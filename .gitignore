@@ -1,0 +1,9 @@
+
+# Other
+.vscode/
+*.code-workspace
+/images/
+/audio/
+/keyconf.bin
+/char/backups/
+AFGEngine.exe

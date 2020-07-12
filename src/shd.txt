@@ -1,0 +1,18 @@
+vec3 BilinearSmoothstepSample (vec2 P)
+{
+    vec2 pixel = P * c_textureSize + 0.5;
+    
+    vec2 frac = fract(pixel);
+    pixel = (floor(pixel) / c_textureSize) - vec2(c_onePixel/2.0);
+
+    vec3 C11 = texture(iChannel0, pixel + vec2( 0.0        , 0.0)).rgb;
+    vec3 C21 = texture(iChannel0, pixel + vec2( c_onePixel , 0.0)).rgb;
+    vec3 C12 = texture(iChannel0, pixel + vec2( 0.0        , c_onePixel)).rgb;
+    vec3 C22 = texture(iChannel0, pixel + vec2( c_onePixel , c_onePixel)).rgb;
+
+    vec3 x1 = mix(C11, C21, smoothstep(0.2, 0.8, frac.x));
+    vec3 x2 = mix(C12, C22, smoothstep(0.2, 0.8, frac.x));
+    return mix(x1, x2, smoothstep(0.2, 0.8, frac.y));
+}
+
+//==
