@@ -1,32 +1,27 @@
 # PNM #
-This is the official repo for *Plight:*. 
 
 -----------------------
-## How to playtest ##
+## How to play ##
 
-Download every .7z file at "downloads" and decompress in the same directory.
-Run PNM.exe to play the game or frametool.exe if you want to test the character editor.
+Assets for the .char files aren't provided, so you'll have to get your own.
 
 To configure your keys/buttons in-game do the following:
 
 For keyboard press F1 and input the keys you that want to be set in this order: 
 UP DOWN LEFT RIGHT A B C D.
 
-For joy input you'll have to press F2 and input only A B C D, in that order.
-The movement is hardcoded for joy so there might be issues with it.
-
-Compressed binaries won't be updated regularly so request them if you want the lastest ones.
+For joy input you'll have to press F2 and input A B C D in order.
+The movement is hardcoded for joy and it hasn't been tested well so there might be issues with it.
 
 -----------------------
 ## Compiling ##
-The CMake file included should cover everything for now.
-
-As of now the dependencies are:
+Whether you're on windows (MSYS2) or linux, install the packages for:
 
 * GLEW
-* GLFW
+* GLFW3
 * pnglib + zlib
 
-Audio and networking capabilities were cut down for your convenience in the meantime.
+The CMake file included should cover everything else for now.
+Audio and networking capabilities are disabled, so there no dependencies for them.
 
-Don't ask about the source of the editor.
+The character editor is not provided in this repository.
