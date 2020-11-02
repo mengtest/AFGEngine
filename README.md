@@ -1,4 +1,8 @@
-# PNM #
+# Fighting Game Engine #
+
+A fighting game engine that aims to reduce hardcoding as much as possible. It is currently in very early stages and it'll go through many changes. Don't expect to be usable for anything yet.
+
+![screenshot](https://user-images.githubusercontent.com/39018575/97825338-20c29b80-1c9d-11eb-9d25-5287eea75cba.png)
 
 -----------------------
 ## How to play ##
@@ -22,6 +26,6 @@ Whether you're on windows (MSYS2) or linux, install the packages for:
 * pnglib + zlib
 
 The CMake file included should cover everything else for now.
-Audio and networking capabilities are disabled, so there no dependencies for them.
+Audio and networking capabilities are disabled, so there are no dependencies for them.
 
 The character editor is not provided in this repository.
