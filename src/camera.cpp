@@ -17,19 +17,30 @@ scale(1.f)
 
 }
 
+Camera::Camera() : Camera(1.1f)
+{
+
+}
+
+
 const FixedPoint stageWidth(480);
 
 void Camera::Calculate(Point2d<FixedPoint> p1, Point2d<FixedPoint> p2)
 {
-
 	const FixedPoint dif = p1.x - p2.x;
 
-	if(dif.abs() > FixedPoint(widthBoundary*limitRatio))
+	//Zooms out when the distance between points is larger than the screen's h-ratio.
+	if(dif.abs() > FixedPoint(widthBoundary*limitRatio)) 
 	{
 		scale = dif.abs()/(widthBoundary*limitRatio);
+		if(scale > maxScale)
+			scale = maxScale;
 	}
-	if(scale > maxScale)
-		scale = maxScale;
+	else
+	{
+		scale = 1.f;
+	}
+	
 
 	center = p1.x - dif/FixedPoint(2);
 	if(GetWallPos(camera::leftWall) <= -stageWidth)

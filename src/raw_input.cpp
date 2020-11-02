@@ -72,14 +72,14 @@ void CbGameLoopKeys(GLFWwindow* window, int key, int scancode, int action, int m
         break;
 	case GLFW_KEY_F3: //Set joy buttons
         {
-        	int count;
-			glfwGetJoystickButtons(GLFW_JOYSTICK_1, &count);
+        	int buttonN = 0;
+			glfwGetJoystickButtons(GLFW_JOYSTICK_1, &buttonN);
 			int i = 0;
-			int used[count] = {0};
+			int *used = new int[buttonN];
             while(i < 4)
             {
-                const unsigned char *buttons = glfwGetJoystickButtons(GLFW_JOYSTICK_1, &count);
-                for(int buttonItr = 0; buttonItr < count; ++buttonItr)
+                const unsigned char *buttons = glfwGetJoystickButtons(GLFW_JOYSTICK_1, &buttonN);
+                for(int buttonItr = 0; buttonItr < buttonN; ++buttonItr)
 				{
 					if(buttons[buttonItr] == GLFW_PRESS)
 					{
@@ -92,10 +92,14 @@ void CbGameLoopKeys(GLFWwindow* window, int key, int scancode, int action, int m
 					}
 				}
             }
+			delete[] used;
             std::ofstream keyfile("joyconf.bin", std::ofstream::out | std::ofstream::binary);
 			keyfile.write((const char*)modifiableJoyKeys, sizeof(int)*4);
             keyfile.close();
         }
+        break;
+		case GLFW_KEY_F5: //Switches between different framerates
+				ChangeFramerate();
         break;
     case GLFW_KEY_ESCAPE:
         glfwSetWindowShouldClose(mainWindow, GL_TRUE);

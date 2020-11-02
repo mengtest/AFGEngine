@@ -4,7 +4,6 @@
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
 
-
 extern bool fullscreen;
 extern bool vsync;
 extern const int internalWidth;
@@ -15,6 +14,7 @@ extern GLFWwindow *mainWindow;
 
 GLFWwindow* InitWindow(); //Sets up initial window size, opengl configuration and shaders.
 
+void ChangeFramerate();
 
 //Sleeps until it's time to process the next frame.
 void SleepUntilNextFrame();

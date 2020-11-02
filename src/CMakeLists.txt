@@ -1,7 +1,7 @@
 include_directories("${CMAKE_SOURCE_DIR}/src")
 
 target_sources(AFGEngine PUBLIC
-	audio.cpp
+	#audio.cpp
 	camera.cpp
 	chara.cpp
 	chara_input.cpp

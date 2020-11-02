@@ -17,21 +17,23 @@ class Camera
 {
 public: //As always, this is access only.
 	FixedPoint center;
+	FixedPoint scale;
 
 private:
 
 	const FixedPoint widthBoundary;
 	const FixedPoint limitRatio; //The max distance relative to 1 game screen between characters before the camera zooms out.
 	const FixedPoint maxScale; //Max zoom out.
-	FixedPoint scale;
+
 
 public:
-    Camera(float maxScale);
+	Camera();
+	Camera(float maxScale);
 
-    void Apply();
+	void Apply();
 	void Calculate(Point2d<FixedPoint>, Point2d<FixedPoint> p2);
 
-    FixedPoint GetWallPos(int which);
+		FixedPoint GetWallPos(int which);
 private:
 };
 

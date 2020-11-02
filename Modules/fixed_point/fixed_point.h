@@ -3,16 +3,19 @@
 
 #include <cstdint> //fixed width types
 
+
+	
 //Fixed point, 32bit as 16.16.
 class FixedPoint
 {
+	
 public:
 	typedef std::int32_t fixed_t;
 	fixed_t value;
 
 public:
-	FixedPoint();
-	FixedPoint(int decimal, unsigned int fractional);
+	constexpr FixedPoint();
+	constexpr FixedPoint(int decimal, unsigned int fractional);
 
 
 
@@ -62,10 +65,57 @@ public:
 	template<typename T> FixedPoint operator*(T a) const;
 
 private:
+	static constexpr int fracBits = 16;
+	static constexpr int fracUnit = 1 << fracBits;
+
 	static fixed_t ToFixed(double number);
 	static fixed_t ToFixed(float number);
 	static fixed_t ToFixed(int number);
 };
+
+
+constexpr FixedPoint::FixedPoint() : value(0)
+{
+	
+}
+
+constexpr FixedPoint::FixedPoint(int integral, unsigned int fractional) : value(0)
+{
+
+	bool negate = false;
+	if(integral < 0)
+	{
+		integral = -integral;
+		negate = true;
+	}
+	
+	//Set the integral part in the msb
+	integral <<= fracBits;
+
+	//Make sure the fractional part fits in the lsb
+	int c = 0; //Compensation
+	while(fractional >= fracUnit)
+	{	
+		fractional >>= 1;
+		c++;
+	}
+
+	//Base 10 fractional to base 2
+	fractional <<= fracBits;
+	while(fractional >= 1 << (fracBits))
+	{	
+		fractional /= 10;
+		if(c > 0)
+		{
+			fractional <<= 1;
+			c--;
+		}
+	}
+
+	value = integral + fractional;
+	if(negate)
+		value = -value;
+}
 
 template<typename T>
 FixedPoint::FixedPoint(T number)

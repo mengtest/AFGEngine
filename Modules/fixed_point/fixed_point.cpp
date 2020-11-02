@@ -10,47 +10,6 @@
 const int fracBits = FP_FRACBITS;
 const int fracUnit = 1 << fracBits;
 
-FixedPoint::FixedPoint()
-{
-	value = 0;
-}
-
-FixedPoint::FixedPoint(int integral, unsigned int fractional)
-{
-	bool negate = false;
-	if(integral < 0)
-	{
-		integral = -integral;
-		negate = true;
-	}
-	
-	//Set the integral part in the msb
-	integral <<= fracBits;
-
-	//Make sure the fractional part fits in the lsb
-	int c = 0; //Compensation
-	while(fractional >= fracUnit)
-	{	
-		fractional >>= 1;
-		c++;
-	}
-
-	//Base 10 fractional to base 2
-	fractional <<= fracBits;
-	while(fractional >= 1 << (fracBits))
-	{	
-		fractional /= 10;
-		if(c > 0)
-		{
-			fractional <<= 1;
-			c--;
-		}
-	}
-
-	value = integral + fractional;
-	if(negate)
-		value = -value;
-}
 
 FixedPoint& FixedPoint::operator=(FixedPoint a)
 {

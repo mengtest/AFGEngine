@@ -11,7 +11,7 @@
 #include <string>
 #include <vector>
 
-#include "audio.h"
+//#include "audio.h"
 #include "camera.h"
 #include "chara.h"
 #include "hud.h"
@@ -125,7 +125,7 @@ void PlayLoop()
 	pal = 0;
 	Character player2(250, -1, "char/vaki.char");
 
-	Camera view(1.1);
+	Camera view;
 	player.SetCameraRef(&view);
 	player2.SetCameraRef(&view);
 
@@ -151,6 +151,10 @@ void PlayLoop()
 	bool gameOver = false;
 	while(!gameOver && !glfwWindowShouldClose(mainWindow))
 	{
+		glfwPollEvents();
+		if(glfwJoystickPresent(GLFW_JOYSTICK_1))
+			GameLoopJoy();
+		
 		for(int i = 0; i < 2; ++i)
 		{
 			keyBuf[i].pop_back();
@@ -159,12 +163,11 @@ void PlayLoop()
 			keyBufDelayed[i].push_front(keyBuf[i][inputDelay]);
 		}
 
+		
 		player.HitCollision();
 		player2.HitCollision();
 
-		glfwPollEvents();
-		if(glfwJoystickPresent(GLFW_JOYSTICK_1))
-			GameLoopJoy();
+		
 		player.Input(&keyBufDelayed[0]);
 		player2.Input(&keyBufDelayed[1]);
 
@@ -176,7 +179,7 @@ void PlayLoop()
 
 		/*player.Print();
 		player2.Print();
-		std::cout << " \n";*/
+		*/std::cout << (float)view.scale << " \n";
 
 		barHandler[B_P1Life].Resize(player.getHealthRatio(), 1);
 		barHandler[B_P2Life].Resize(player2.getHealthRatio(), 1);
@@ -184,7 +187,7 @@ void PlayLoop()
 		//Turn this into a draw function perhaps?
 		//glClear(GL_COLOR_BUFFER_BIT);
 		glPushMatrix();
-		view.Calculate(player.getXYCoords(), player2.getXYCoords());
+		view.Calculate(player.getXYCoords(), player2.getXYCoords()); //Should calculations be performed earlier? Watchout for this
 		view.Apply();
 
 		//This stays until stage files exist and can be loaded.

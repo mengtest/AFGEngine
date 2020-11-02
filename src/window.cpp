@@ -3,9 +3,10 @@
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
 
-#include <chrono>
+
 #include <iostream>
-#include <thread>
+#include <chrono>
+#include "threading.h"
 
 #include "main.h"
 #include "shader.h"
@@ -17,7 +18,7 @@ bool shitty_drivers = false;
 
 double realSpf = 0;
 
-const double secondsPerFrame = 0.01666; //Duration of a frame in seconds.
+double targetSpf = 0.01666; //Duration of a frame in seconds.
 const int internalWidth = 480;
 const int internalHeight = 270;
 
@@ -80,7 +81,7 @@ void SleepUntilNextFrame()
 	{
 		if(shitty_drivers) //This is a workaround to some faulty vsync/sleep behaviour.
 		{
-			while( (realSpf = glfwGetTime()) <= secondsPerFrame)
+			while( (realSpf = glfwGetTime()) <= targetSpf)
 			{
 				
 			}
@@ -88,11 +89,11 @@ void SleepUntilNextFrame()
 		else
 		{
 			double time = glfwGetTime();
-			if(time < secondsPerFrame)
+			if(time < targetSpf)
 			{
-				std::this_thread::sleep_for(std::chrono::milliseconds(1));
+				threadNS::this_thread::sleep_for(std::chrono::milliseconds(1));
 			}
-			while( (realSpf = glfwGetTime()) <= secondsPerFrame);
+			while( (realSpf = glfwGetTime()) <= targetSpf);
 		}
 	}
 	glfwSetTime(0);
@@ -134,4 +135,20 @@ void GlSetup2d()
 float GetSpf()
 {
 	return realSpf;
+}
+
+const double framerateList[4] = {
+	0.01666, 
+	1.0/30.0, 
+	1.0/10.0,
+	1.0/2.0
+};
+
+void ChangeFramerate()
+{
+	static int which = 0;
+	which++;
+	if(which >= 4)
+		which = 0;
+	targetSpf = framerateList[which];
 }
