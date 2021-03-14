@@ -397,6 +397,8 @@ float Character::getHealthRatio()
 
 bool Character::SuggestSequence(int seq)
 {
+	if(seq == -1)
+		return false;
 
 	if (sequences[currSeq].machineState == state::BUSY_GRND) //Checks if it should ignore the next command
 	{

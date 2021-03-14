@@ -2,14 +2,6 @@
 
 #include <cstdlib> //abs()
 
-#ifndef FP_FRACBITS
-	#define FP_FRACBITS 16
-#endif
-
-//Fractional part bits
-const int fracBits = FP_FRACBITS;
-const int fracUnit = 1 << fracBits;
-
 
 FixedPoint& FixedPoint::operator=(FixedPoint a)
 {

@@ -3,6 +3,9 @@
 
 #include <cstdint> //fixed width types
 
+#ifndef FP_FRACBITS
+	#define FP_FRACBITS 16
+#endif
 
 	
 //Fixed point, 32bit as 16.16.
@@ -65,7 +68,7 @@ public:
 	template<typename T> FixedPoint operator*(T a) const;
 
 private:
-	static constexpr int fracBits = 16;
+	static constexpr int fracBits = FP_FRACBITS;
 	static constexpr int fracUnit = 1 << fracBits;
 
 	static fixed_t ToFixed(double number);

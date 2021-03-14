@@ -7,11 +7,11 @@
 extern int pal;
 
 struct TextureData{ //I probably should integrate this directly into the Texture class.
-  png_byte *data;
-  int width;
-  int height;
-  int flag;
-  int format; //OpenGL texel format.
+  png_byte *data = 0;
+  int width = 0;
+  int height = 0;
+  int flag = 0;
+  int format = 0; //OpenGL texel format.
 };
 
 class Texture //Point to it, do not use directly.

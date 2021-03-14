@@ -14,7 +14,7 @@
 
 bool fullscreen = false;
 bool vsync = false;
-bool shitty_drivers = false;
+bool busyWait = false;
 
 double realSpf = 0;
 
@@ -79,7 +79,7 @@ void SleepUntilNextFrame()
 {
 	if(!vsync)
 	{
-		if(shitty_drivers) //This is a workaround to some faulty vsync/sleep behaviour.
+		if(busyWait) //This is a workaround to some faulty sleep behaviour.
 		{
 			while( (realSpf = glfwGetTime()) <= targetSpf)
 			{

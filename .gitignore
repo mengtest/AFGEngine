@@ -3,6 +3,7 @@
 .vscode/
 *.code-workspace
 /images/
+/engine/.cache/
 /audio/
 /keyconf.bin
 /char/backups/

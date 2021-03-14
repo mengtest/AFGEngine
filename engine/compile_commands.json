@@ -1,0 +1,62 @@
+[
+{
+  "directory": "D:/c/projects/PNM/win64",
+  "command": "C:\\PROGRA~2\\MICROS~3\\2019\\COMMUN~1\\VC\\Tools\\MSVC\\1428~1.293\\bin\\Hostx64\\x64\\cl.exe  /nologo /TP -DGLFW_DLL -ID:\\c\\projects\\PNM\\Modules\\geometry -ID:\\c\\projects\\PNM\\Modules\\RtAudio -ID:\\c\\projects\\PNM\\Modules\\fixed_point -ID:\\MSVC\\vcpkg\\installed\\x64-windows\\include /DWIN32 /D_WINDOWS /W3 /GR /EHsc /MDd /Zi /Ob0 /Od /RTC1 /FoCMakeFiles\\AFGEngine.dir\\src\\camera.cpp.obj /FdCMakeFiles\\AFGEngine.dir\\ /FS -c D:\\c\\projects\\PNM\\src\\camera.cpp",
+  "file": "D:/c/projects/PNM/src/camera.cpp"
+},
+{
+  "directory": "D:/c/projects/PNM/win64",
+  "command": "C:\\PROGRA~2\\MICROS~3\\2019\\COMMUN~1\\VC\\Tools\\MSVC\\1428~1.293\\bin\\Hostx64\\x64\\cl.exe  /nologo /TP -DGLFW_DLL -ID:\\c\\projects\\PNM\\Modules\\geometry -ID:\\c\\projects\\PNM\\Modules\\RtAudio -ID:\\c\\projects\\PNM\\Modules\\fixed_point -ID:\\MSVC\\vcpkg\\installed\\x64-windows\\include /DWIN32 /D_WINDOWS /W3 /GR /EHsc /MDd /Zi /Ob0 /Od /RTC1 /FoCMakeFiles\\AFGEngine.dir\\src\\chara.cpp.obj /FdCMakeFiles\\AFGEngine.dir\\ /FS -c D:\\c\\projects\\PNM\\src\\chara.cpp",
+  "file": "D:/c/projects/PNM/src/chara.cpp"
+},
+{
+  "directory": "D:/c/projects/PNM/win64",
+  "command": "C:\\PROGRA~2\\MICROS~3\\2019\\COMMUN~1\\VC\\Tools\\MSVC\\1428~1.293\\bin\\Hostx64\\x64\\cl.exe  /nologo /TP -DGLFW_DLL -ID:\\c\\projects\\PNM\\Modules\\geometry -ID:\\c\\projects\\PNM\\Modules\\RtAudio -ID:\\c\\projects\\PNM\\Modules\\fixed_point -ID:\\MSVC\\vcpkg\\installed\\x64-windows\\include /DWIN32 /D_WINDOWS /W3 /GR /EHsc /MDd /Zi /Ob0 /Od /RTC1 /FoCMakeFiles\\AFGEngine.dir\\src\\chara_input.cpp.obj /FdCMakeFiles\\AFGEngine.dir\\ /FS -c D:\\c\\projects\\PNM\\src\\chara_input.cpp",
+  "file": "D:/c/projects/PNM/src/chara_input.cpp"
+},
+{
+  "directory": "D:/c/projects/PNM/win64",
+  "command": "C:\\PROGRA~2\\MICROS~3\\2019\\COMMUN~1\\VC\\Tools\\MSVC\\1428~1.293\\bin\\Hostx64\\x64\\cl.exe  /nologo /TP -DGLFW_DLL -ID:\\c\\projects\\PNM\\Modules\\geometry -ID:\\c\\projects\\PNM\\Modules\\RtAudio -ID:\\c\\projects\\PNM\\Modules\\fixed_point -ID:\\MSVC\\vcpkg\\installed\\x64-windows\\include /DWIN32 /D_WINDOWS /W3 /GR /EHsc /MDd /Zi /Ob0 /Od /RTC1 /FoCMakeFiles\\AFGEngine.dir\\src\\hud.cpp.obj /FdCMakeFiles\\AFGEngine.dir\\ /FS -c D:\\c\\projects\\PNM\\src\\hud.cpp",
+  "file": "D:/c/projects/PNM/src/hud.cpp"
+},
+{
+  "directory": "D:/c/projects/PNM/win64",
+  "command": "C:\\PROGRA~2\\MICROS~3\\2019\\COMMUN~1\\VC\\Tools\\MSVC\\1428~1.293\\bin\\Hostx64\\x64\\cl.exe  /nologo /TP -DGLFW_DLL -ID:\\c\\projects\\PNM\\Modules\\geometry -ID:\\c\\projects\\PNM\\Modules\\RtAudio -ID:\\c\\projects\\PNM\\Modules\\fixed_point -ID:\\MSVC\\vcpkg\\installed\\x64-windows\\include /DWIN32 /D_WINDOWS /W3 /GR /EHsc /MDd /Zi /Ob0 /Od /RTC1 /FoCMakeFiles\\AFGEngine.dir\\src\\main.cpp.obj /FdCMakeFiles\\AFGEngine.dir\\ /FS -c D:\\c\\projects\\PNM\\src\\main.cpp",
+  "file": "D:/c/projects/PNM/src/main.cpp"
+},
+{
+  "directory": "D:/c/projects/PNM/win64",
+  "command": "C:\\PROGRA~2\\MICROS~3\\2019\\COMMUN~1\\VC\\Tools\\MSVC\\1428~1.293\\bin\\Hostx64\\x64\\cl.exe  /nologo /TP -DGLFW_DLL -ID:\\c\\projects\\PNM\\Modules\\geometry -ID:\\c\\projects\\PNM\\Modules\\RtAudio -ID:\\c\\projects\\PNM\\Modules\\fixed_point -ID:\\MSVC\\vcpkg\\installed\\x64-windows\\include /DWIN32 /D_WINDOWS /W3 /GR /EHsc /MDd /Zi /Ob0 /Od /RTC1 /FoCMakeFiles\\AFGEngine.dir\\src\\raw_input.cpp.obj /FdCMakeFiles\\AFGEngine.dir\\ /FS -c D:\\c\\projects\\PNM\\src\\raw_input.cpp",
+  "file": "D:/c/projects/PNM/src/raw_input.cpp"
+},
+{
+  "directory": "D:/c/projects/PNM/win64",
+  "command": "C:\\PROGRA~2\\MICROS~3\\2019\\COMMUN~1\\VC\\Tools\\MSVC\\1428~1.293\\bin\\Hostx64\\x64\\cl.exe  /nologo /TP -DGLFW_DLL -ID:\\c\\projects\\PNM\\Modules\\geometry -ID:\\c\\projects\\PNM\\Modules\\RtAudio -ID:\\c\\projects\\PNM\\Modules\\fixed_point -ID:\\MSVC\\vcpkg\\installed\\x64-windows\\include /DWIN32 /D_WINDOWS /W3 /GR /EHsc /MDd /Zi /Ob0 /Od /RTC1 /FoCMakeFiles\\AFGEngine.dir\\src\\shader.cpp.obj /FdCMakeFiles\\AFGEngine.dir\\ /FS -c D:\\c\\projects\\PNM\\src\\shader.cpp",
+  "file": "D:/c/projects/PNM/src/shader.cpp"
+},
+{
+  "directory": "D:/c/projects/PNM/win64",
+  "command": "C:\\PROGRA~2\\MICROS~3\\2019\\COMMUN~1\\VC\\Tools\\MSVC\\1428~1.293\\bin\\Hostx64\\x64\\cl.exe  /nologo /TP -DGLFW_DLL -ID:\\c\\projects\\PNM\\Modules\\geometry -ID:\\c\\projects\\PNM\\Modules\\RtAudio -ID:\\c\\projects\\PNM\\Modules\\fixed_point -ID:\\MSVC\\vcpkg\\installed\\x64-windows\\include /DWIN32 /D_WINDOWS /W3 /GR /EHsc /MDd /Zi /Ob0 /Od /RTC1 /FoCMakeFiles\\AFGEngine.dir\\src\\texture.cpp.obj /FdCMakeFiles\\AFGEngine.dir\\ /FS -c D:\\c\\projects\\PNM\\src\\texture.cpp",
+  "file": "D:/c/projects/PNM/src/texture.cpp"
+},
+{
+  "directory": "D:/c/projects/PNM/win64",
+  "command": "C:\\PROGRA~2\\MICROS~3\\2019\\COMMUN~1\\VC\\Tools\\MSVC\\1428~1.293\\bin\\Hostx64\\x64\\cl.exe  /nologo /TP -DGLFW_DLL -ID:\\c\\projects\\PNM\\Modules\\geometry -ID:\\c\\projects\\PNM\\Modules\\RtAudio -ID:\\c\\projects\\PNM\\Modules\\fixed_point -ID:\\MSVC\\vcpkg\\installed\\x64-windows\\include /DWIN32 /D_WINDOWS /W3 /GR /EHsc /MDd /Zi /Ob0 /Od /RTC1 /FoCMakeFiles\\AFGEngine.dir\\src\\util.cpp.obj /FdCMakeFiles\\AFGEngine.dir\\ /FS -c D:\\c\\projects\\PNM\\src\\util.cpp",
+  "file": "D:/c/projects/PNM/src/util.cpp"
+},
+{
+  "directory": "D:/c/projects/PNM/win64",
+  "command": "C:\\PROGRA~2\\MICROS~3\\2019\\COMMUN~1\\VC\\Tools\\MSVC\\1428~1.293\\bin\\Hostx64\\x64\\cl.exe  /nologo /TP -DGLFW_DLL -ID:\\c\\projects\\PNM\\Modules\\geometry -ID:\\c\\projects\\PNM\\Modules\\RtAudio -ID:\\c\\projects\\PNM\\Modules\\fixed_point -ID:\\MSVC\\vcpkg\\installed\\x64-windows\\include /DWIN32 /D_WINDOWS /W3 /GR /EHsc /MDd /Zi /Ob0 /Od /RTC1 /FoCMakeFiles\\AFGEngine.dir\\src\\window.cpp.obj /FdCMakeFiles\\AFGEngine.dir\\ /FS -c D:\\c\\projects\\PNM\\src\\window.cpp",
+  "file": "D:/c/projects/PNM/src/window.cpp"
+},
+{
+  "directory": "D:/c/projects/PNM/win64/Modules",
+  "command": "C:\\PROGRA~2\\MICROS~3\\2019\\COMMUN~1\\VC\\Tools\\MSVC\\1428~1.293\\bin\\Hostx64\\x64\\cl.exe  /nologo /TP -DFP_FRACBITS=16 -D__WINDOWS_DS__ -ID:\\c\\projects\\PNM\\Modules\\RtAudio /DWIN32 /D_WINDOWS /W3 /GR /EHsc /MDd /Zi /Ob0 /Od /RTC1 /FoCMakeFiles\\RTAUDIO.dir\\RtAudio\\RtAudio.cpp.obj /FdCMakeFiles\\RTAUDIO.dir\\RTAUDIO.pdb /FS -c D:\\c\\projects\\PNM\\Modules\\RtAudio\\RtAudio.cpp",
+  "file": "D:/c/projects/PNM/Modules/RtAudio/RtAudio.cpp"
+},
+{
+  "directory": "D:/c/projects/PNM/win64/Modules",
+  "command": "C:\\PROGRA~2\\MICROS~3\\2019\\COMMUN~1\\VC\\Tools\\MSVC\\1428~1.293\\bin\\Hostx64\\x64\\cl.exe  /nologo /TP -DFP_FRACBITS=16 -D__WINDOWS_DS__ -ID:\\c\\projects\\PNM\\Modules\\fixed_point /DWIN32 /D_WINDOWS /W3 /GR /EHsc /MDd /Zi /Ob0 /Od /RTC1 /FoCMakeFiles\\FixedPoint.dir\\fixed_point\\fixed_point.cpp.obj /FdCMakeFiles\\FixedPoint.dir\\FixedPoint.pdb /FS -c D:\\c\\projects\\PNM\\Modules\\fixed_point\\fixed_point.cpp",
+  "file": "D:/c/projects/PNM/Modules/fixed_point/fixed_point.cpp"
+}
+]
