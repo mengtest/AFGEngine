@@ -10,8 +10,8 @@
 Camera::Camera(float _maxScale) :
 widthBoundary(internalWidth),
 maxScale(_maxScale),
-limitRatio(FixedPoint(6)/FixedPoint(7)),
-scale(1.f)
+scale(1.f),
+limitRatio(FixedPoint(6)/FixedPoint(7))
 {
 
 }
