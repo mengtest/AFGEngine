@@ -97,7 +97,7 @@ int InstantInput(input_deque *keyPresses, float side, Motion_Data* motions)
 		return act::UP;
 	}
 
-    else if(key & key::buf::DOWN && key & right)
+	else if(key & key::buf::DOWN && key & right)
 	{
 		if(key & key::buf::A)
 			return act::A2;
@@ -137,7 +137,7 @@ int InstantInput(input_deque *keyPresses, float side, Motion_Data* motions)
 		return act::DOWN;
 	}
 
-    else if(key & right)
+	else if(key & right)
 	{
 		if(key & key::buf::A)
 			return act::A6;

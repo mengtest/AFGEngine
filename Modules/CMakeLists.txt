@@ -11,7 +11,7 @@ target_link_libraries(AFGEngine PRIVATE RTAUDIO)
 
 #FixedPoint
 add_library(FixedPoint STATIC fixed_point/fixed_point.cpp)
-add_compile_definitions(FP_FRACBITS=16)
+target_compile_definitions(FixedPoint PUBLIC FP_FRACBITS=16)
 target_include_directories(FixedPoint PUBLIC fixed_point)
 target_link_libraries(AFGEngine PRIVATE FixedPoint)
 

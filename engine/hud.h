@@ -1,7 +1,6 @@
 #ifndef HUD_H_INCLUDED
 #define HUD_H_INCLUDED
-#include <GL/glew.h>
-#include <GLFW/glfw3.h>
+#include <glad/glad.h>
 #include <vector>
 
 enum

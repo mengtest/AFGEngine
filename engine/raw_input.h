@@ -1,7 +1,7 @@
 #ifndef RAW_INPUT_H_INCLUDED
 #define RAW_INPUT_H_INCLUDED
-#include <GL/glew.h>
-#include <GLFW/glfw3.h>
+#include <stdint.h>
+#include <SDL.h>
 
 namespace key //Key press as an int after being processed.
 {
@@ -21,7 +21,7 @@ namespace key //Key press as an int after being processed.
 	};
 	namespace buf
 	{
-		enum //Bit-mask for the keys pressed on each frame to be send to the key buffer
+		enum : uint32_t //Bit-mask for the keys pressed on each frame to be send to the key buffer
 		{
 			UP = 0x1,
 			DOWN = 0x2,
@@ -42,13 +42,12 @@ namespace key //Key press as an int after being processed.
 const int buttonsN = key::END;
 
 extern unsigned int keySend[2];
-extern int modifiableSCKeys[buttonsN*2];
+extern SDL_Scancode modifiableSCKeys[buttonsN*2];
 extern int modifiableJoyKeys[4];
 
 void GameLoopJoy(); //Called directly to poll Joy stick/pad status.
 //Callbacks that are called when polling anyway.
-void CbGameLoopKeys(GLFWwindow* window, int key, int scancode, int action, int mods); //In-game input processing.
-void CbSetupKeys(GLFWwindow* window, int key, int scancode, int action, int mods);  //Auxiliary callback to setup keys. Temporary, as always.
-void SetupKeys(GLFWwindow* window, int offset); //Sets up and uses the callback to configure keys.
+void GameLoopKeyHandle(SDL_KeyboardEvent &e); //In-game input processing.
+void SetupKeys(int offset); //Sets up and uses the callback to configure keys.
 
 #endif // RAW_INPUT_H_INCLUDED

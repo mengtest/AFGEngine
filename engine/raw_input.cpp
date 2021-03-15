@@ -1,50 +1,50 @@
+#include "raw_input.h"
+#include <SDL.h>
 #include <fstream>
 
-#include "raw_input.h"
 #include "window.h"
 
 //As usual, all of this should be wrapped in a class?
 //And as always, there are temporary(?) globals for convenience.
 
 unsigned int keySend[2] = {key::buf::TRUE_NEUTRAL, key::buf::TRUE_NEUTRAL};
-int modifiableSCKeys[buttonsN*2] = {0};
+SDL_Scancode modifiableSCKeys[buttonsN*2];
 int modifiableJoyKeys[4] = {0};
-int keyIterator = 0;
 
-void CbSetupKeys(GLFWwindow* window, int key, int scancode, int action, int mods)
+void SetupKeys(int offset)
 {
-    if(action != GLFW_PRESS)
-        return;
-    modifiableSCKeys[keyIterator]=scancode;
-    ++keyIterator;
-}
-
-void SetupKeys(GLFWwindow* window, int offset)
-{
+	int keyIterator = 0;
 	keyIterator = offset;
-	glfwSetKeyCallback(window, CbSetupKeys);
 	while(keyIterator<buttonsN+offset)
 	{
-		glfwWaitEvents();
+		SDL_Event event;
+		SDL_WaitEvent(&event);
+		if(event.type != SDL_KEYDOWN)
+			continue;
+		
+		modifiableSCKeys[keyIterator]=event.key.keysym.scancode;
+		++keyIterator;
 	}
 	std::ofstream keyfile("keyconf.bin", std::ofstream::out | std::ofstream::binary);
 	keyfile.write((const char*)modifiableSCKeys, sizeof(int)*buttonsN*2);
 	keyfile.close();
-	glfwSetKeyCallback(window, CbGameLoopKeys);
 }
 
-void CbGameLoopKeys(GLFWwindow* window, int key, int scancode, int action, int mods)
+void GameLoopKeyHandle(SDL_KeyboardEvent &e)
 {
-	if(action == GLFW_REPEAT)
+	if(e.repeat)
 		return;
+	
+	SDL_Scancode scancode = e.keysym.scancode; 
 
+	bool action = e.type == SDL_KEYDOWN;
 	for(int i = 0; i < buttonsN; ++i)
 	{
 		if(scancode == modifiableSCKeys[i])
 		{
-			if(action == GLFW_PRESS)
+			if(action)
 				keySend[0] |= 1 << i;
-			else if(action == GLFW_RELEASE)
+			else
 				keySend[0] &= ~(1 << i);
 		}
 	}
@@ -52,34 +52,36 @@ void CbGameLoopKeys(GLFWwindow* window, int key, int scancode, int action, int m
 	{
 		if(scancode == modifiableSCKeys[i+buttonsN])
 		{
-			if(action == GLFW_PRESS)
+			if(action)
 				keySend[1] |= 1 << i;
-			else if(action == GLFW_RELEASE)
+			else
 				keySend[1] &= ~(1 << i);
 		}
 	}
 
 
-    //unmodifiable keys.
-    if(action != GLFW_PRESS)
-        return;
-    switch (key){
-    case GLFW_KEY_F1: //Set custom keys for player one
-		SetupKeys(window, 0);
-        break;
-	case GLFW_KEY_F2: //and player two too
-		SetupKeys(window, buttonsN);
-        break;
-	case GLFW_KEY_F3: //Set joy buttons
-        {
-        	int buttonN = 0;
+	//unmodifiable keys.
+	if(!action)
+		return;
+
+	switch (scancode){
+	case SDL_SCANCODE_F1: //Set custom keys for player one
+		SetupKeys(0);
+		break;
+	case SDL_SCANCODE_F2: //and player two too
+		SetupKeys(buttonsN);
+		break;
+	case SDL_SCANCODE_F3: //Set joy buttons
+		{
+			/* TODO
+			int buttonN = 0;
 			glfwGetJoystickButtons(GLFW_JOYSTICK_1, &buttonN);
 			int i = 0;
 			int *used = new int[buttonN];
-            while(i < 4)
-            {
-                const unsigned char *buttons = glfwGetJoystickButtons(GLFW_JOYSTICK_1, &buttonN);
-                for(int buttonItr = 0; buttonItr < buttonN; ++buttonItr)
+			while(i < 4)
+			{
+				const unsigned char *buttons = glfwGetJoystickButtons(GLFW_JOYSTICK_1, &buttonN);
+				for(int buttonItr = 0; buttonItr < buttonN; ++buttonItr)
 				{
 					if(buttons[buttonItr] == GLFW_PRESS)
 					{
@@ -91,27 +93,29 @@ void CbGameLoopKeys(GLFWwindow* window, int key, int scancode, int action, int m
 						break;
 					}
 				}
-            }
+			}
 			delete[] used;
-            std::ofstream keyfile("joyconf.bin", std::ofstream::out | std::ofstream::binary);
+			std::ofstream keyfile("joyconf.bin", std::ofstream::out | std::ofstream::binary);
 			keyfile.write((const char*)modifiableJoyKeys, sizeof(int)*4);
-            keyfile.close();
-        }
-        break;
-		case GLFW_KEY_F5: //Switches between different framerates
-				ChangeFramerate();
-        break;
-    case GLFW_KEY_ESCAPE:
-        glfwSetWindowShouldClose(mainWindow, GL_TRUE);
-        break;
-    }
+			keyfile.close();
+			*/
+		}
+		break;
+	case SDL_SCANCODE_F5: //Switches between different framerates
+			//ChangeFramerate();
+		break;
+	case SDL_SCANCODE_ESCAPE:
+			mainWindow->wantsToClose = true;
+		break;
+	}
 }
 
 void GameLoopJoy()
 {
+	/* TODO
 	int acount;
-    const float *axesArray = glfwGetJoystickAxes(GLFW_JOYSTICK_1, &acount);
-    if(acount >= 2)
+	const float *axesArray = glfwGetJoystickAxes(GLFW_JOYSTICK_1, &acount);
+	if(acount >= 2)
 	{
 		if(axesArray[0] == 1)
 			keySend[0] |= key::buf::RIGHT;
@@ -151,4 +155,5 @@ void GameLoopJoy()
 			}
 		}
 	}
+	*/
 }

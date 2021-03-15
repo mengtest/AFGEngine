@@ -1,7 +1,7 @@
 #include "main.h"
 
-#include <GL/glew.h>
-#include <GLFW/glfw3.h>
+#include <glad/glad.h>
+#include <SDL.h>
 
 #include <deque>
 #include <fstream>
@@ -41,7 +41,6 @@ int gameState = GS_MENU;
 
 int main(int argc, char** argv)
 {
-
 	#ifdef NETPLAY
 	if(argc > 1) //Netplay
 	{
@@ -50,9 +49,8 @@ int main(int argc, char** argv)
 	}
 	#endif
 
-	mainWindow = InitWindow();
-	if(!mainWindow)
-		return EXIT_FAILURE;
+	mainWindow = new Window();
+	mainWindow->GlSetup2d();
 
 	//reads configurable keys
 	std::ifstream keyfile("keyconf.bin", std::ifstream::in | std::ifstream::binary);
@@ -68,7 +66,7 @@ int main(int argc, char** argv)
 		keyfile.close();
 	}
 
-	while (!glfwWindowShouldClose(mainWindow))
+	while(!mainWindow->wantsToClose)
 	{
 		switch (gameState)
 		{
@@ -82,18 +80,12 @@ int main(int argc, char** argv)
 		}
 	}
 
-	glfwDestroyWindow(mainWindow);
-	glfwTerminate();
 	return 0;
 }
 
 void PlayLoop()
 {
-	GlSetup2d();
 	glUseProgram(globalShaderProgram);
-	glfwSetKeyCallback(mainWindow, CbGameLoopKeys);
-
-	
 
 	//texture load
 	std::vector<Texture> activeTextures;
@@ -149,11 +141,14 @@ void PlayLoop()
 	testA.playback.startStream();*/
 
 	bool gameOver = false;
-	while(!gameOver && !glfwWindowShouldClose(mainWindow))
+	while(!gameOver && !mainWindow->wantsToClose)
 	{
-		glfwPollEvents();
+		EventLoop();
+		
+		/* TODO
 		if(glfwJoystickPresent(GLFW_JOYSTICK_1))
 			GameLoopJoy();
+		*/
 		
 		for(int i = 0; i < 2; ++i)
 		{
@@ -162,12 +157,10 @@ void PlayLoop()
 			keyBufDelayed[i].pop_back();
 			keyBufDelayed[i].push_front(keyBuf[i][inputDelay]);
 		}
-
 		
 		player.HitCollision();
 		player2.HitCollision();
 
-		
 		player.Input(&keyBufDelayed[0]);
 		player2.Input(&keyBufDelayed[1]);
 
@@ -178,8 +171,7 @@ void PlayLoop()
 		
 
 		/*player.Print();
-		player2.Print();
-		*/std::cout << (float)view.scale << " \n";
+		player2.Print();*/
 
 		barHandler[B_P1Life].Resize(player.getHealthRatio(), 1);
 		barHandler[B_P2Life].Resize(player2.getHealthRatio(), 1);
@@ -193,7 +185,7 @@ void PlayLoop()
 		//This stays until stage files exist and can be loaded.
 		glBindTexture(GL_TEXTURE_2D, activeTextures[T_STAGELAYER1].id);
 		glBegin(GL_QUADS );
-			glColor3f(1, 0.9, 0.8);
+			glColor3f(1.f, 0.9f, 0.8f);
 			glTexCoord2f(0, 0);
 			glVertex3f(-480, 0, 0);
 
@@ -220,18 +212,45 @@ void PlayLoop()
 		DrawHud(activeTextures[T_HUD].id);
 
 		timerString.seekp(0);
-		timerString << "SFP: " << GetSpf() << " FPS: " << 1/GetSpf();
+		timerString << "SFP: " << mainWindow->GetSpf() << " FPS: " << 1/mainWindow->GetSpf();
 
 		DrawTextA(timerString.str(), activeTextures[T_FONT].id, 2, 12, 0);
 		/* DrawText("the quick brown fox jumps over the lazy dog", texturelist[2], -170, 100, -200); //Font texting
 		DrawText("The Quick Brown Fox Jumps Over The Lazy dog", texturelist[2], -170, 80, -200);
 		DrawText("THE QUICK BROWN FOX JUMPS OVER THE LAZY DOG", texturelist[2], -170, 60, -200);*/
 
-		glfwSwapBuffers(mainWindow);
+		mainWindow->SwapBuffers();
 
 		//End drawing.
 		 ++gameTicks;
 
-		SleepUntilNextFrame();
+		mainWindow->SleepUntilNextFrame();
+	}
+}
+
+void EventLoop()
+{
+	SDL_Event event;
+	while(SDL_PollEvent(&event))
+	{
+		switch(event.type)
+		{
+			case SDL_QUIT:
+				mainWindow->wantsToClose = true;
+				return;
+			case SDL_WINDOWEVENT:
+				switch(event.window.event)
+				{
+					case SDL_WINDOWEVENT_SIZE_CHANGED:
+						glViewport(0, 0, event.window.data1, event.window.data2);
+						//clip = glm::perspective(glm::radians(FOV), (float)event.window.data1/(float)event.window.data2, 0.01f, 100.0f);
+						break;
+				}
+				break;
+			case SDL_KEYDOWN:
+			case SDL_KEYUP:
+				GameLoopKeyHandle(event.key);
+				break;
+		}
 	}
 }

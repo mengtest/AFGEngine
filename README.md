@@ -19,13 +19,13 @@ The movement is hardcoded for joy and it hasn't been tested well so there might 
 
 -----------------------
 ## Compiling ##
-Whether you're on windows (MSYS2) or linux, install the packages for:
+This project depends on:
 
-* GLEW
-* GLFW3
+* glad
+* SDL 2.1
 * pnglib + zlib
 
-The CMake file included should cover everything else for now.
+If you're on windows you can use vcpkg or MSYS2 to install the package for these. The CMake file included should cover everything else for now.
 Audio and networking capabilities are disabled, so there are no dependencies for them.
 
 The character editor is not provided in this repository.

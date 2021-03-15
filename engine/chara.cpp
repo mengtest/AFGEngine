@@ -4,8 +4,7 @@
 #include <string>
 #include <iostream>
 
-#include <GL/glew.h>	//These shouldn't be here but w/e for now
-#include <GLFW/glfw3.h> //They're going to get removed since characters shouldn't draw themselves anyway.
+#include <glad/glad.h>	//These shouldn't be here but w/e for now
 
 #include "chara.h"
 #include "chara_input.h"

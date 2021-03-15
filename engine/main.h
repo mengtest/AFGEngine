@@ -28,6 +28,6 @@ enum //ingame stage static texture list. Most probably will get replaced by some
 };
 
 void PlayLoop();
-
+void EventLoop();
 
 #endif // MAIN_H_INCLUDED

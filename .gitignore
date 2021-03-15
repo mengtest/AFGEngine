@@ -3,9 +3,10 @@
 .vscode/
 *.code-workspace
 /images/
-/engine/.cache/
+.cache/
 /audio/
 /keyconf.bin
 /char/backups/
 /win64/
 AFGEngine.exe
+compile_commands.json

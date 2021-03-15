@@ -1,26 +1,43 @@
 #ifndef WINDOW_H_INCLUDED
 #define WINDOW_H_INCLUDED
 
-#include <GL/glew.h>
-#include <GLFW/glfw3.h>
+#include <glad/glad.h>
+#include <SDL.h>
 
-extern bool fullscreen;
-extern bool vsync;
-extern const int internalWidth;
-extern const int internalHeight;
+constexpr int internalWidth = 480;
+constexpr int internalHeight = 270;
 
-extern GLFWwindow *mainWindow;
+class Window
+{
+public:
+	bool wantsToClose;
+	bool fullscreen;
+	bool vsync;
+	bool busyWait;
 
+private:
+	SDL_GLContext glcontext;
+	SDL_Window* window;
 
-GLFWwindow* InitWindow(); //Sets up initial window size, opengl configuration and shaders.
+	int frameRateChoice;
+	double targetSpf;
+	double realSpf;
 
-void ChangeFramerate();
+public:
+	Window();
+	~Window();
 
-//Sleeps until it's time to process the next frame.
-void SleepUntilNextFrame();
+	void SwapBuffers();
+	void ChangeFramerate();
 
-void GlSetup2d();
+	//Sleeps until it's time to process the next frame.
+	void SleepUntilNextFrame();
 
-float GetSpf();
+	void GlSetup2d();
+
+	double GetSpf();
+};
+
+extern Window *mainWindow;
 
 #endif // WINDOW_H_INCLUDED
