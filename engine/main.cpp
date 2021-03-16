@@ -17,6 +17,7 @@
 #include "hud.h"
 #include "raw_input.h"
 #include "shader.h"
+#include "texture.h"
 #include "util.h"
 #include "window.h"
 
@@ -89,15 +90,22 @@ void PlayLoop()
 
 	//texture load
 	std::vector<Texture> activeTextures;
-	activeTextures.resize(5);
+	
+	activeTextures.reserve(5);
 	for(int i = 0; i < 5; ++i)
 	{
-		activeTextures[i].Load(texNames[i]);
+		Texture texture;
+		
+		texture.Load(texNames[i]);
 		if(i<3)
-			activeTextures[i].Apply();
+			texture.Apply();
 		else
-			activeTextures[i].Apply(false, false);
+			texture.Apply(false, false);
+
+		activeTextures.push_back(std::move(texture));
 	}
+	
+	
 
 	//fontSettings testfont = {32, 8, &activeTextures[T_FONT]};
 

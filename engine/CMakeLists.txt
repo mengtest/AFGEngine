@@ -26,5 +26,6 @@ target_link_libraries(AFGEngine PRIVATE PNG::PNG)
 target_link_libraries(AFGEngine PRIVATE RTAUDIO)
 target_link_libraries(AFGEngine PRIVATE FixedPoint)
 target_link_libraries(AFGEngine PRIVATE Geometry)
+target_link_libraries(AFGEngine PRIVATE Image)
 
 install(TARGETS AFGEngine RUNTIME DESTINATION debug)

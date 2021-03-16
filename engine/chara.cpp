@@ -183,7 +183,10 @@ Character::Character(FixedPoint xPos, float _side, std::string charFile) :
 				std::string defaultPath("images/char/");
 				defaultPath.append(filename);
 
-				sequences[i].frames[i2].spriteImage->Load(defaultPath);
+				std::string palette = "palettes/play2.act";
+				if(pal)
+					palette = "palettes/akicolor.act";
+				sequences[i].frames[i2].spriteImage->Load(defaultPath, palette);
 				sequences[i].frames[i2].spriteImage->Apply();
 				sequences[i].frames[i2].spriteImage->Unload();
 			}

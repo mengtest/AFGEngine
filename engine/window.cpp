@@ -7,7 +7,7 @@
 #include <iostream>
 #include <chrono>
 #include <stdexcept>
-#include "threading.h"
+#include <thread>
 
 #include "main.h"
 #include "shader.h"
@@ -88,7 +88,7 @@ void Window::SleepUntilNextFrame()
 			double time = glfwGetTime();
 			if(time < targetSpf)
 			{
-				threadNS::this_thread::sleep_for(std::chrono::milliseconds(1));
+				std::this_thread::sleep_for(std::chrono::milliseconds(1));
 			}
 			while( (realSpf = glfwGetTime()) <= targetSpf);
 		}
