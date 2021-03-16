@@ -31,7 +31,6 @@ const float charTexCoords[8] = {0,0,1,0,1,1,0,1};
 
 const char *texNames[] ={
 	"images/background.png",
-	"images/glow.png",
 	"images/hud.png",
 	"images/fontactive.png",
 	"images/fontdead.png"
@@ -91,13 +90,13 @@ void PlayLoop()
 	//texture load
 	std::vector<Texture> activeTextures;
 	
-	activeTextures.reserve(5);
-	for(int i = 0; i < 5; ++i)
+	activeTextures.reserve(4);
+	for(int i = 0; i < 4; ++i)
 	{
 		Texture texture;
 		
 		texture.Load(texNames[i]);
-		if(i<3)
+		if(i<2)
 			texture.Apply();
 		else
 			texture.Apply(false, false);

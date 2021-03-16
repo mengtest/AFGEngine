@@ -21,7 +21,6 @@ enum //gamestate
 enum //ingame stage static texture list. Most probably will get replaced by something else.
 {
     T_STAGELAYER1, //multiple layers on different textures?
-    T_STAGELAYER2,
     T_HUD,
     T_FONT,
     T_FONTGRAY

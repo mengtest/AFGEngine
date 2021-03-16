@@ -5,6 +5,7 @@
 #include <fstream>
 #include <iostream>
 #include <string>
+#include <cassert>
 
 int pal = 0; //temporary
 
@@ -12,6 +13,13 @@ Texture::Texture() : id(0), isLoaded(false), isApplied(false){}; //initializes a
 Texture::Texture(Texture&& texture)
 {
 	image = std::move(texture.image);
+	id = texture.id;
+	isLoaded = texture.isLoaded;
+	isApplied = texture.isApplied;
+	filename = std::move(texture.filename);
+
+	texture.isApplied = false;
+	texture.isLoaded = false;
 }
 
 Texture::~Texture()
@@ -77,7 +85,7 @@ void Texture::Apply(bool repeat, bool linearFilter)
 			break;
 		case 3:
 			extType = GL_RGB;
-			intType = GL_RGBA;
+			intType = GL_RGB;
 			break;
 		case 4:
 			extType = GL_RGBA;
@@ -87,6 +95,7 @@ void Texture::Apply(bool repeat, bool linearFilter)
 			std::cout << filename << " unhandled format.\n";
 			break;
 	}
+	assert(extType != 0 && intType != 0);
 
 	glTexImage2D(GL_TEXTURE_2D, 0, intType, image->width, image->height, 0, extType, GL_UNSIGNED_BYTE, image->data);
 
