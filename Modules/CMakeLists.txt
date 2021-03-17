@@ -17,7 +17,8 @@ add_library(Geometry INTERFACE)
 target_include_directories(Geometry INTERFACE geometry)
 
 #A libpng wrapper to load and write images
-add_library(Image STATIC image/image.cpp)
-target_compile_definitions(Image PRIVATE LIB_PNG_WARN=1)
+add_library(Image SHARED image/image.cpp)
+set_target_properties(Image PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS ON)
+target_compile_definitions(Image PRIVATE LIB_PNG_WARN=0)
 target_include_directories(Image PUBLIC image)
-target_link_libraries(Image PRIVATE PNG::PNG)
+target_link_libraries(Image PUBLIC PNG::PNG)

@@ -2,6 +2,7 @@
 #define IMAGE_H_INCLUDED
 #include <string>
 #include <image.h>
+#include <memory>
 
 extern int pal;
 

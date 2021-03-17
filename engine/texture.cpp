@@ -37,7 +37,7 @@ void Texture::Load(std::string imageFile, std::string paletteFile)
 	const char *palette = nullptr;
 	if(!paletteFile.empty())
 		palette = paletteFile.c_str();
-	image = LoadImageFromPng(imageFile.c_str(), palette);
+	image.reset(new ImageData(imageFile.c_str(), palette));
 }
 
 void Texture::Apply(bool repeat, bool linearFilter)
@@ -83,6 +83,10 @@ void Texture::Apply(bool repeat, bool linearFilter)
 			intType = GL_RGB;
 			std::cout << filename << " uses 8bpp!\n";
 			break;
+		case 2:
+			extType = GL_RG;
+			intType = GL_RGB;
+			break;
 		case 3:
 			extType = GL_RGB;
 			intType = GL_RGB;
@@ -95,7 +99,7 @@ void Texture::Apply(bool repeat, bool linearFilter)
 			std::cout << filename << " unhandled format.\n";
 			break;
 	}
-	assert(extType != 0 && intType != 0);
+	//assert(extType != 0 && intType != 0);
 
 	glTexImage2D(GL_TEXTURE_2D, 0, intType, image->width, image->height, 0, extType, GL_UNSIGNED_BYTE, image->data);
 
