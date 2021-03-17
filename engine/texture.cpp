@@ -78,15 +78,6 @@ void Texture::Apply(bool repeat, bool linearFilter)
 	GLenum intType = 0;
 	switch(image->bytesPerPixel)
 	{
-		case 1:
-			extType = GL_RED;
-			intType = GL_RGB;
-			std::cout << filename << " uses 8bpp!\n";
-			break;
-		case 2:
-			extType = GL_RG;
-			intType = GL_RGB;
-			break;
 		case 3:
 			extType = GL_RGB;
 			intType = GL_RGB;
@@ -96,11 +87,10 @@ void Texture::Apply(bool repeat, bool linearFilter)
 			intType = GL_RGBA;
 			break;
 		default:
-			std::cout << filename << " unhandled format.\n";
+			std::cout << filename.c_str() << " unhandled format. "<< image->bytesPerPixel << " channels.\n";
 			break;
 	}
-	//assert(extType != 0 && intType != 0);
-
+	
 	glTexImage2D(GL_TEXTURE_2D, 0, intType, image->width, image->height, 0, extType, GL_UNSIGNED_BYTE, image->data);
 
 }

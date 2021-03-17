@@ -1,6 +1,4 @@
 #include "image.h"
-#include "pngconf.h"
-
 #include <memory>
 #include <png.h>
 #include <cstdio>
@@ -74,13 +72,13 @@ bool ImageData::WriteAsPng(const char* file_name, const char* palette_file) cons
 		return false;
 	}
 
-	pnge_init_io(png_ptr, fp);
+	png_init_io(png_ptr, fp);
 
 	int color_type = 0;
 	switch(bytesPerPixel)
 	{
 		case 1:
-			color_type = PNG_COLOR_TYPE_PALETTE;
+			color_type = palette_file ? PNG_COLOR_TYPE_PALETTE : PNG_COLOR_TYPE_GRAY;
 			break;
 		case 3:
 			color_type = PNG_COLOR_TYPE_RGB;
@@ -214,17 +212,18 @@ bool ImageData::LoadFromPng(const char* file_name, const char* palette_file)
 
 	png_set_alpha_mode(png_ptr, PNG_ALPHA_BROKEN, PNG_DEFAULT_sRGB);
 
-	int bit_depth, color_type, interlace_method;
+	int bit_depth, color_type, interlace_method, interlace_type, compression_type, filter_method;
 	png_uint_32 temp_width, temp_height;
 
 	png_get_IHDR(png_ptr, info_ptr, &temp_width, &temp_height, &bit_depth, &color_type,
-		nullptr, nullptr, &interlace_method);
+		&interlace_type, &compression_type, &filter_method);
 	assert(bit_depth == 8);
 	interlace_method = png_set_interlace_handling(png_ptr);
 
 	png_color* palette = nullptr;
 	if ((color_type == PNG_COLOR_TYPE_PALETTE || color_type == PNG_COLOR_TYPE_GRAY) && palette_file)
 	{
+		
 		palette = (png_color*)png_malloc(png_ptr, 256*sizeof(png_color));
 
 		std::ifstream pltefile;
@@ -248,9 +247,16 @@ bool ImageData::LoadFromPng(const char* file_name, const char* palette_file)
 		pltefile.close();
 
 		png_set_PLTE(png_ptr, info_ptr, palette, 256);
-		png_byte trans_alpha = 0;
-		png_set_tRNS(png_ptr, info_ptr, &trans_alpha, 1, nullptr);
-		png_set_palette_to_rgb(png_ptr);
+
+		if(color_type == PNG_COLOR_TYPE_PALETTE)
+			png_set_expand(png_ptr);
+		/*
+		if(color_type == PNG_COLOR_TYPE_GRAY)
+		{
+			png_byte trans_alpha = 0;
+			png_set_tRNS(png_ptr, info_ptr, &trans_alpha, 1, nullptr);
+			png_set_gray_to_rgb(png_ptr);
+		}*/
 	}
 	//png_set_invert_alpha(png_ptr);
 
@@ -297,12 +303,32 @@ bool ImageData::LoadFromPng(const char* file_name, const char* palette_file)
 	// Let libpng do the rest.
 	png_read_image(png_ptr, row_pointers);
 	png_read_end(png_ptr, end_info);
+
+	bytesPerPixel = rowbytes/temp_width;
+
+	if(color_type == PNG_COLOR_TYPE_GRAY)
+	{
+		uint8_t *image_data32bit = (uint8_t*)malloc(temp_height*temp_width*4);
+		for (unsigned int p = 0; p < temp_height * rowbytes * sizeof(png_byte); p+=bytesPerPixel)
+		{
+			png_byte ref = image_data[p];
+			
+			image_data32bit[p*4] = palette[ref].red;
+			image_data32bit[p*4 + 1] = palette[ref].green;
+			image_data32bit[p*4 + 2] = palette[ref].blue;
+			image_data32bit[p*4 + 3] = ref == 0 ? 0 : 255;
+		}
+		free(image_data);
+		image_data = image_data32bit;
+		bytesPerPixel = 4;
+	}
+
 	png_free(png_ptr, palette);
 
 	data = image_data;
 	width = temp_width;
 	height = temp_height;
-	bytesPerPixel = rowbytes/temp_width;
+	
 
 	png_destroy_read_struct(&png_ptr, &info_ptr, &end_info);
 	free(row_pointers);
