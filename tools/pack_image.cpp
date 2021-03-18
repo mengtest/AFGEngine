@@ -9,9 +9,11 @@
 #include <memory>
 #include <stdint.h>
 #include <string>
+#include <vector>
 
 namespace fs = std::filesystem;
 typedef Rect2d<int> Rect;
+typedef Point2d<int> Point;
 
 struct ImageMeta
 {
@@ -31,12 +33,13 @@ struct Atlas
 {
 	ImageData image;
 	int x, y;
+	uint32_t chunkSize;
 
-	Atlas(uint32_t width, uint32_t height, uint32_t bytesPerPixel):
-	image(width, height, bytesPerPixel), x(0), y(0)
+	Atlas(uint32_t width, uint32_t height, uint32_t bytesPerPixel, uint32_t _chunkSize):
+	image(width, height, bytesPerPixel), x(0), y(0), chunkSize(_chunkSize)
 	{}
 
-	bool Advance(uint32_t chunkSize)
+	bool Advance()
 	{
 		if(x + chunkSize >= image.width)
 		{
@@ -46,11 +49,17 @@ struct Atlas
 				return false;
 			}
 			y += chunkSize;
-			x =
+			x = 0;
 		}
 		else
 			x += chunkSize;
 		return true;
+	}
+
+	bool Fits(uint32_t chunkN)
+	{
+		uint32_t available = ((image.height-y)*image.width/chunkSize - x) / (chunkSize);
+		return (available >= chunkN);
 	}
 };
 
@@ -72,8 +81,8 @@ bool IsPixelTrans(const ImageData &im, uint32_t x, uint32_t y)
 
 bool IsChunkTrans(const ImageData &im, uint32_t xStart, uint32_t yStart, uint32_t chunkSize)
 {
-	for(int y = yStart; y < chunkSize; y++){
-		for(int x = xStart; x < chunkSize; x++){
+	for(unsigned int y = yStart; y < chunkSize+yStart; y++){
+		for(unsigned int x = xStart; x < chunkSize+xStart; x++){
 			if(!IsPixelTrans(im,x,y)){
 				return false;
 			}
@@ -135,11 +144,10 @@ Rect GetImageBoundaries(const ImageData &im)
 	}
 	right_end:
 
-	std::cout << left <<" "<< bottom <<" "<< right <<" "<< top << "\n";
 	return Rect(left, bottom, right, top);
 }
 
-Rect CalculateChunkRect(const ImageData &image, int chunkSize)
+std::list<Point> CalculateChunks(const ImageData &image, int chunkSize)
 {
 	Rect size = GetImageBoundaries(image);
 	//Size of rect in chunks. At least 1.
@@ -171,17 +179,19 @@ Rect CalculateChunkRect(const ImageData &image, int chunkSize)
 		abort();
 	}
 
-	int numberChunks = 0;
+	std::list<Point> chunks;
 	for(int y = requiredSize.bottomLeft.y; y < requiredSize.topRight.y; y += chunkSize)
 	{
 		for(int x = requiredSize.bottomLeft.x; x < requiredSize.topRight.x; x += chunkSize)
 		{
+			//TODO: Calculate hash instead.
 			if(!IsChunkTrans(image, x, y, chunkSize))
 			{
-				numberChunks++;
+				chunks.push_back(Point(x,y));
 			}
 		}
 	}
+	return chunks;
 }
 
 bool CopyChunk(ImageData &dst, const ImageData &src, 
@@ -216,12 +226,30 @@ uint32_t xDst, uint32_t yDst, uint32_t xSrc, uint32_t ySrc, uint32_t chunkSize)
 	return true; 
 }
 
-bool CopyToAtlas(Atlas &dst, const ImageMeta &src, uint32_t chunkSize)
+bool CopyToAtlas(Atlas &dst, const ImageMeta &src)
 {
 	ImageData &srcIm = *src.data; 
-	Rect chunkRect = CalculateChunkRect(srcIm, chunkSize);
+	std::list<Point> chunks = CalculateChunks(srcIm, dst.chunkSize);
+	if(!dst.Fits(chunks.size()))
+	{
+		std::cout << "There is not enough space available in the atlas\n";
+		return false;
+	}
 
-	
+	for(Point &chunk : chunks)
+	{
+		if(!CopyChunk(dst.image, *src.data, dst.x, dst.y, chunk.x, chunk.y, dst.chunkSize))
+		{
+			std::cerr << __func__ << " failed.\n";
+			return false;
+		}
+		if(!dst.Advance())
+		{
+			std::cout << "The atlas is full.\n";
+			return false;
+		}
+	}
+	return true;
 }
 
 int main()
@@ -233,7 +261,7 @@ int main()
 	int tempi = 1;
 	for(const fs::directory_entry &file : fs::directory_iterator(folderIn))
 	{
-		if(tempi > 8)
+		if(tempi > 1)
 			break;
 		ImageMeta im {
 			std::make_unique<ImageData>(file.path().generic_string().c_str()),
@@ -246,7 +274,7 @@ int main()
 				
 				//image->WriteAsPng((folderOut + filename).c_str());
 				images8bpp.push_back(std::move(im));
-				tempi++;
+				//tempi++;
 			}
 			else
 			{
@@ -256,20 +284,51 @@ int main()
 		
 	}
 
-	GetImageBoundaries(*images8bpp.front().data);
+	std::cout << "Read " << images8bpp.size() << " images.\n";
 
-	Atlas atlas(2048, 2048, 1);
-	memset(atlas.image.data, 0, atlas.image.GetMemSize());
-	
-	int i = 0, chunksize = 256;
+	std::vector<std::unique_ptr<Atlas>> atlases;
+	atlases.reserve(4);
+	for(int i = 0; i < 4; i++)
+	{
+		atlases.push_back(std::make_unique<Atlas>(1024, 1024, 1, 8));
+		memset(atlases[i]->image.data, 0, atlases[i]->image.GetMemSize());
+	}
+
+
+	auto atlasI = atlases.begin();
 	for(const auto &im: images8bpp)
 	{
-		if(!CopyToAtlas(atlas, im, chunksize))
-			break;
+		if(!CopyToAtlas(**atlasI, im))
+		{
+			atlasI++;
+			if(atlasI == atlases.end())
+			{
+				std::cout << "Not enough atlases\n";
+				break;
+			}
+		}
 	}
 	
-	std::cout << images8bpp.size() << " images.\n";
-	atlas.image.WriteAsPng("test.png");
+	
+	ImageData composite(1024, 1024, 4);
+	memset(composite.data, 255, composite.GetMemSize());
+	for(int y = 0; y < 1024; y++)
+	{
+		for(int x = 0; x < 1024; x++)
+		{
+			for(int ch = 0; ch < 4; ch++)
+			{
+				ImageData &srcIm = atlases[ch]->image;
+				composite.data[y*composite.width*composite.bytesPerPixel + x*composite.bytesPerPixel + ch] =
+					srcIm.data[y*srcIm.width*srcIm.bytesPerPixel + x*srcIm.bytesPerPixel];
+			}
+		}
+	}
+
+
+	std::cout << "Writing file... ";
+	composite.WriteAsPng("test.png");
+	std::cout << "Done\n";
 	return 0;
 }
 
