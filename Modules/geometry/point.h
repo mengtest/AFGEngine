@@ -20,7 +20,9 @@ public:
 
 	Point2d& operator=(Point2d a);
 	Point2d operator+(Point2d a);
+	Point2d operator-(Point2d a);
 	Point2d& operator+=(Point2d a);
+	
 };
 
 template <class T>
@@ -59,6 +61,15 @@ Point2d<T> Point2d<T>::operator+(Point2d<T> op)
 	Point2d<T> result;
 	result.x = x + op.x;
 	result.y = y + op.y;
+	return result;
+}
+
+template <class T>
+Point2d<T> Point2d<T>::operator-(Point2d<T> op)
+{
+	Point2d<T> result;
+	result.x = x - op.x;
+	result.y = y - op.y;
 	return result;
 }
 

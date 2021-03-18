@@ -12,6 +12,7 @@ struct ImageData{
 	uint32_t bytesPerPixel;
 
 	ImageData();
+	ImageData(uint32_t width, uint32_t height, uint32_t bytesPerPixel);
 	ImageData(const char* image, const char* palette = nullptr);
 	~ImageData();
 

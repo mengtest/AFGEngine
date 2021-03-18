@@ -21,8 +21,15 @@ void png_user_warning_fn(png_structp png_ptr, png_const_charp warning_msg)
 	}
 }
 
-ImageData::ImageData(): data(nullptr), width(0), height(0), flag(0), bytesPerPixel(0)
+ImageData::ImageData():
+data(nullptr), width(0), height(0), flag(0), bytesPerPixel(0)
 {}
+
+ImageData::ImageData(uint32_t _width, uint32_t _height, uint32_t _bytesPerPixel):
+data(nullptr), width(_width), height(_height), flag(0), bytesPerPixel(_bytesPerPixel)
+{
+	data = (uint8_t*) malloc(width * height * bytesPerPixel * sizeof(uint8_t));
+}
 
 ImageData::ImageData(const char* image, const char* palette): ImageData()
 {
@@ -270,7 +277,7 @@ bool ImageData::LoadFromPng(const char* file_name, const char* palette_file)
 
 
 	png_byte * image_data;
-	image_data = png_bytep(malloc(rowbytes * temp_height * sizeof(png_byte)+15));
+	image_data = png_bytep(malloc(rowbytes * temp_height * sizeof(png_byte)));
 	if (image_data == nullptr)
 	{
 		fprintf(stderr, "Image load: %s error: could not allocate memory for PNG image data\n", file_name);
@@ -306,7 +313,7 @@ bool ImageData::LoadFromPng(const char* file_name, const char* palette_file)
 
 	bytesPerPixel = rowbytes/temp_width;
 
-	if(color_type == PNG_COLOR_TYPE_GRAY)
+	if(color_type == PNG_COLOR_TYPE_GRAY && palette)
 	{
 		uint8_t *image_data32bit = (uint8_t*)malloc(temp_height*temp_width*4);
 		for (unsigned int p = 0; p < temp_height * rowbytes * sizeof(png_byte); p+=bytesPerPixel)

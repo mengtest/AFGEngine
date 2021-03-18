@@ -20,6 +20,7 @@ public:
 	Rect2d& operator=(Rect2d a);
 
 	Rect2d Translate(Point2d<T> translate);
+	Rect2d Translate(T x, T y);
 	Rect2d FlipHorizontal();
 
 	bool Intersects(Rect2d rect);
@@ -65,6 +66,12 @@ Rect2d<T> Rect2d<T>::Translate(Point2d<T> amount)
 	Rect2d translated(bottomLeft+amount, topRight+amount);
 	//translated.Normalize();
 	return translated;
+}
+
+template <class T>
+Rect2d<T> Rect2d<T>::Translate(T x, T y)
+{
+	return Translate(Point2d<T>(x,y));
 }
 
 template <class T>
