@@ -1,68 +1,14 @@
-#include "point.h"
+#include "pack_image.h"
 #include <image.h>
 #include <geometry.h>
 
 #include <cassert>
-#include <cstdint>
+#include <cmath>
 #include <filesystem>
 #include <iostream>
 #include <memory>
-#include <stdint.h>
 #include <string>
 #include <vector>
-
-namespace fs = std::filesystem;
-typedef Rect2d<int> Rect;
-typedef Point2d<int> Point;
-
-struct ImageMeta
-{
-	std::unique_ptr<ImageData> data;
-	std::string name;
-};
-
-/*
-struct Chunk
-{
-	Point2d<unsigned int> pos;
-};
-
-*/
-
-struct Atlas
-{
-	ImageData image;
-	int x, y;
-	uint32_t chunkSize;
-
-	Atlas(uint32_t width, uint32_t height, uint32_t bytesPerPixel, uint32_t _chunkSize):
-	image(width, height, bytesPerPixel), x(0), y(0), chunkSize(_chunkSize)
-	{}
-
-	bool Advance()
-	{
-		if(x + chunkSize >= image.width)
-		{
-			if(y + chunkSize >= image.height)
-			{
-				//The atlas is full.
-				return false;
-			}
-			y += chunkSize;
-			x = 0;
-		}
-		else
-			x += chunkSize;
-		return true;
-	}
-
-	bool Fits(uint32_t chunkN)
-	{
-		uint32_t available = ((image.height-y)*image.width/chunkSize - x) / (chunkSize);
-		return (available >= chunkN);
-	}
-};
-
 
 bool IsPixelTrans(const ImageData &im, uint32_t x, uint32_t y)
 {
@@ -147,53 +93,6 @@ Rect GetImageBoundaries(const ImageData &im)
 	return Rect(left, bottom, right, top);
 }
 
-std::list<Point> CalculateChunks(const ImageData &image, int chunkSize)
-{
-	Rect size = GetImageBoundaries(image);
-	//Size of rect in chunks. At least 1.
-	int wChunks = 1 + (size.topRight - size.bottomLeft).x/chunkSize;
-	int hChunks = 1 + (size.topRight - size.bottomLeft).y/chunkSize;
-
-	Rect requiredSize(
-		size.bottomLeft.x, size.bottomLeft.y,
-		size.bottomLeft.x + wChunks*chunkSize, size.bottomLeft.y + hChunks*chunkSize
-	);
-	//Boundary check and adjustment
-	int xTranslate = image.width - requiredSize.topRight.x;
-	int yTranslate = image.height - requiredSize.topRight.y;
-	if(xTranslate < 0)
-	{
-		requiredSize = requiredSize.Translate(xTranslate, 0);
-	}
-	if(yTranslate < 0)
-	{
-		requiredSize = requiredSize.Translate(0, yTranslate);
-	}
-	//The image is too small for all the chunks to fit.
-	//If it becomes an issue I could support for rectangular chunks.
-	if(requiredSize.bottomLeft.x < 0 || requiredSize.bottomLeft.y < 0)
-	{
-		std::cerr << __func__ << ": Chunks do not fit in image.\n" <<
-			"Image (w,h) " << image.width << " " << image.height <<
-			". Chunk size " << chunkSize << " (w,h) " << wChunks << " " << hChunks << "\n";
-		abort();
-	}
-
-	std::list<Point> chunks;
-	for(int y = requiredSize.bottomLeft.y; y < requiredSize.topRight.y; y += chunkSize)
-	{
-		for(int x = requiredSize.bottomLeft.x; x < requiredSize.topRight.x; x += chunkSize)
-		{
-			//TODO: Calculate hash instead.
-			if(!IsChunkTrans(image, x, y, chunkSize))
-			{
-				chunks.push_back(Point(x,y));
-			}
-		}
-	}
-	return chunks;
-}
-
 bool CopyChunk(ImageData &dst, const ImageData &src, 
 uint32_t xDst, uint32_t yDst, uint32_t xSrc, uint32_t ySrc, uint32_t chunkSize)
 {
@@ -226,34 +125,13 @@ uint32_t xDst, uint32_t yDst, uint32_t xSrc, uint32_t ySrc, uint32_t chunkSize)
 	return true; 
 }
 
-bool CopyToAtlas(Atlas &dst, const ImageMeta &src)
-{
-	ImageData &srcIm = *src.data; 
-	std::list<Point> chunks = CalculateChunks(srcIm, dst.chunkSize);
-	if(!dst.Fits(chunks.size()))
-	{
-		std::cout << "There is not enough space available in the atlas\n";
-		return false;
-	}
-
-	for(Point &chunk : chunks)
-	{
-		if(!CopyChunk(dst.image, *src.data, dst.x, dst.y, chunk.x, chunk.y, dst.chunkSize))
-		{
-			std::cerr << __func__ << " failed.\n";
-			return false;
-		}
-		if(!dst.Advance())
-		{
-			std::cout << "The atlas is full.\n";
-			return false;
-		}
-	}
-	return true;
-}
-
 int main()
 {
+	namespace fs = std::filesystem;
+
+	int chunkSize = 8;
+	int nChunks = 0;
+
 	std::string folderIn = "images/char/";
 	std::string folderOut = "images/test/";
 
@@ -271,8 +149,8 @@ int main()
 		{
 			if(im.data->bytesPerPixel == 1)
 			{
-				
-				//image->WriteAsPng((folderOut + filename).c_str());
+				im.CalculateChunks(chunkSize);
+				nChunks += im.chunks.size();
 				images8bpp.push_back(std::move(im));
 				//tempi++;
 			}
@@ -284,34 +162,41 @@ int main()
 		
 	}
 
-	std::cout << "Read " << images8bpp.size() << " images.\n";
+	
+
+	//Calculate size of atlas.
+	int atlasChunks = nChunks/4 + !!(nChunks%4);
+
+	std::cout << "Read " << images8bpp.size() << " images.\n"
+		<< nChunks << " chunks required ("<<atlasChunks<<" per channel)\n";
+
 
 	std::vector<std::unique_ptr<Atlas>> atlases;
 	atlases.reserve(4);
 	for(int i = 0; i < 4; i++)
 	{
-		atlases.push_back(std::make_unique<Atlas>(1024, 1024, 1, 8));
-		memset(atlases[i]->image.data, 0, atlases[i]->image.GetMemSize());
+		atlases.push_back(std::make_unique<Atlas>(1024, 1024, 1, chunkSize));
+		memset(atlases[i]->image.data, 255, atlases[i]->image.GetMemSize());
 	}
-
 
 	auto atlasI = atlases.begin();
 	for(const auto &im: images8bpp)
 	{
-		if(!CopyToAtlas(**atlasI, im))
+		if(!(*atlasI)->CopyToAtlas(im))
 		{
 			atlasI++;
 			if(atlasI == atlases.end())
 			{
-				std::cout << "Not enough atlases\n";
+				std::cout << "Not enough atlases.\n";
 				break;
 			}
+			//Copy the image that couldn't be copied.
+			(*atlasI)->CopyToAtlas(im);
 		}
 	}
 	
 	
 	ImageData composite(1024, 1024, 4);
-	memset(composite.data, 255, composite.GetMemSize());
 	for(int y = 0; y < 1024; y++)
 	{
 		for(int x = 0; x < 1024; x++)
