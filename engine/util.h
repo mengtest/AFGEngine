@@ -14,8 +14,6 @@ void ModifyQuad(float x, float y, float w, float h, std::vector<float> *vertArra
 
 void DrawTextA(std::string text, unsigned int texId, float x, float y, float z); //Draws text on the screen for debugging purposes.
 
-std::string ReadFile(const char *filePath); //Reads a plain text file and turns it into a single std::string.
-
 enum e_coordtype
 {
     NONE,

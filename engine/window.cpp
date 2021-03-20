@@ -2,6 +2,8 @@
 
 #include <glad/glad.h>
 #include <SDL.h>
+#include <glm/glm.hpp>
+#include <glm/ext.hpp>
 
 #include <assert.h>
 #include <iostream>
@@ -105,9 +107,6 @@ void Window::SwapBuffers()
 
 void Window::GlSetup2d()
 {
-
-	glEnable(GL_MULTISAMPLE  );
-
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
 	glOrtho(0, internalWidth, 0, internalHeight, 1, -1); //The difference should equal the borders of the viewport for pixel perfection.
@@ -119,9 +118,6 @@ void Window::GlSetup2d()
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
 
-	glDisable(GL_DEPTH_TEST);
-
-	glEnable(GL_TEXTURE_2D);
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	//glTexEnvf(GL_TEXTURE_2D, GL_TEXTURE_ENV_MODE, GL_MODULATE); //Vertex color, maybe.

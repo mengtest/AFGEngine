@@ -23,6 +23,7 @@ struct ImageMeta
 	std::string name;
 	std::list<Point> chunks;
 	int chunkSize;
+	int atlasId;
 
 	void CalculateChunks(int chunkSize)
 	{
@@ -74,12 +75,13 @@ struct ImageMeta
 
 struct Atlas
 {
+	int id;
 	ImageData image;
 	int x, y;
 	uint32_t chunkSize;
 
-	Atlas(uint32_t width, uint32_t height, uint32_t bytesPerPixel, uint32_t _chunkSize):
-	image(width, height, bytesPerPixel), x(0), y(0), chunkSize(_chunkSize)
+	Atlas(uint32_t width, uint32_t height, uint32_t bytesPerPixel, uint32_t _chunkSize, int _id = -1):
+	id(_id), image(width, height, bytesPerPixel), x(0), y(0), chunkSize(_chunkSize)
 	{}
 
 	bool Advance()
@@ -105,7 +107,7 @@ struct Atlas
 		return (available >= chunkN);
 	}
 
-	bool CopyToAtlas(const ImageMeta &src)
+	bool CopyToAtlas(ImageMeta &src)
 	{
 		const std::list<Point> &chunks = src.chunks;
 		if(!Fits(chunks.size()))
@@ -114,6 +116,7 @@ struct Atlas
 			return false;
 		}
 
+		src.atlasId = id;
 		for(const Point &chunk : chunks)
 		{
 			if(!CopyChunk(image, *src.data, x, y, chunk.x, chunk.y, chunkSize))

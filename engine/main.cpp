@@ -188,7 +188,6 @@ void PlayLoop()
 		glPushMatrix();
 		view.Calculate(player.getXYCoords(), player2.getXYCoords()); //Should calculations be performed earlier? Watchout for this
 		view.Apply();
-
 		//This stays until stage files exist and can be loaded.
 		glBindTexture(GL_TEXTURE_2D, activeTextures[T_STAGELAYER1].id);
 		glBegin(GL_QUADS );

@@ -1,45 +1,94 @@
-#include <glad/glad.h>
-
-#include <iostream>
-
-#include "util.h"
 #include "shader.h"
+#include <glad/glad.h>
+#include <iostream>
+#include <fstream>
+#include <string>
 
-int globalShaderProgram;
+unsigned int globalShaderProgram;
 
-int LoadShader(const char *vertex_path, const char *fragment_path)
+const char *vertex = R"()";
+const char *fragment = R"()";
+
+std::string ReadFile(const char *filePath)
 {
-	char log[2048];
+    std::string content;
+    std::ifstream fileStream(filePath, std::ios::in);
 
-	std::string vertShaderStr = ReadFile(vertex_path);
-	std::string fragShaderStr = ReadFile(fragment_path);
-	const char *vertShaderSrc = vertShaderStr.c_str();
-	const char *fragShaderSrc = fragShaderStr.c_str();
+    if(!fileStream.is_open()) {
+        return "";
+    }
 
-	int myVertexShader = glCreateShader(GL_VERTEX_SHADER);
-	glShaderSource(myVertexShader, 1, &vertShaderSrc, 0);
-	glCompileShader(myVertexShader);
-	glGetShaderInfoLog(myVertexShader, 2048, 0, log);
-	if (log[0])
-		std::cout << "Vertex Shader: " << log << "\n";
+    std::string line = "";
+    while(!fileStream.eof()) {
+        std::getline(fileStream, line);
+        content.append(line + "\n");
+    }
 
-	int myFragShader = glCreateShader(GL_FRAGMENT_SHADER);
-	glShaderSource(myFragShader, 1, &fragShaderSrc, 0);
-	glCompileShader(myFragShader);
-	glGetShaderInfoLog(myFragShader, 2048, 0, log);
-	if (log[0])
-		std::cout << "Fragment Shader: " << log << "\n";
+    fileStream.close();
+    return content;
+}
 
-	int myProgram = glCreateProgram();
+GLuint CreateShader(const char **src, GLenum type)
+{
+	GLuint shader = glCreateShader(type);
+	glShaderSource(shader, 1, src, nullptr);
+	glCompileShader(shader);
+	GLint success;
+	glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
+	if(!success)
+	{
+		char log[2048];
+		glGetShaderInfoLog(shader, 2048, 0, log);
+		switch(type)
+		{
+			case GL_VERTEX_SHADER:
+				std::cerr << "Vertex ";
+				break;
+			case GL_FRAGMENT_SHADER:
+				std::cerr << "Frament ";
+				break;
+			default:
+				std::cerr << "Other ";
+		}
+		std::cerr << "Shader error:\n" << log;
+	}
+	return shader;
+}
+
+
+unsigned int LoadShader(const char *vertex_path, const char *fragment_path)
+{
+	const char *vertShaderSrc = vertex;
+	const char *fragShaderSrc = fragment;
+	std::string vertShaderStr, fragShaderStr;
+	if(vertex_path != nullptr && fragment_path != nullptr)
+	{
+		vertShaderStr = ReadFile(vertex_path);
+		fragShaderStr = ReadFile(fragment_path);
+		vertShaderSrc = vertShaderStr.c_str();
+		fragShaderSrc = fragShaderStr.c_str();
+	}
+
+	GLuint myVertexShader = CreateShader(&vertShaderSrc, GL_VERTEX_SHADER);
+	GLuint myFragShader = CreateShader(&fragShaderSrc, GL_FRAGMENT_SHADER);
+
+	unsigned int myProgram = glCreateProgram();
 	if (myProgram == 0)
-		std::cout << "Shader program creation failed/n";
+		std::cout << "Shader program creation failed\n";
 
 	glAttachShader(myProgram, myVertexShader);
 	glAttachShader(myProgram, myFragShader);
 	glLinkProgram(myProgram);
-	glGetProgramInfoLog(myProgram, 2048, 0, log);
-	if (log[0])
-		std::cout << "Shader linking stage: " << log << "\n";
+	GLint success;
+	glGetProgramiv(myProgram, GL_LINK_STATUS, &success);
+	if(!success)
+	{
+		char log[2048];
+		glGetProgramInfoLog(myProgram, 2048, 0, log);
+		std::cerr << "Shader linking error:\n" << log;
+	}
 
+	glDeleteShader(myVertexShader);
+	glDeleteShader(myFragShader);
 	return myProgram;
 }

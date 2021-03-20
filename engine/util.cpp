@@ -9,25 +9,6 @@
 
 #include "util.h"
 
-std::string ReadFile(const char *filePath)
-{
-    std::string content;
-    std::ifstream fileStream(filePath, std::ios::in);
-
-    if(!fileStream.is_open()) {
-        return "";
-    }
-
-    std::string line = "";
-    while(!fileStream.eof()) {
-        std::getline(fileStream, line);
-        content.append(line + "\n");
-    }
-
-    fileStream.close();
-    return content;
-}
-
 void DrawTextA(std::string text, GLuint textureid, float x, float y, float z)
 {
     glBindTexture(GL_TEXTURE_2D, textureid);

@@ -136,11 +136,8 @@ int main()
 	std::string folderOut = "images/test/";
 
 	std::list<ImageMeta> images8bpp;
-	int tempi = 1;
 	for(const fs::directory_entry &file : fs::directory_iterator(folderIn))
 	{
-		if(tempi > 1)
-			break;
 		ImageMeta im {
 			std::make_unique<ImageData>(file.path().generic_string().c_str()),
 			file.path().filename().string()
@@ -152,11 +149,10 @@ int main()
 				im.CalculateChunks(chunkSize);
 				nChunks += im.chunks.size();
 				images8bpp.push_back(std::move(im));
-				//tempi++;
 			}
-			else
+			else 
 			{
-				//std::cout << filename << " is not 8bpp. Ignoring...\n";
+				//TODO: Handle 32bpp images
 			}
 		}
 		
@@ -175,12 +171,12 @@ int main()
 	atlases.reserve(4);
 	for(int i = 0; i < 4; i++)
 	{
-		atlases.push_back(std::make_unique<Atlas>(1024, 1024, 1, chunkSize));
+		atlases.push_back(std::make_unique<Atlas>(1024, 1024, 1, chunkSize, i));
 		memset(atlases[i]->image.data, 255, atlases[i]->image.GetMemSize());
 	}
 
 	auto atlasI = atlases.begin();
-	for(const auto &im: images8bpp)
+	for(auto &im: images8bpp)
 	{
 		if(!(*atlasI)->CopyToAtlas(im))
 		{
@@ -194,7 +190,6 @@ int main()
 			(*atlasI)->CopyToAtlas(im);
 		}
 	}
-	
 	
 	ImageData composite(1024, 1024, 4);
 	for(int y = 0; y < 1024; y++)
