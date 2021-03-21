@@ -4,7 +4,6 @@
 #include <fstream>
 #include <string>
 
-unsigned int globalShaderProgram;
 
 const char *vertex = R"()";
 const char *fragment = R"()";

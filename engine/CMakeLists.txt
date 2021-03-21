@@ -15,6 +15,7 @@ target_sources(AFGEngine PRIVATE
 	texture.cpp
 	util.cpp
 	window.cpp
+	render_context.cpp
 )
 
 find_package(SDL2 CONFIG REQUIRED)

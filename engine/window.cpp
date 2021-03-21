@@ -1,18 +1,12 @@
 #include "window.h"
+#include "shader.h"
 
-#include <glad/glad.h>
 #include <SDL.h>
-#include <glm/glm.hpp>
-#include <glm/ext.hpp>
 
 #include <assert.h>
 #include <iostream>
 #include <chrono>
-#include <stdexcept>
 #include <thread>
-
-#include "main.h"
-#include "shader.h"
 
 Window *mainWindow = nullptr;
 
@@ -52,15 +46,7 @@ realSpf(0)
 		throw std::runtime_error("Couldn't create window.");
 	}
 
-	glcontext = SDL_GL_CreateContext(window);
-	if (!gladLoadGLLoader((GLADloadproc) SDL_GL_GetProcAddress))
-	{
-		SDL_DestroyWindow( window );
-		SDL_Quit();
-		throw std::runtime_error("Glad couldn't initialize OpenGL context.");
-	}
-
-	std::cout << "OpenGL " << GLVersion.major <<"."<< GLVersion.minor <<"\n";
+	context.SetupGl(window);
 
 	if(vsync)
 		SDL_GL_SetSwapInterval(1);
@@ -68,7 +54,6 @@ realSpf(0)
 
 Window::~Window()
 {
-	SDL_GL_DeleteContext(glcontext); 
 	SDL_DestroyWindow( window );
 	SDL_Quit();
 }
@@ -102,33 +87,6 @@ void Window::SleepUntilNextFrame()
 void Window::SwapBuffers()
 {
 	SDL_GL_SwapWindow(window);
-}
-
-
-void Window::GlSetup2d()
-{
-	glMatrixMode(GL_PROJECTION);
-	glLoadIdentity();
-	glOrtho(0, internalWidth, 0, internalHeight, 1, -1); //The difference should equal the borders of the viewport for pixel perfection.
-
-	int width, height;
-	SDL_GetWindowSize(window, &width, &height);
-	glViewport(0, 0, width, height);
-
-	glMatrixMode(GL_MODELVIEW);
-	glLoadIdentity();
-
-	glEnable(GL_BLEND);
-	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-	//glTexEnvf(GL_TEXTURE_2D, GL_TEXTURE_ENV_MODE, GL_MODULATE); //Vertex color, maybe.
-
-	/*glEnable(GL_POINT_SPRITE);
-	glPointSize(128);
-	glTexEnvi(GL_POINT_SPRITE, GL_COORD_REPLACE, GL_TRUE);*/
-
-	globalShaderProgram = LoadShader("data/vertex.txt", "data/fragment.txt");
-	glUseProgram(globalShaderProgram);
-	glUniform1i(glGetUniformLocation(globalShaderProgram, "tex0"), 0 ); //Set texture unit to be accessed as 0.
 }
 
 double Window::GetSpf()

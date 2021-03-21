@@ -1,17 +1,20 @@
+#include "camera.h"
+#include "window.h"
+
 #include <glad/glad.h>
+#include <glm/ext/matrix_transform.hpp>
+#include <glm/vec3.hpp>
 
 #include <cmath>
 #include <iostream>
 #include <fixed_point.h>
 
-#include "window.h"
-#include "camera.h"
 
 Camera::Camera(float _maxScale) :
-widthBoundary(internalWidth),
-maxScale(_maxScale),
 scale(1.f),
-limitRatio(FixedPoint(6)/FixedPoint(7))
+widthBoundary(internalWidth),
+limitRatio(FixedPoint(6)/FixedPoint(7)),
+maxScale(_maxScale)
 {
 
 }
@@ -24,7 +27,7 @@ Camera::Camera() : Camera(1.1f)
 
 const FixedPoint stageWidth(480);
 
-void Camera::Calculate(Point2d<FixedPoint> p1, Point2d<FixedPoint> p2)
+glm::mat4 Camera::Calculate(Point2d<FixedPoint> p1, Point2d<FixedPoint> p2)
 {
 	const FixedPoint dif = p1.x - p2.x;
 
@@ -46,13 +49,12 @@ void Camera::Calculate(Point2d<FixedPoint> p1, Point2d<FixedPoint> p2)
 		center = -stageWidth + widthBoundary*scale/FixedPoint(2);
 	else if(GetWallPos(camera::rightWall) >= stageWidth)
 		center = stageWidth - widthBoundary*scale/FixedPoint(2);
-}
-
-void Camera::Apply()
-{
-	glTranslatef(internalWidth/2.f, 0, 0);
-	glScalef(1.f/(float)scale, 1.f/(float)scale, 1);
-    glTranslatef(-center, 0, 0);
+	
+	glm::mat4 view(1);
+	view = glm::translate(view, glm::vec3(internalWidth/2.f, 0.f, 0.f));
+	view = glm::scale(view, glm::vec3(1.f/(float)scale, 1.f/(float)scale, 1.f));
+	view = glm::translate(view, glm::vec3(-center, 0.f, 0.f));
+	return view;
 }
 
 FixedPoint Camera::GetWallPos(int which)

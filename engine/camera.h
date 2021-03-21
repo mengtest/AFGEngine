@@ -3,6 +3,7 @@
 
 #include <fixed_point.h>
 #include <geometry.h>
+#include <glm/mat4x4.hpp>
 
 namespace camera
 {
@@ -30,10 +31,9 @@ public:
 	Camera();
 	Camera(float maxScale);
 
-	void Apply();
-	void Calculate(Point2d<FixedPoint>, Point2d<FixedPoint> p2);
+	glm::mat4 Calculate(Point2d<FixedPoint>, Point2d<FixedPoint> p2);
 
-		FixedPoint GetWallPos(int which);
+	FixedPoint GetWallPos(int which);
 private:
 };
 

@@ -50,7 +50,6 @@ int main(int argc, char** argv)
 	#endif
 
 	mainWindow = new Window();
-	mainWindow->GlSetup2d();
 
 	//reads configurable keys
 	std::ifstream keyfile("keyconf.bin", std::ifstream::in | std::ifstream::binary);
@@ -85,7 +84,6 @@ int main(int argc, char** argv)
 
 void PlayLoop()
 {
-	glUseProgram(globalShaderProgram);
 
 	//texture load
 	std::vector<Texture> activeTextures;
@@ -114,8 +112,6 @@ void PlayLoop()
 
 	std::vector<Bar> barHandler = InitBars();
 
-
-	glUseProgram(globalShaderProgram);
 
 	int32_t gameTicks = 0;
 
@@ -150,6 +146,11 @@ void PlayLoop()
 	bool gameOver = false;
 	while(!gameOver && !mainWindow->wantsToClose)
 	{
+		if(int err = glGetError())
+		{
+			std::cerr << "GL Error: 0x" << std::hex << err << "\n";
+		}
+		
 		EventLoop();
 		
 		/* TODO
@@ -185,9 +186,11 @@ void PlayLoop()
 
 		//Turn this into a draw function perhaps?
 		//glClear(GL_COLOR_BUFFER_BIT);
-		glPushMatrix();
-		view.Calculate(player.getXYCoords(), player2.getXYCoords()); //Should calculations be performed earlier? Watchout for this
-		view.Apply();
+		//glPushMatrix();
+
+		//Should calculations be performed earlier? Watchout for this
+		mainWindow->context.SetModelView(view.Calculate(player.getXYCoords(), player2.getXYCoords()));
+
 		//This stays until stage files exist and can be loaded.
 		glBindTexture(GL_TEXTURE_2D, activeTextures[T_STAGELAYER1].id);
 		glBegin(GL_QUADS );
@@ -214,7 +217,8 @@ void PlayLoop()
 		player2.Draw();
 		player.Draw();
 
-		glPopMatrix();
+		//glPopMatrix();
+		mainWindow->context.SetModelView();
 		DrawHud(activeTextures[T_HUD].id);
 
 		timerString.seekp(0);
