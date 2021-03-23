@@ -20,6 +20,7 @@
 #include "texture.h"
 #include "util.h"
 #include "window.h"
+#include "vao.h"
 
 #ifdef NETPLAY
 #include "netplay.h"
@@ -84,7 +85,6 @@ int main(int argc, char** argv)
 
 void PlayLoop()
 {
-
 	//texture load
 	std::vector<Texture> activeTextures;
 	
@@ -92,41 +92,38 @@ void PlayLoop()
 	for(int i = 0; i < 4; ++i)
 	{
 		Texture texture;
-		
+
 		texture.Load(texNames[i]);
 		if(i<2)
 			texture.Apply();
 		else
 			texture.Apply(false, false);
+			
 
+		texture.Unload();
 		activeTextures.push_back(std::move(texture));
 	}
 	
 	
-
-	//fontSettings testfont = {32, 8, &activeTextures[T_FONT]};
-
-	glEnableClientState(GL_VERTEX_ARRAY);
-	glEnableClientState(GL_TEXTURE_COORD_ARRAY);
 	//hud load
-
 	std::vector<Bar> barHandler = InitBars();
 
-
 	int32_t gameTicks = 0;
-
-	pal = 1;
-	Character player(200, 1, "char/vaki.char");
-	pal = 0;
-	Character player2(250, -1, "char/vaki.char");
-
 	Camera view;
+
+/*
+	pal = 1;
+	Character player(-50, 1, "char/vaki.char");
+	pal = 0;
+	Character player2(50, -1, "char/vaki.char");
+
+	
 	player.SetCameraRef(&view);
 	player2.SetCameraRef(&view);
 
 	player.setTarget(&player2);
 	player2.setTarget(&player);
-
+*/
 
 	input_deque keyBufDelayed[2] = {input_deque(32, key::buf::TRUE_NEUTRAL), input_deque(32, key::buf::TRUE_NEUTRAL)};
 	input_deque keyBuf[2]= {input_deque(32, key::buf::TRUE_NEUTRAL), input_deque(32, key::buf::TRUE_NEUTRAL)};
@@ -143,6 +140,23 @@ void PlayLoop()
 	/*Song testA("audio/372094.ogg");
 	testA.playback.startStream();*/
 
+	float stageVertices[] = {
+		-480, 0, 	0, 0,
+		480, 0,  	1, 0,
+		480, 540,  	1, 1,
+		-480, 540,	0, 1
+	};
+
+	std::vector<float> textVertData;
+	textVertData.resize(24*80);
+
+	Vao VaoTexOnly(Vao::F2F2, GL_DYNAMIC_DRAW);
+	int hudId = VaoTexOnly.Prepare(GetHudData().size()*sizeof(float), nullptr);
+	int stageId = VaoTexOnly.Prepare(sizeof(stageVertices), stageVertices);
+	int textId = VaoTexOnly.Prepare(sizeof(float)*textVertData.size(), nullptr);
+	VaoTexOnly.Load();
+	
+	glClearColor(0, 0, 0.1, 1.f); 
 	bool gameOver = false;
 	while(!gameOver && !mainWindow->wantsToClose)
 	{
@@ -153,10 +167,10 @@ void PlayLoop()
 		
 		EventLoop();
 		
-		/* TODO
-		if(glfwJoystickPresent(GLFW_JOYSTICK_1))
-			GameLoopJoy();
-		*/
+		// TODO
+		//if(glfwJoystickPresent(GLFW_JOYSTICK_1))
+		//	GameLoopJoy();
+		/*
 		
 		for(int i = 0; i < 2; ++i)
 		{
@@ -176,58 +190,43 @@ void PlayLoop()
 		player2.Update();
 
 		Character::Collision(&player, &player2);
-		
-
-		/*player.Print();
-		player2.Print();*/
 
 		barHandler[B_P1Life].Resize(player.getHealthRatio(), 1);
 		barHandler[B_P2Life].Resize(player2.getHealthRatio(), 1);
-
-		//Turn this into a draw function perhaps?
-		//glClear(GL_COLOR_BUFFER_BIT);
-		//glPushMatrix();
-
+		*/
+		
+		
+		barHandler[B_P1Life].Resize(0.3, 1);
+		barHandler[B_P2Life].Resize(0.9, 1);
+		VaoTexOnly.UpdateBuffer(hudId, GetHudData().data(), GetHudData().size()*sizeof(float));
+		
+		glClear(GL_COLOR_BUFFER_BIT);
+		
 		//Should calculations be performed earlier? Watchout for this
-		mainWindow->context.SetModelView(view.Calculate(player.getXYCoords(), player2.getXYCoords()));
+		//mainWindow->context.SetModelView(view.Calculate(player.getXYCoords(), player2.getXYCoords()));
+		mainWindow->context.SetModelView(view.Calculate(Point2d<FixedPoint>(-450,0), Point2d<FixedPoint>(450,0)));
 
-		//This stays until stage files exist and can be loaded.
+		//Draw stage quad
 		glBindTexture(GL_TEXTURE_2D, activeTextures[T_STAGELAYER1].id);
-		glBegin(GL_QUADS );
-			glColor3f(1.f, 0.9f, 0.8f);
-			glTexCoord2f(0, 0);
-			glVertex3f(-480, 0, 0);
+		VaoTexOnly.Draw(stageId, 0, GL_TRIANGLE_FAN);
 
-			glTexCoord2f(1, 0);
-			glVertex3f(480, 0, 0);
-
-			glColor3f(0, 0, 0);
-			glTexCoord2f(1, 1);
-			glVertex3f(480, 540, 0);
-
-			glTexCoord2f(0, 1);
-			glVertex3f(-480, 540, 0);
-			glColor3f(1, 1, 1);
-		glEnd();
-
-
-		glTexCoordPointer(2, GL_FLOAT, 0, charTexCoords);
-
-
+		/* glTexCoordPointer(2, GL_FLOAT, 0, charTexCoords);
 		player2.Draw();
-		player.Draw();
-
-		//glPopMatrix();
+		player.Draw(); */
+		
 		mainWindow->context.SetModelView();
-		DrawHud(activeTextures[T_HUD].id);
+		glBindTexture(GL_TEXTURE_2D, activeTextures[T_HUD].id);
+		VaoTexOnly.Draw(hudId, 0, GL_TRIANGLES);
 
 		timerString.seekp(0);
 		timerString << "SFP: " << mainWindow->GetSpf() << " FPS: " << 1/mainWindow->GetSpf();
 
-		DrawTextA(timerString.str(), activeTextures[T_FONT].id, 2, 12, 0);
-		/* DrawText("the quick brown fox jumps over the lazy dog", texturelist[2], -170, 100, -200); //Font texting
-		DrawText("The Quick Brown Fox Jumps Over The Lazy dog", texturelist[2], -170, 80, -200);
-		DrawText("THE QUICK BROWN FOX JUMPS OVER THE LAZY DOG", texturelist[2], -170, 60, -200);*/
+		glBindTexture(GL_TEXTURE_2D, activeTextures[T_FONT].id);
+		int count = DrawText(timerString.str(), textVertData, 2, 12);
+		VaoTexOnly.UpdateBuffer(textId, textVertData.data());
+		VaoTexOnly.Draw(textId, count);
+
+
 
 		mainWindow->SwapBuffers();
 
@@ -252,8 +251,7 @@ void EventLoop()
 				switch(event.window.event)
 				{
 					case SDL_WINDOWEVENT_SIZE_CHANGED:
-						glViewport(0, 0, event.window.data1, event.window.data2);
-						//clip = glm::perspective(glm::radians(FOV), (float)event.window.data1/(float)event.window.data2, 0.01f, 100.0f);
+						mainWindow->context.UpdateViewport(event.window.data1, event.window.data2);
 						break;
 				}
 				break;

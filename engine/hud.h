@@ -29,16 +29,15 @@ private:
 	float texChunkY;
 	e_side side;
 	std::vector<float> *vertexArray;
-	std::vector<float> *coordArray;
 	int index; //Where is the bar in the vertex array.
 
 public:
-	Bar(float width, float height, float offsetX, float offsetY, std::vector<float> *vertexArray, std::vector<float> *coordArray, float texAtlasIndexX, float texAtlasIndexY, e_side side);
+	Bar(float width, float height, float offsetX, float offsetY, std::vector<float> *vertexArray, float texAtlasIndexX, float texAtlasIndexY, e_side side);
 	void Resize(float amountX, float amountY); //Amounts are the ratio of the maximum size, not the actual size.
 
 };
 
 std::vector<Bar> InitBars();
-void DrawHud(GLuint textureId);
+std::vector<float>& GetHudData();
 
 #endif // HUD_H_INCLUDED

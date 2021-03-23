@@ -46,6 +46,12 @@ std::size_t ImageData::GetMemSize() const
 	return width*height*bytesPerPixel;
 }
 
+void ImageData::FreeData()
+{
+	free(data);
+	data = nullptr;
+}
+
 bool ImageData::WriteAsPng(const char* file_name, const char* palette_file) const
 {
 	FILE *fp = fopen(file_name, "wb");

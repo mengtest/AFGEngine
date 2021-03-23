@@ -23,6 +23,7 @@ public:
 
 	void SetupGl(SDL_Window *window);
 	void SetModelView(glm::mat4 view = glm::mat4(1));
+	void UpdateViewport(float width, float height);
 };
 
 #endif /* RENDER_CONTEXT_H_GUARD */

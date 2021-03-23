@@ -10,63 +10,53 @@
 
 //VAO data for drawing the HUD.
 std::vector<float> hudVertArray;
-std::vector<float> hudCoordArray;
 
-void DrawHud(GLuint textureId)
+std::vector<float>& GetHudData()
 {
-	glVertexPointer(2, GL_FLOAT, 0, hudVertArray.data());
-    glTexCoordPointer(2, GL_FLOAT, 0, hudCoordArray.data());
-
-    glBindTexture(GL_TEXTURE_2D, textureId);
-    glDrawArrays(GL_QUADS, 0, hudVertArray.size()/2);
+	return hudVertArray;
 }
 
 std::vector<Bar> InitBars()
 {
-    //This should be expanded to InitHUD
-    hudVertArray.reserve(64);
-    hudCoordArray.reserve(64);
+	//This should be expanded to InitHUD
+	hudVertArray.reserve(64);
 
-    std::vector<Bar> bars;
-    for(int i = 0; i < 2; ++i)
+	std::vector<Bar> bars;
+	for(int i = 0; i < 2; ++i)
 	{
-		Bar lifebar(200, 10, 20, 240, &hudVertArray, &hudCoordArray, 1, 0, static_cast<e_side>(i));
+		Bar lifebar(200, 10, 20, 240, &hudVertArray, 1, 0, static_cast<e_side>(i));
 		bars.push_back(lifebar);
 	}
 	for(int i = 0; i < 2; ++i)
 	{
-		Bar lifebar(200, 10, 20, 240, &hudVertArray, &hudCoordArray, 0, 0, static_cast<e_side>(i));
+		Bar lifebar(200, 10, 20, 240, &hudVertArray, 0, 0, static_cast<e_side>(i));
 		bars.push_back(lifebar);
 	}
 
-	CoordinateHelper ch(1024, 1024, 128, 128, &hudCoordArray, CHUNK_SIZE); //KO thingy in the middle of the screen.
+	CoordinateHelper ch(1024, 1024, 128, 128, hudVertArray, CHUNK_SIZE); //KO thingy in the middle of the screen.
 	ch.shrinkBorders = true;
-	PushQuad(internalWidth/2.f-21, internalHeight-42, 42, 42, &hudVertArray);
-	ch.PushQuad(1, 0, true);
+	PushQuad(internalWidth/2.f-21, internalHeight-42, 42, 42, &hudVertArray, ch, 1, 0, true);
 
-    return bars;
+	return bars;
 }
 
-Bar::Bar(float _width, float _height, float _offsetX, float _offsetY, std::vector<float> *va, std::vector<float> *ca, float texAtlasIndexX, float texAtlasIndexY, e_side _side) :
-    width(_width), height(_height), offsetX(_offsetX), offsetY(_offsetY), texChunkX(texAtlasIndexX), texChunkY(texAtlasIndexY), side(_side)
+Bar::Bar(float _width, float _height, float _offsetX, float _offsetY, std::vector<float> *va, float texAtlasIndexX, float texAtlasIndexY, e_side _side) :
+	width(_width), height(_height), offsetX(_offsetX), offsetY(_offsetY), texChunkX(texAtlasIndexX), texChunkY(texAtlasIndexY), side(_side)
 {
-    vertexArray = va;
-    coordArray = ca;
-    index = va->size();
-    if (side == RIGHT)
-    {   //Push ccw vertex/texture coordinates of the box
-    	CoordinateHelper ch(1024, 1024, 64, 64, coordArray, CHUNK_SIZE); //sizes hardcoded until I code some texture management.
-    	ch.shrinkBorders = true;
-    	PushQuad(internalWidth/2.f+offsetX, offsetY, width, height, vertexArray);
-        ch.PushQuad(texChunkX, texChunkY);
-    }
-    else //left
-    {
-        CoordinateHelper ch(1024, 1024, 64, 64, coordArray, CHUNK_SIZE);
-    	ch.shrinkBorders = true;
-        PushQuad(internalWidth/2.f-offsetX, offsetY, -width, height, vertexArray);
-        ch.PushQuad(texChunkX, texChunkY);
-    }
+	vertexArray = va;
+	index = va->size();
+	if (side == RIGHT)
+	{   //Push ccw vertex/texture coordinates of the box
+		CoordinateHelper ch(1024, 1024, 64, 64, *vertexArray, CHUNK_SIZE); //sizes hardcoded until I code some texture management.
+		ch.shrinkBorders = true;
+		PushQuad(internalWidth/2.f+offsetX, offsetY, width, height, vertexArray, ch, texChunkX, texChunkY);
+	}
+	else //left
+	{
+		CoordinateHelper ch(1024, 1024, 64, 64, *vertexArray, CHUNK_SIZE);
+		ch.shrinkBorders = true;
+		PushQuad(internalWidth/2.f-offsetX, offsetY, -width, height, vertexArray, ch, texChunkX, texChunkY);
+	}
 }
 
 void Bar::Resize(float amountX, float amountY)

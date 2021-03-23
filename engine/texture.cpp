@@ -38,6 +38,7 @@ void Texture::Load(std::string imageFile, std::string paletteFile)
 	if(!paletteFile.empty())
 		palette = paletteFile.c_str();
 	image.reset(new ImageData(imageFile.c_str(), palette));
+	isLoaded = true;
 }
 
 void Texture::Apply(bool repeat, bool linearFilter)
@@ -72,7 +73,6 @@ void Texture::Apply(bool repeat, bool linearFilter)
 	else
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_GENERATE_MIPMAP, GL_FALSE);
 
 	GLenum extType = 0;
 	GLenum intType = 0;
@@ -102,4 +102,5 @@ void Texture::Unapply()
 void Texture::Unload()
 {
 	isLoaded = false;
+	image->FreeData();
 }

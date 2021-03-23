@@ -24,6 +24,7 @@ struct ImageData{
 	bool LoadFromPng(const char* image, const char* palette = nullptr);
 	bool WriteAsPng(const char* path, const char* palette = nullptr) const;
 	std::size_t GetMemSize() const;
+	void FreeData();
 
 	enum
 	{

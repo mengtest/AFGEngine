@@ -43,7 +43,7 @@ void RenderContext::SetupGl(SDL_Window *window)
 
 	int width, height;
 	SDL_GetWindowSize(window, &width, &height);
-	glViewport(0, 0, width, height);
+	UpdateViewport(width, height);
 
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -57,6 +57,18 @@ void RenderContext::SetupGl(SDL_Window *window)
 	initialized = true;
 }
 
+void RenderContext::UpdateViewport(float width, float height)
+{
+	constexpr float asRatio = (float)internalWidth/(float)internalHeight;
+	if(width/height > asRatio) //wider
+	{
+		glViewport((width-height*asRatio)/2, 0, height*asRatio, height);
+	}
+	else
+	{
+		glViewport(0, (height-width/asRatio)/2, width, width/asRatio);
+	}
+}
 
 void RenderContext::SetModelView(glm::mat4 _view)
 {
