@@ -11,6 +11,12 @@
     T_BACKGROUND2
 };*/
 
+struct VertexData8
+{
+	float x,y,s,t;
+	int atlasId;
+};
+
 enum //gamestate
 {
     GS_MENU,
@@ -22,7 +28,8 @@ enum //ingame stage static texture list. Most probably will get replaced by some
 {
     T_STAGELAYER1, //multiple layers on different textures?
     T_HUD,
-    T_FONT
+    T_FONT,
+    T_CHAR
 };
 
 void PlayLoop();

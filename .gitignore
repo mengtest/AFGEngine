@@ -2,7 +2,7 @@
 # Other
 .vscode/
 *.code-workspace
-/images/src/
+/data/images/src/
 .cache/
 /audio/
 /keyconf.bin

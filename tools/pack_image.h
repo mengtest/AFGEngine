@@ -16,13 +16,17 @@ bool IsPixelTrans(const ImageData &im, uint32_t x, uint32_t y);
 bool CopyChunk(ImageData &dst, const ImageData &src, 
 	uint32_t xDst, uint32_t yDst, uint32_t xSrc, uint32_t ySrc, uint32_t chunkSize);
 
+struct VertexData8
+{
+	float x,y,s,t;
+	int atlasId;
+};
 
 struct ImageMeta
 {
 	std::unique_ptr<ImageData> data;
 	std::string name;
 	std::list<Point> chunks;
-	int chunkSize;
 	int atlasId;
 
 	void CalculateChunks(int chunkSize)
@@ -109,7 +113,7 @@ struct Atlas
 
 	bool CopyToAtlas(ImageMeta &src)
 	{
-		const std::list<Point> &chunks = src.chunks;
+		std::list<Point> &chunks = src.chunks;
 		if(!Fits(chunks.size()))
 		{
 			std::cout << "Switching atlas channel...\n";
@@ -117,13 +121,15 @@ struct Atlas
 		}
 
 		src.atlasId = id;
-		for(const Point &chunk : chunks)
+		for(Point &chunk : chunks)
 		{
 			if(!CopyChunk(image, *src.data, x, y, chunk.x, chunk.y, chunkSize))
 			{
 				std::cerr << __func__ << " failed.\n";
 				return false;
 			}
+			chunk.x = x;
+			chunk.y = y;
 			if(!Advance())
 			{
 				std::cerr << "The atlas is full. "<<src.name<<" couldn't be copied properly.\n";

@@ -5,6 +5,7 @@
 #include <cassert>
 #include <cmath>
 #include <filesystem>
+#include <fstream>
 #include <iostream>
 #include <memory>
 #include <string>
@@ -125,6 +126,35 @@ uint32_t xDst, uint32_t yDst, uint32_t xSrc, uint32_t ySrc, uint32_t chunkSize)
 	return true; 
 }
 
+void WriteVertexData(std::string filename, int nChunks, std::list<ImageMeta> &metas, const ImageData &atlas, int chunkSize)
+{
+	std::ofstream vertexFile(filename, std::ios_base::binary);
+	vertexFile.write((char*)&nChunks, sizeof(int));
+	auto data = new VertexData8[nChunks*6];
+	int dataI = 0;
+	constexpr float tX[] = {0,1,1, 1,0,0};
+	constexpr float tY[] = {0,0,1, 1,1,0};
+	for(auto &meta: metas)
+	{
+		for(auto &chunk: meta.chunks)
+		{
+			for(int i = 0; i < 6; i++)
+			{
+				data[dataI+i].x = chunk.x + chunkSize*tX[i];
+				data[dataI+i].y = chunk.y + chunkSize*tY[i];
+
+				data[dataI+i].s = (chunk.x + chunkSize*tX[i])/atlas.width;
+				data[dataI+i].t = (chunk.y + chunkSize*tY[i])/atlas.height;
+
+				data[dataI+i].atlasId = meta.atlasId;
+			}
+			dataI += 6;
+		}
+	}
+	vertexFile.write((char*)data, nChunks*6*sizeof(VertexData8));
+	delete[] data;
+}
+
 int main()
 {
 	namespace fs = std::filesystem;
@@ -132,8 +162,7 @@ int main()
 	int chunkSize = 8;
 	int nChunks = 0;
 
-	std::string folderIn = "images/char/";
-	std::string folderOut = "images/test/";
+	std::string folderIn = "data/images/src/";
 
 	std::list<ImageMeta> images8bpp;
 	for(const fs::directory_entry &file : fs::directory_iterator(folderIn))
@@ -205,10 +234,13 @@ int main()
 		}
 	}
 
-
 	std::cout << "Writing file... ";
-	composite.WriteAsPng("test.png");
+	composite.WriteAsPng("vaki.png");
 	std::cout << "Done\n";
+
+	WriteVertexData("vaki.vt8", nChunks, images8bpp, composite, chunkSize);
+
+
 	return 0;
 }
 
