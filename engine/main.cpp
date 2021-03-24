@@ -2,6 +2,7 @@
 
 #include <glad/glad.h>
 #include <SDL.h>
+#include <glm/ext/matrix_transform.hpp>
 
 #include <deque>
 #include <fstream>
@@ -31,9 +32,10 @@ int inputDelay = 0;
 const float charTexCoords[8] = {0,0,1,0,1,1,0,1};
 
 const char *texNames[] ={
-	"images/background.png",
-	"images/hud.png",
-	"images/font.png",
+	"data/images/background.png",
+	"data/images/hud.png",
+	"data/images/font.png",
+	"vaki.png",
 	};
 
 int gameState = GS_MENU;
@@ -87,8 +89,8 @@ void PlayLoop()
 	//texture load
 	std::vector<Texture> activeTextures;
 	
-	activeTextures.reserve(3);
-	for(int i = 0; i < 3; ++i)
+	activeTextures.reserve(4);
+	for(int i = 0; i < 4; ++i)
 	{
 		Texture texture;
 
@@ -97,11 +99,12 @@ void PlayLoop()
 			texture.Apply();
 		else
 			texture.Apply(false, false);
-			
 
 		texture.Unload();
 		activeTextures.push_back(std::move(texture));
 	}
+	glActiveTexture(GL_TEXTURE1);
+	
 	
 	
 	//hud load
@@ -136,8 +139,13 @@ void PlayLoop()
 	timerString.precision(6);
 	timerString.setf(std::ios::fixed, std::ios::floatfield);
 
-	/*Song testA("audio/372094.ogg");
-	testA.playback.startStream();*/
+	std::ifstream vertexFile("vaki.vt8", std::ios_base::binary);
+	int size;
+	vertexFile.read((char *)&size, sizeof(int));
+	std::unique_ptr<VertexData8> vt8(new VertexData8[size*6]); 
+	vertexFile.read((char *)vt8.get(), size*6);
+	vertexFile.close();
+
 
 	float stageVertices[] = {
 		-480, 0, 	0, 0,
@@ -154,8 +162,14 @@ void PlayLoop()
 	int stageId = VaoTexOnly.Prepare(sizeof(stageVertices), stageVertices);
 	int textId = VaoTexOnly.Prepare(sizeof(float)*textVertData.size(), nullptr);
 	VaoTexOnly.Load();
+
+
+	Vao VaoChar(Vao::F2F2I1, GL_STATIC_DRAW);
+	int charId = VaoChar.Prepare(sizeof(VertexData8)*6*size, vt8.get());
+	VaoChar.Load();
 	
-	glClearColor(0, 0, 0.1, 1.f); 
+	VaoTexOnly.Bind();
+	glClearColor(1, 1, 1, 1.f); 
 	bool gameOver = false;
 	while(!gameOver && !mainWindow->wantsToClose)
 	{
@@ -203,19 +217,33 @@ void PlayLoop()
 		
 		//Should calculations be performed earlier? Watchout for this
 		//mainWindow->context.SetModelView(view.Calculate(player.getXYCoords(), player2.getXYCoords()));
-		mainWindow->context.SetModelView(view.Calculate(Point2d<FixedPoint>(-450,0), Point2d<FixedPoint>(450,0)));
+		//mainWindow->context.SetModelView(view.Calculate(Point2d<FixedPoint>(-450,0), Point2d<FixedPoint>(450,0)));
+
+		glm::mat4 tempV = glm::translate(glm::mat4(1), glm::vec3(100, 100,1));
+		tempV = glm::scale(tempV, glm::vec3(0.3,0.3,1));
+		
+		mainWindow->context.SetModelView(tempV);
 
 		//Draw stage quad
-		glBindTexture(GL_TEXTURE_2D, activeTextures[T_STAGELAYER1].id);
-		VaoTexOnly.Draw(stageId, 0, GL_TRIANGLE_FAN);
+		/* glBindTexture(GL_TEXTURE_2D, activeTextures[T_STAGELAYER1].id);
+		VaoTexOnly.Draw(stageId, 0, GL_TRIANGLE_FAN); */
 
 		/* glTexCoordPointer(2, GL_FLOAT, 0, charTexCoords);
 		player2.Draw();
 		player.Draw(); */
+
+		
+		glBindTexture(GL_TEXTURE_2D, activeTextures[T_CHAR].id);
+		VaoChar.Bind();
+		VaoChar.Draw(charId, 40);
+		VaoTexOnly.Bind();
+		
 		
 		mainWindow->context.SetModelView();
 		glBindTexture(GL_TEXTURE_2D, activeTextures[T_HUD].id);
 		VaoTexOnly.Draw(hudId, 0, GL_TRIANGLES);
+
+		
 
 		timerString.seekp(0);
 		timerString << "SFP: " << mainWindow->GetSpf() << " FPS: " << 1/mainWindow->GetSpf();
