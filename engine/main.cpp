@@ -33,8 +33,7 @@ const float charTexCoords[8] = {0,0,1,0,1,1,0,1};
 const char *texNames[] ={
 	"images/background.png",
 	"images/hud.png",
-	"images/fontactive.png",
-	"images/fontdead.png"
+	"images/font.png",
 	};
 
 int gameState = GS_MENU;
@@ -88,8 +87,8 @@ void PlayLoop()
 	//texture load
 	std::vector<Texture> activeTextures;
 	
-	activeTextures.reserve(4);
-	for(int i = 0; i < 4; ++i)
+	activeTextures.reserve(3);
+	for(int i = 0; i < 3; ++i)
 	{
 		Texture texture;
 
@@ -222,7 +221,7 @@ void PlayLoop()
 		timerString << "SFP: " << mainWindow->GetSpf() << " FPS: " << 1/mainWindow->GetSpf();
 
 		glBindTexture(GL_TEXTURE_2D, activeTextures[T_FONT].id);
-		int count = DrawText(timerString.str(), textVertData, 2, 12);
+		int count = DrawText(timerString.str(), textVertData, 2, 10);
 		VaoTexOnly.UpdateBuffer(textId, textVertData.data());
 		VaoTexOnly.Draw(textId, count);
 

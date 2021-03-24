@@ -22,8 +22,7 @@ enum //ingame stage static texture list. Most probably will get replaced by some
 {
     T_STAGELAYER1, //multiple layers on different textures?
     T_HUD,
-    T_FONT,
-    T_FONTGRAY
+    T_FONT
 };
 
 void PlayLoop();
