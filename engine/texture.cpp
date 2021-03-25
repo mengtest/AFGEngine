@@ -30,14 +30,14 @@ Texture::~Texture()
 		Unload();
 }
 
-void Texture::Load(std::string imageFile, std::string paletteFile)
+void Texture::Load(std::string imageFile, std::string paletteFile, bool alphaFix)
 {
 	filename = imageFile;
 
 	const char *palette = nullptr;
 	if(!paletteFile.empty())
 		palette = paletteFile.c_str();
-	image.reset(new ImageData(imageFile.c_str(), palette));
+	image.reset(new ImageData(imageFile.c_str(), palette, alphaFix));
 	isLoaded = true;
 }
 

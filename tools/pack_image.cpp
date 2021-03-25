@@ -140,11 +140,11 @@ void WriteVertexData(std::string filename, int nChunks, std::list<ImageMeta> &me
 		{
 			for(int i = 0; i < 6; i++)
 			{
-				data[dataI+i].x = chunk.x + chunkSize*tX[i];
-				data[dataI+i].y = chunk.y + chunkSize*tY[i];
+				data[dataI+i].x = chunk.pos.x + chunkSize*tX[i];
+				data[dataI+i].y = chunk.pos.y + chunkSize*tY[i];
 
-				data[dataI+i].s = (chunk.x + chunkSize*tX[i])/atlas.width;
-				data[dataI+i].t = (chunk.y + chunkSize*tY[i])/atlas.height;
+				data[dataI+i].s = (chunk.tex.x + chunkSize*tX[i])/1024.f;
+				data[dataI+i].t = (chunk.tex.y + chunkSize*tY[i])/1024.f;
 
 				data[dataI+i].atlasId = meta.atlasId;
 			}
@@ -201,7 +201,7 @@ int main()
 	for(int i = 0; i < 4; i++)
 	{
 		atlases.push_back(std::make_unique<Atlas>(1024, 1024, 1, chunkSize, i));
-		memset(atlases[i]->image.data, 255, atlases[i]->image.GetMemSize());
+		memset(atlases[i]->image.data, 0, atlases[i]->image.GetMemSize());
 	}
 
 	auto atlasI = atlases.begin();
@@ -221,16 +221,18 @@ int main()
 	}
 	
 	ImageData composite(1024, 1024, 4);
+	memset(composite.data, 0, composite.GetMemSize());
 	for(int y = 0; y < 1024; y++)
 	{
 		for(int x = 0; x < 1024; x++)
 		{
-			for(int ch = 0; ch < 4; ch++)
+			for(int ch = 0; ch < 1; ch++)
 			{
 				ImageData &srcIm = atlases[ch]->image;
 				composite.data[y*composite.width*composite.bytesPerPixel + x*composite.bytesPerPixel + ch] =
 					srcIm.data[y*srcIm.width*srcIm.bytesPerPixel + x*srcIm.bytesPerPixel];
 			}
+			composite.data[y*composite.width*composite.bytesPerPixel + x*composite.bytesPerPixel + 3] = 200;
 		}
 	}
 

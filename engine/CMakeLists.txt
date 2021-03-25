@@ -23,11 +23,10 @@ find_package(SDL2 CONFIG REQUIRED)
 find_package(glad REQUIRED)
 find_package(glm CONFIG REQUIRED)
 
-
 #External
 target_link_libraries(AFGEngine PRIVATE SDL2::SDL2 SDL2::SDL2main)
 target_link_libraries(AFGEngine PRIVATE glad::glad)
-target_link_libraries(AFGEngine PRIVATE glm)
+target_link_libraries(AFGEngine PRIVATE glm::glm)
 
 #Internal
 target_link_libraries(AFGEngine PRIVATE RTAUDIO)

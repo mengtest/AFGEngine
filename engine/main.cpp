@@ -51,6 +51,8 @@ int main(int argc, char** argv)
 	}
 	#endif
 
+	
+
 	mainWindow = new Window();
 
 	//reads configurable keys
@@ -84,6 +86,29 @@ int main(int argc, char** argv)
 	return 0;
 }
 
+int LoadPaletteTEMP()
+{
+	std::ifstream pltefile("data/palettes/akicolor.act", std::ifstream::in | std::ifstream::binary);
+	uint8_t palette[256*3];
+
+	pltefile.read((char*)palette, 256*3);
+	pltefile.close();
+
+	GLuint paletteGlId;
+
+	glGenTextures(1, &paletteGlId);
+	glActiveTexture(GL_TEXTURE1);
+	glBindTexture(GL_TEXTURE_2D, paletteGlId);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 256, 1, 0, GL_RGB, GL_UNSIGNED_BYTE, palette);
+	glActiveTexture(GL_TEXTURE0);
+
+	return paletteGlId;
+}
+
 void PlayLoop()
 {
 	//texture load
@@ -94,7 +119,10 @@ void PlayLoop()
 	{
 		Texture texture;
 
-		texture.Load(texNames[i]);
+		if(i==3)
+			texture.Load(texNames[i], "", true);
+		else
+			texture.Load(texNames[i]);
 		if(i<2)
 			texture.Apply();
 		else
@@ -103,9 +131,7 @@ void PlayLoop()
 		texture.Unload();
 		activeTextures.push_back(std::move(texture));
 	}
-	glActiveTexture(GL_TEXTURE1);
-	
-	
+	LoadPaletteTEMP();
 	
 	//hud load
 	std::vector<Bar> barHandler = InitBars();
@@ -219,8 +245,8 @@ void PlayLoop()
 		//mainWindow->context.SetModelView(view.Calculate(player.getXYCoords(), player2.getXYCoords()));
 		//mainWindow->context.SetModelView(view.Calculate(Point2d<FixedPoint>(-450,0), Point2d<FixedPoint>(450,0)));
 
-		glm::mat4 tempV = glm::translate(glm::mat4(1), glm::vec3(100, 100,1));
-		tempV = glm::scale(tempV, glm::vec3(0.3,0.3,1));
+		glm::mat4 tempV = glm::translate(glm::mat4(1), glm::vec3(100, 0,1));
+		//tempV = glm::scale(tempV, glm::vec3(0.3,0.3,1));
 		
 		mainWindow->context.SetModelView(tempV);
 
@@ -235,7 +261,7 @@ void PlayLoop()
 		
 		glBindTexture(GL_TEXTURE_2D, activeTextures[T_CHAR].id);
 		VaoChar.Bind();
-		VaoChar.Draw(charId, 40);
+		VaoChar.Draw(charId, 6*65);
 		VaoTexOnly.Bind();
 		
 		

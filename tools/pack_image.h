@@ -22,11 +22,17 @@ struct VertexData8
 	int atlasId;
 };
 
+struct ChunkMeta
+{
+	Point pos;
+	Point tex;
+};
+
 struct ImageMeta
 {
 	std::unique_ptr<ImageData> data;
 	std::string name;
-	std::list<Point> chunks;
+	std::list<ChunkMeta> chunks;
 	int atlasId;
 
 	void CalculateChunks(int chunkSize)
@@ -69,7 +75,8 @@ struct ImageMeta
 				//TODO: Calculate hash instead.
 				if(!IsChunkTrans(image, x, y, chunkSize))
 				{
-					chunks.push_back(Point(x,y));
+					ChunkMeta chunk{Point(x,y)};
+					chunks.push_back(chunk);
 				}
 			}
 		}
@@ -113,7 +120,7 @@ struct Atlas
 
 	bool CopyToAtlas(ImageMeta &src)
 	{
-		std::list<Point> &chunks = src.chunks;
+		std::list<ChunkMeta> &chunks = src.chunks;
 		if(!Fits(chunks.size()))
 		{
 			std::cout << "Switching atlas channel...\n";
@@ -121,15 +128,15 @@ struct Atlas
 		}
 
 		src.atlasId = id;
-		for(Point &chunk : chunks)
+		for(ChunkMeta &chunk : chunks)
 		{
-			if(!CopyChunk(image, *src.data, x, y, chunk.x, chunk.y, chunkSize))
+			if(!CopyChunk(image, *src.data, x, y, chunk.pos.x, chunk.pos.y, chunkSize))
 			{
 				std::cerr << __func__ << " failed.\n";
 				return false;
 			}
-			chunk.x = x;
-			chunk.y = y;
+			chunk.tex.x = x;
+			chunk.tex.y = y;
 			if(!Advance())
 			{
 				std::cerr << "The atlas is full. "<<src.name<<" couldn't be copied properly.\n";

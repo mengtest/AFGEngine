@@ -31,9 +31,9 @@ data(nullptr), width(_width), height(_height), flag(0), bytesPerPixel(_bytesPerP
 	data = (uint8_t*) malloc(width * height * bytesPerPixel * sizeof(uint8_t));
 }
 
-ImageData::ImageData(const char* image, const char* palette): ImageData()
+ImageData::ImageData(const char* image, const char* palette, bool linearAlpha): ImageData()
 {
-	LoadFromPng(image, palette);
+	LoadFromPng(image, palette, linearAlpha);
 }
 
 ImageData::~ImageData()
@@ -161,7 +161,7 @@ bool ImageData::WriteAsPng(const char* file_name, const char* palette_file) cons
 	return true;
 }
 
-bool ImageData::LoadFromPng(const char* file_name, const char* palette_file)
+bool ImageData::LoadFromPng(const char* file_name, const char* palette_file, bool linearAlpha)
 {
 	png_byte header[8];
 	FILE *fp = fopen(file_name, "rb");
@@ -223,7 +223,8 @@ bool ImageData::LoadFromPng(const char* file_name, const char* palette_file)
 	png_set_sig_bytes(png_ptr, 8);
 	png_read_info(png_ptr, info_ptr);
 
-	png_set_alpha_mode(png_ptr, PNG_ALPHA_BROKEN, PNG_DEFAULT_sRGB);
+	if(!linearAlpha)
+		png_set_alpha_mode(png_ptr, PNG_ALPHA_BROKEN, PNG_DEFAULT_sRGB);
 
 	int bit_depth, color_type, interlace_method, interlace_type, compression_type, filter_method;
 	png_uint_32 temp_width, temp_height;
