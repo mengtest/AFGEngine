@@ -12,7 +12,9 @@
 
 
 RenderContext::RenderContext() :
-view(1), model(1), initialized(false)
+projection(1),
+initialized(false),
+uniforms("Common", 1)
 {}
 
 RenderContext::RenderContext(SDL_Window *window) :RenderContext()
@@ -22,8 +24,6 @@ RenderContext::RenderContext(SDL_Window *window) :RenderContext()
 
 RenderContext::~RenderContext()
 {
-	if(initialized)
-		glDeleteProgram(currentProgram);
 	SDL_GL_DeleteContext(glcontext);
 }
 
@@ -48,11 +48,19 @@ void RenderContext::SetupGl(SDL_Window *window)
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-	currentProgram = LoadShader("data/def.vert", "data/def.frag");
-	glUseProgram(currentProgram);
-	glUniform1i(glGetUniformLocation(currentProgram, "tex0"), 0 ); //Set texture unit to be accessed as 0.
-	transformLoc = glGetUniformLocation(currentProgram, "transform");
-	glUniformMatrix4fv(transformLoc, 1, GL_FALSE, glm::value_ptr(projection));
+	defaultS.LoadShader("data/def.vert", "data/def.frag");
+	indexedS.LoadShader("data/palette.vert", "data/palette.frag");
+	
+	indexedS.Use();
+	//Set texture unit indexes
+	glUniform1i(indexedS.GetLoc("tex0"), 0 ); 
+	glUniform1i(indexedS.GetLoc("palette"), 1 );
+	defaultS.Use();	
+
+	//Bind transform matrix uniforms.
+	uniforms.Init(sizeof(float)*16);
+	uniforms.Bind(defaultS.program);
+	uniforms.Bind(indexedS.program);
 
 	initialized = true;
 }
@@ -70,8 +78,23 @@ void RenderContext::UpdateViewport(float width, float height)
 	}
 }
 
-void RenderContext::SetModelView(glm::mat4 _view)
+void RenderContext::SetModelView(glm::mat4 view)
 {
-	view = _view;
-	glUniformMatrix4fv(transformLoc, 1, GL_FALSE, glm::value_ptr(projection * view));
+	view = projection*view;
+	uniforms.SetData(glm::value_ptr(view));
+}
+
+void RenderContext::SetShader(int type)
+{
+	switch(type)
+	{
+	case DEFAULT:
+		defaultS.Use();
+		break;
+	case PALETTE:
+		indexedS.Use();
+		break;
+	default:
+		std::cerr << __FUNCTION__ << ": No such shader type.\n";
+	}
 }

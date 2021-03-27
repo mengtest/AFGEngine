@@ -1,5 +1,7 @@
 #ifndef RENDER_CONTEXT_H_GUARD
 #define RENDER_CONTEXT_H_GUARD
+#include "shader.h"
+#include "ubo.h"
 #include <SDL.h>
 #include <glm/mat4x4.hpp>
 
@@ -10,11 +12,13 @@ class RenderContext
 {
 private:
 	SDL_GLContext glcontext;
-	glm::mat4 projection, view, model;
-	int transformLoc;
-
-	unsigned int currentProgram;
+	glm::mat4 projection;
+	
 	bool initialized;
+
+	Shader defaultS;
+	Shader indexedS;
+	Ubo uniforms;
 
 public:
 	RenderContext();
@@ -24,6 +28,13 @@ public:
 	void SetupGl(SDL_Window *window);
 	void SetModelView(glm::mat4 view = glm::mat4(1));
 	void UpdateViewport(float width, float height);
+
+	//Bad idea maybe
+	void SetShader(int type);
+	enum{
+		DEFAULT,
+		PALETTE
+	};
 };
 
 #endif /* RENDER_CONTEXT_H_GUARD */

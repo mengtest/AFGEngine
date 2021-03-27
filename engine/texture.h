@@ -14,6 +14,7 @@ public: //public only for ease of reading access, do not write anything.
 	bool isLoaded;
 	bool isApplied;
 	std::string filename;
+	
 
 public:
 	Texture();
@@ -22,7 +23,7 @@ public:
 
 	//Set alphaFix to true to NOT modify the image when loading it. False leaves white borders.
 	void Load(std::string imageFile, std::string paletteFile = std::string(), bool alphaFix = false);
-	void Apply(bool repeat = false, bool linearFilter = true);
+	void Apply(bool repeat = false, bool linearFilter = false);
 	void Unapply();
 	void Unload();
 

@@ -126,7 +126,7 @@ uint32_t xDst, uint32_t yDst, uint32_t xSrc, uint32_t ySrc, uint32_t chunkSize)
 	return true; 
 }
 
-void WriteVertexData(std::string filename, int nChunks, std::list<ImageMeta> &metas, const ImageData &atlas, int chunkSize)
+void WriteVertexData(std::string filename, int nChunks, std::list<ImageMeta> &metas, int chunkSize)
 {
 	std::ofstream vertexFile(filename, std::ios_base::binary);
 	vertexFile.write((char*)&nChunks, sizeof(int));
@@ -221,18 +221,16 @@ int main()
 	}
 	
 	ImageData composite(1024, 1024, 4);
-	memset(composite.data, 0, composite.GetMemSize());
 	for(int y = 0; y < 1024; y++)
 	{
 		for(int x = 0; x < 1024; x++)
 		{
-			for(int ch = 0; ch < 1; ch++)
+			for(int ch = 0; ch < 4; ch++)
 			{
 				ImageData &srcIm = atlases[ch]->image;
 				composite.data[y*composite.width*composite.bytesPerPixel + x*composite.bytesPerPixel + ch] =
 					srcIm.data[y*srcIm.width*srcIm.bytesPerPixel + x*srcIm.bytesPerPixel];
 			}
-			composite.data[y*composite.width*composite.bytesPerPixel + x*composite.bytesPerPixel + 3] = 200;
 		}
 	}
 
@@ -240,7 +238,7 @@ int main()
 	composite.WriteAsPng("vaki.png");
 	std::cout << "Done\n";
 
-	WriteVertexData("vaki.vt8", nChunks, images8bpp, composite, chunkSize);
+	WriteVertexData("vaki.vt8", nChunks, images8bpp, chunkSize);
 
 
 	return 0;

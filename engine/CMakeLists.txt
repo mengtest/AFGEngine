@@ -17,6 +17,7 @@ target_sources(AFGEngine PRIVATE
 	window.cpp
 	render_context.cpp
 	vao.cpp
+	ubo.cpp
 )
 
 find_package(SDL2 CONFIG REQUIRED)

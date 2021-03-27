@@ -88,7 +88,7 @@ int main(int argc, char** argv)
 
 int LoadPaletteTEMP()
 {
-	std::ifstream pltefile("data/palettes/akicolor.act", std::ifstream::in | std::ifstream::binary);
+	std::ifstream pltefile("data/palettes/play2.act", std::ifstream::in | std::ifstream::binary);
 	uint8_t palette[256*3];
 
 	pltefile.read((char*)palette, 256*3);
@@ -123,10 +123,11 @@ void PlayLoop()
 			texture.Load(texNames[i], "", true);
 		else
 			texture.Load(texNames[i]);
+		
 		if(i<2)
-			texture.Apply();
+			texture.Apply(false,true);
 		else
-			texture.Apply(false, false);
+			texture.Apply();
 
 		texture.Unload();
 		activeTextures.push_back(std::move(texture));
@@ -169,7 +170,7 @@ void PlayLoop()
 	int size;
 	vertexFile.read((char *)&size, sizeof(int));
 	std::unique_ptr<VertexData8> vt8(new VertexData8[size*6]); 
-	vertexFile.read((char *)vt8.get(), size*6);
+	vertexFile.read((char *)vt8.get(), size*6*sizeof(VertexData8));
 	vertexFile.close();
 
 
@@ -245,24 +246,23 @@ void PlayLoop()
 		//mainWindow->context.SetModelView(view.Calculate(player.getXYCoords(), player2.getXYCoords()));
 		//mainWindow->context.SetModelView(view.Calculate(Point2d<FixedPoint>(-450,0), Point2d<FixedPoint>(450,0)));
 
-		glm::mat4 tempV = glm::translate(glm::mat4(1), glm::vec3(100, 0,1));
+		glm::mat4 tempV = glm::translate(glm::mat4(1), glm::vec3(0+gameTicks/2.f, 0,1));
 		//tempV = glm::scale(tempV, glm::vec3(0.3,0.3,1));
-		
 		mainWindow->context.SetModelView(tempV);
 
 		//Draw stage quad
-		/* glBindTexture(GL_TEXTURE_2D, activeTextures[T_STAGELAYER1].id);
-		VaoTexOnly.Draw(stageId, 0, GL_TRIANGLE_FAN); */
+		glBindTexture(GL_TEXTURE_2D, activeTextures[T_STAGELAYER1].id);
+		VaoTexOnly.Draw(stageId, 0, GL_TRIANGLE_FAN);
 
-		/* glTexCoordPointer(2, GL_FLOAT, 0, charTexCoords);
-		player2.Draw();
+		/* player2.Draw();
 		player.Draw(); */
 
-		
+		mainWindow->context.SetShader(RenderContext::PALETTE);
 		glBindTexture(GL_TEXTURE_2D, activeTextures[T_CHAR].id);
 		VaoChar.Bind();
-		VaoChar.Draw(charId, 6*65);
+		VaoChar.Draw(charId);
 		VaoTexOnly.Bind();
+		mainWindow->context.SetShader(RenderContext::DEFAULT);
 		
 		
 		mainWindow->context.SetModelView();

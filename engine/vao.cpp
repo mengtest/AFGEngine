@@ -86,7 +86,7 @@ void Vao::Load()
 		glEnableVertexAttribArray(0);
 		glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, stride, (void*)(sizeof(float)*2));
 		glEnableVertexAttribArray(1);
-		glVertexAttribPointer(2, 1, GL_INT, GL_FALSE, stride, (void*)(sizeof(float)*4));
+		glVertexAttribIPointer(2, 1, GL_INT, stride, (void*)(sizeof(float)*4));
 		glEnableVertexAttribArray(2);
 		break;
 	case F2F2:

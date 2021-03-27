@@ -91,7 +91,7 @@ struct Atlas
 	int x, y;
 	uint32_t chunkSize;
 
-	Atlas(uint32_t width, uint32_t height, uint32_t bytesPerPixel, uint32_t _chunkSize, int _id = -1):
+	Atlas(uint32_t width, uint32_t height, uint32_t bytesPerPixel, uint32_t _chunkSize, int _id = 0):
 	id(_id), image(width, height, bytesPerPixel), x(0), y(0), chunkSize(_chunkSize)
 	{}
 

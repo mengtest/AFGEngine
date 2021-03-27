@@ -54,8 +54,23 @@ GLuint CreateShader(const char **src, GLenum type)
 	return shader;
 }
 
+Shader::Shader(): program(0)
+{}
+Shader::~Shader()
+{
+	glDeleteProgram(program);
+}
+Shader::Shader(const char *vertex_path, const char *fragment_path): Shader()
+{
+	LoadShader(vertex_path, fragment_path);
+}
 
-unsigned int LoadShader(const char *vertex_path, const char *fragment_path)
+unsigned int Shader::GetLoc(const char* name)
+{
+	return glGetUniformLocation(program, name);
+}
+
+void Shader::LoadShader(const char *vertex_path, const char *fragment_path)
 {
 	const char *vertShaderSrc = vertex;
 	const char *fragShaderSrc = fragment;
@@ -71,23 +86,27 @@ unsigned int LoadShader(const char *vertex_path, const char *fragment_path)
 	GLuint myVertexShader = CreateShader(&vertShaderSrc, GL_VERTEX_SHADER);
 	GLuint myFragShader = CreateShader(&fragShaderSrc, GL_FRAGMENT_SHADER);
 
-	unsigned int myProgram = glCreateProgram();
-	if (myProgram == 0)
+	program = glCreateProgram();
+	if (program == 0)
 		std::cout << "Shader program creation failed\n";
 
-	glAttachShader(myProgram, myVertexShader);
-	glAttachShader(myProgram, myFragShader);
-	glLinkProgram(myProgram);
+	glAttachShader(program, myVertexShader);
+	glAttachShader(program, myFragShader);
+	glLinkProgram(program);
 	GLint success;
-	glGetProgramiv(myProgram, GL_LINK_STATUS, &success);
+	glGetProgramiv(program, GL_LINK_STATUS, &success);
 	if(!success)
 	{
 		char log[2048];
-		glGetProgramInfoLog(myProgram, 2048, 0, log);
-		std::cerr << "Shader linking error:\n" << log;
+		glGetProgramInfoLog(program, 2048, 0, log);
+		std::cerr << "Shader linking error: "<<vertex_path<<" & "<<fragment_path<<":\n" << log <<"\n";
 	}
 
 	glDeleteShader(myVertexShader);
 	glDeleteShader(myFragShader);
-	return myProgram;
+}
+
+void Shader::Use()
+{
+	glUseProgram(program);
 }
