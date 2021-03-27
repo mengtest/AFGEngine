@@ -88,7 +88,7 @@ int main(int argc, char** argv)
 
 int LoadPaletteTEMP()
 {
-	std::ifstream pltefile("data/palettes/akicolor.act", std::ifstream::in | std::ifstream::binary);
+	std::ifstream pltefile("data/palettes/play2.act", std::ifstream::in | std::ifstream::binary);
 	uint8_t palette[256*3];
 
 	pltefile.read((char*)palette, 256*3);

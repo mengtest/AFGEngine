@@ -11,6 +11,8 @@
 #include <string>
 #include <vector>
 
+constexpr unsigned int atlasSize = 1280;
+
 bool IsPixelTrans(const ImageData &im, uint32_t x, uint32_t y)
 {
 	uint32_t mul = im.bytesPerPixel;
@@ -126,10 +128,10 @@ uint32_t xDst, uint32_t yDst, uint32_t xSrc, uint32_t ySrc, uint32_t chunkSize)
 	return true; 
 }
 
-void WriteVertexData(std::string filename, int nChunks, std::list<ImageMeta> &metas, int chunkSize)
+void WriteVertexData(std::string filename, int nChunks, std::list<ImageMeta> &metas, int chunkSize, float atlasSize)
 {
-	constexpr float tX[] = {0,1,1, 1,0,0};
-	constexpr float tY[] = {0,0,1, 1,1,0};
+	constexpr int tX[] = {0,1,1, 1,0,0};
+	constexpr int tY[] = {0,0,1, 1,1,0};
 
 	int nSprites = metas.size();
 	auto chunksPerSprite = new int[nSprites];
@@ -147,8 +149,8 @@ void WriteVertexData(std::string filename, int nChunks, std::list<ImageMeta> &me
 				data[dataI+i].x = chunk.pos.x + chunkSize*tX[i];
 				data[dataI+i].y = chunk.pos.y + chunkSize*tY[i];
 
-				data[dataI+i].s = (float)(chunk.tex.x + chunkSize*tX[i])*UINT16_MAX/1024.f;
-				data[dataI+i].t = (float)(chunk.tex.y + chunkSize*tY[i])*UINT16_MAX/1024.f;
+				data[dataI+i].s = (float)(chunk.tex.x + chunkSize*tX[i])*UINT16_MAX/atlasSize;
+				data[dataI+i].t = (float)(chunk.tex.y + chunkSize*tY[i])*UINT16_MAX/atlasSize;
 
 				data[dataI+i].atlasId = meta.atlasId;
 			}
@@ -213,7 +215,7 @@ int main()
 	atlases.reserve(4);
 	for(int i = 0; i < 4; i++)
 	{
-		atlases.push_back(std::make_unique<Atlas>(1024, 1024, 1, chunkSize, i));
+		atlases.push_back(std::make_unique<Atlas>(atlasSize, atlasSize, 1, chunkSize, i));
 		memset(atlases[i]->image.data, 0, atlases[i]->image.GetMemSize());
 	}
 
@@ -233,10 +235,10 @@ int main()
 		}
 	}
 	
-	ImageData composite(1024, 1024, 4);
-	for(int y = 0; y < 1024; y++)
+	ImageData composite(atlasSize, atlasSize, 4);
+	for(int y = 0; y < atlasSize; y++)
 	{
-		for(int x = 0; x < 1024; x++)
+		for(int x = 0; x < atlasSize; x++)
 		{
 			for(int ch = 0; ch < 4; ch++)
 			{
@@ -251,7 +253,7 @@ int main()
 	composite.WriteAsPng("vaki.png");
 	std::cout << "Done\n";
 
-	WriteVertexData("vaki.vt8", nChunks, images8bpp, chunkSize);
+	WriteVertexData("vaki.vt8", nChunks, images8bpp, chunkSize, atlasSize);
 
 
 	return 0;

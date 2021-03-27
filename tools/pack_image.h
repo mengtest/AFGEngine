@@ -7,6 +7,8 @@
 #include <cstdint>
 #include <iostream>
 
+constexpr int border = 1;
+
 typedef Rect2d<int> Rect;
 typedef Point2d<int> Point;
 
@@ -92,7 +94,7 @@ struct Atlas
 	uint32_t chunkSize;
 
 	Atlas(uint32_t width, uint32_t height, uint32_t bytesPerPixel, uint32_t _chunkSize, int _id = 0):
-	id(_id), image(width, height, bytesPerPixel), x(0), y(0), chunkSize(_chunkSize)
+	id(_id), image(width, height, bytesPerPixel), x(0), y(0), chunkSize(_chunkSize+border*2)
 	{}
 
 	bool Advance()
@@ -130,13 +132,13 @@ struct Atlas
 		src.atlasId = id;
 		for(ChunkMeta &chunk : chunks)
 		{
-			if(!CopyChunk(image, *src.data, x, y, chunk.pos.x, chunk.pos.y, chunkSize))
+			if(!CopyChunk(image, *src.data, x, y, chunk.pos.x-border, chunk.pos.y-border, chunkSize))
 			{
 				std::cerr << __func__ << " failed.\n";
 				return false;
 			}
-			chunk.tex.x = x;
-			chunk.tex.y = y;
+			chunk.tex.x = x+border;
+			chunk.tex.y = y+border;
 			if(!Advance())
 			{
 				std::cerr << "The atlas is full. "<<src.name<<" couldn't be copied properly.\n";

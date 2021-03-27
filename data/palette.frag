@@ -15,8 +15,8 @@ vec4 indexedSample(vec2 texCoord)
 
 vec4 BilinearSmoothstepSample (vec2 P)
 {
-	const float c_textureSize = 1024;
-	const float c_onePixel = 1.f/1024;
+	const float c_textureSize = 1280;
+	const float c_onePixel = 1.f/c_textureSize;
 	vec2 pixel = P * c_textureSize + 0.5;
 	
 	vec2 frac = fract(pixel);
@@ -34,5 +34,5 @@ vec4 BilinearSmoothstepSample (vec2 P)
 
 void main(void)
 {
-	fragColor = indexedSample(texCoord);
+	fragColor = BilinearSmoothstepSample(texCoord);
 }
