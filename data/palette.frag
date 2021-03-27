@@ -10,7 +10,7 @@ out vec4 fragColor;
 vec4 indexedSample(vec2 texCoord)
 {
 	vec4 color =  texture(palette, vec2(texture(tex0, texCoord)[channel], 0));
-	return vec4(vec3(color), clamp((color.r+color.g+color.b)*256, 0, 0.1));
+	return vec4(vec3(color), clamp((color.r+color.g+color.b)*256, 0, 1));
 }
 
 vec4 BilinearSmoothstepSample (vec2 P)

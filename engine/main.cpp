@@ -88,7 +88,7 @@ int main(int argc, char** argv)
 
 int LoadPaletteTEMP()
 {
-	std::ifstream pltefile("data/palettes/play2.act", std::ifstream::in | std::ifstream::binary);
+	std::ifstream pltefile("data/palettes/akicolor.act", std::ifstream::in | std::ifstream::binary);
 	uint8_t palette[256*3];
 
 	pltefile.read((char*)palette, 256*3);
@@ -166,12 +166,8 @@ void PlayLoop()
 	timerString.precision(6);
 	timerString.setf(std::ios::fixed, std::ios::floatfield);
 
-	std::ifstream vertexFile("vaki.vt8", std::ios_base::binary);
-	int size;
-	vertexFile.read((char *)&size, sizeof(int));
-	std::unique_ptr<VertexData8> vt8(new VertexData8[size*6]); 
-	vertexFile.read((char *)vt8.get(), size*6*sizeof(VertexData8));
-	vertexFile.close();
+	
+
 
 
 	float stageVertices[] = {
@@ -192,9 +188,32 @@ void PlayLoop()
 
 
 	Vao VaoChar(Vao::F2F2I1, GL_STATIC_DRAW);
-	int charId = VaoChar.Prepare(sizeof(VertexData8)*6*size, vt8.get());
-	VaoChar.Load();
-	
+	{
+		int nSprites, nChunks;
+		std::ifstream vertexFile("vaki.vt8", std::ios_base::binary);
+
+		vertexFile.read((char *)&nSprites, sizeof(int));
+		auto chunksPerSprite = new int[nSprites];
+		vertexFile.read((char *)chunksPerSprite, sizeof(int)*nSprites);
+
+		vertexFile.read((char *)&nChunks, sizeof(int));
+		auto vertexData = new VertexData8[nChunks*6]; 
+		vertexFile.read((char *)vertexData, nChunks*6*sizeof(VertexData8));
+
+		int chunkCount = 0;
+		for(int i = 0; i < nSprites; i++)
+		{
+			VaoChar.Prepare(sizeof(VertexData8)*6*chunksPerSprite[i], &vertexData[6*chunkCount]);
+			chunkCount += chunksPerSprite[i];
+		}
+		std::cout << "Chunks read: "<<chunkCount<<"/"<<nChunks<<"\n";
+		vertexFile.close();
+
+		
+		VaoChar.Load();
+		delete[] vertexData;
+		delete[] chunksPerSprite;
+	}
 	VaoTexOnly.Bind();
 	glClearColor(1, 1, 1, 1.f); 
 	bool gameOver = false;
@@ -246,7 +265,7 @@ void PlayLoop()
 		//mainWindow->context.SetModelView(view.Calculate(player.getXYCoords(), player2.getXYCoords()));
 		//mainWindow->context.SetModelView(view.Calculate(Point2d<FixedPoint>(-450,0), Point2d<FixedPoint>(450,0)));
 
-		glm::mat4 tempV = glm::translate(glm::mat4(1), glm::vec3(0+gameTicks/2.f, 0,1));
+		glm::mat4 tempV = glm::translate(glm::mat4(1), glm::vec3(120, 0,1));
 		//tempV = glm::scale(tempV, glm::vec3(0.3,0.3,1));
 		mainWindow->context.SetModelView(tempV);
 
@@ -254,20 +273,17 @@ void PlayLoop()
 		glBindTexture(GL_TEXTURE_2D, activeTextures[T_STAGELAYER1].id);
 		VaoTexOnly.Draw(stageId, 0, GL_TRIANGLE_FAN);
 
-		/* player2.Draw();
-		player.Draw(); */
-
 		mainWindow->context.SetShader(RenderContext::PALETTE);
 		glBindTexture(GL_TEXTURE_2D, activeTextures[T_CHAR].id);
 		VaoChar.Bind();
-		VaoChar.Draw(charId);
+		VaoChar.Draw((gameTicks)%853);
 		VaoTexOnly.Bind();
 		mainWindow->context.SetShader(RenderContext::DEFAULT);
 		
 		
 		mainWindow->context.SetModelView();
 		glBindTexture(GL_TEXTURE_2D, activeTextures[T_HUD].id);
-		VaoTexOnly.Draw(hudId, 0, GL_TRIANGLES);
+		VaoTexOnly.Draw(hudId);
 
 		
 

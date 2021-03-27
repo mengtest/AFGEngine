@@ -128,14 +128,18 @@ uint32_t xDst, uint32_t yDst, uint32_t xSrc, uint32_t ySrc, uint32_t chunkSize)
 
 void WriteVertexData(std::string filename, int nChunks, std::list<ImageMeta> &metas, int chunkSize)
 {
-	std::ofstream vertexFile(filename, std::ios_base::binary);
-	vertexFile.write((char*)&nChunks, sizeof(int));
-	auto data = new VertexData8[nChunks*6];
-	int dataI = 0;
 	constexpr float tX[] = {0,1,1, 1,0,0};
 	constexpr float tY[] = {0,0,1, 1,1,0};
+
+	int nSprites = metas.size();
+	auto chunksPerSprite = new int[nSprites];
+	auto data = new VertexData8[nChunks*6];
+	
+	int dataI = 0;
+	int spriteI = 0;
 	for(auto &meta: metas)
 	{
+		chunksPerSprite[spriteI] = meta.chunks.size();
 		for(auto &chunk: meta.chunks)
 		{
 			for(int i = 0; i < 6; i++)
@@ -150,9 +154,18 @@ void WriteVertexData(std::string filename, int nChunks, std::list<ImageMeta> &me
 			}
 			dataI += 6;
 		}
+		spriteI++;
 	}
+
+	std::ofstream vertexFile(filename, std::ios_base::binary);
+	vertexFile.write((char*)&nSprites, sizeof(int));
+	vertexFile.write((char*)chunksPerSprite, sizeof(int)*nSprites);
+	vertexFile.write((char*)&nChunks, sizeof(int));
 	vertexFile.write((char*)data, nChunks*6*sizeof(VertexData8));
+
+	vertexFile.close();
 	delete[] data;
+	delete[] chunksPerSprite;
 }
 
 int main()
