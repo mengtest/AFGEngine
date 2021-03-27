@@ -18,8 +18,8 @@ bool CopyChunk(ImageData &dst, const ImageData &src,
 
 struct VertexData8
 {
-	float x,y,s,t;
-	int atlasId;
+	unsigned short x,y,s,t;
+	unsigned short atlasId;
 };
 
 struct ChunkMeta

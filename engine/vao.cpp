@@ -12,7 +12,7 @@ type(_type), usage(_usage), loaded(false), stride(0), totalSize(0), vaoId(0), vb
 		stride = 4 * sizeof(float) ;
 		break;
 	case F2F2I1:
-		stride = 4 * sizeof(float) + sizeof(int);
+		stride = 5*sizeof(short);
 		break;
 	}
 }
@@ -82,11 +82,11 @@ void Vao::Load()
 	switch(type)
 	{
 	case F2F2I1:
-		glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, stride, nullptr);
+		glVertexAttribPointer(0, 2, GL_UNSIGNED_SHORT, GL_FALSE, stride, nullptr);
 		glEnableVertexAttribArray(0);
-		glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, stride, (void*)(sizeof(float)*2));
+		glVertexAttribPointer(1, 2, GL_UNSIGNED_SHORT, GL_TRUE, stride, (void*)(2*sizeof(short)));
 		glEnableVertexAttribArray(1);
-		glVertexAttribIPointer(2, 1, GL_INT, stride, (void*)(sizeof(float)*4));
+		glVertexAttribIPointer(2, 1, GL_UNSIGNED_SHORT, stride, (void*)(4*sizeof(short)));
 		glEnableVertexAttribArray(2);
 		break;
 	case F2F2:

@@ -147,8 +147,8 @@ void WriteVertexData(std::string filename, int nChunks, std::list<ImageMeta> &me
 				data[dataI+i].x = chunk.pos.x + chunkSize*tX[i];
 				data[dataI+i].y = chunk.pos.y + chunkSize*tY[i];
 
-				data[dataI+i].s = (chunk.tex.x + chunkSize*tX[i])/1024.f;
-				data[dataI+i].t = (chunk.tex.y + chunkSize*tY[i])/1024.f;
+				data[dataI+i].s = (float)(chunk.tex.x + chunkSize*tX[i])*UINT16_MAX/1024.f;
+				data[dataI+i].t = (float)(chunk.tex.y + chunkSize*tY[i])*UINT16_MAX/1024.f;
 
 				data[dataI+i].atlasId = meta.atlasId;
 			}
