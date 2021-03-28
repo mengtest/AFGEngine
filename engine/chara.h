@@ -2,15 +2,20 @@
 #define CHARACTER_H_INCLUDED
 #include <geometry.h>
 
+#include <glm/mat4x4.hpp>
+#include <glm/ext/matrix_transform.hpp>
+
 #include <deque>
 #include <string>
 #include <vector>
 #include <utility>
+#include <unordered_map>
+
+typedef std::unordered_map<std::string, uint16_t> NameMap;
 
 #include "camera.h"
 #include "chara_input.h"
 #include "fixed_point.h"
-#include "texture.h"
 
 namespace flag
 {
@@ -54,8 +59,8 @@ namespace state
 		AIRBORNE,
 		BUSY_GRND,
 		BUSY_AIR,
-        PAIN_GRND,
-        PAIN_AIR,
+		PAIN_GRND,
+		PAIN_AIR,
 	};
 
 	namespace fr //frame
@@ -80,8 +85,8 @@ struct Motion_Data
 {
 	int bufLen = 0;
 	int seqRef = 0;
-    std::string motionStr; //Without the button press.
-    char button = 0;
+	std::string motionStr; //Without the button press.
+	char button = 0;
 };
 
 struct Frame_property
@@ -108,21 +113,21 @@ struct Frame_property
 struct Frame
 {
 	Frame_property frameProp;
-    //Boxes are defined by BL, BR, TR, TL points, in that order.
-    float imagepos[8]; //Relative to root;
-    float greenboxes[32*4*2]; //Limit of 32 boxes per frame * all four sides* (x,y)
-    float redboxes[32*4*2]; //probably getting replaced by std::vector
-    Rect2d<FixedPoint> colbox;
+	//Boxes are defined by BL, BR, TR, TL points, in that order.
+	float imagepos[8]; //Relative to root;
+	float greenboxes[32*4*2]; //Limit of 32 boxes per frame * all four sides* (x,y)
+	float redboxes[32*4*2]; //probably getting replaced by std::vector
+	Rect2d<FixedPoint> colbox;
 
 	// Max usable index?
-    int greenboxActive = 0;
-    int redboxActive = 0;
-    int colboxActive = 0;
+	int greenboxActive = 0;
+	int redboxActive = 0;
+	int colboxActive = 0;
 
 
-    int nextFrame = -1;
+	int nextFrame = -1;
 
-    Texture *spriteImage = 0;
+	int spriteIndex = 0;
 };
 
 struct Sequence
@@ -132,90 +137,89 @@ struct Sequence
 	int metercost = 0;
 	bool loops = false;
 	int beginLoop = 0;
-    int gotoSeq = 0;
-    int machineState = 0;
+	int gotoSeq = 0;
+	int machineState = 0;
 	std::vector<Frame> frames;
 };
 
 class Character
 {
 public: //access only, do not change outside the class.
-    std::vector<Sequence> sequences;
+	std::vector<Sequence> sequences;
 
 private:
 	Camera *currView;
 
-    int health;
-    //int hitsTaken;
-    //inr damageTaken;
+	int health;
+	//int hitsTaken;
+	//inr damageTaken;
 
 	Point2d<FixedPoint> root; //Character (x,y) position in game. Every box position is relative to this.
-    
-    Frame *framePointer;
-    Frame *hitTargetFrame;
+	
+	Frame *framePointer;
+	Frame *hitTargetFrame;
 
-    int currentState;
-    int actTableG[64]; //Array to translate act:: constants to their assigned sequence.
-    int actTableA[64]; //Aerial counterpart
-    Motion_Data motionListDataG[32]; //List of motion inputs. Not only for special attack usage.
+	int currentState;
+	int actTableG[64]; //Array to translate act:: constants to their assigned sequence.
+	int actTableA[64]; //Aerial counterpart
+	Motion_Data motionListDataG[32]; //List of motion inputs. Not only for special attack usage.
 	Motion_Data motionListDataA[32];
 
 	int *selectedTable;
 	Motion_Data *selectedMotionList;
 
-    int currSeq; //The active sequence.
-    int currFrame;
-    int frameDuration; //counter for changing frames
+	int currSeq; //The active sequence.
+	int currFrame;
+	int frameDuration; //counter for changing frames
 
-    int hitstop; //hitstop counter
+	int hitstop; //hitstop counter
 
 
 
-    float colpos[32]; //No idea???
+	float colpos[32]; //No idea??? (lol?)
 
-    float imagepos[8]; //Absolute, not relative to root.
-    float spriteSide; //same as side but only applies to the image quad.
+	float spriteSide; //same as side but only applies to the image quad.
 	float side; //used to invert the x of all sort of things
 
-    Point2d<FixedPoint> vel;
-    Point2d<FixedPoint> accel;
-    FixedPoint impulses[2];//X speed set by outside forces.
-    //float inflictedAccel[2];
+	Point2d<FixedPoint> vel;
+	Point2d<FixedPoint> accel;
+	FixedPoint impulses[2];//X speed set by outside forces.
+	//float inflictedAccel[2];
 
-    Character* target;
-    int painType;
-    //These are set by/on the target.
-    bool alreadyHit; //Check for avoiding the same c-frame hitting more than once. Resets when c-frame advances.
-    bool isKickingAss; //Sets when hit is sucessful. Resets when sequence changes. Used for cancelling purposes.
-    //This is set only by self.
-    bool gotHit; //Sets when getting hit (doesn't matter if you block). Resets when the hit is processed in Update().
+	Character* target;
+	int painType;
+	//These are set by/on the target.
+	bool alreadyHit; //Check for avoiding the same c-frame hitting more than once. Resets when c-frame advances.
+	bool isKickingAss; //Sets when hit is sucessful. Resets when sequence changes. Used for cancelling purposes.
+	//This is set only by self.
+	bool gotHit; //Sets when getting hit (doesn't matter if you block). Resets when the hit is processed in Update().
 
 
-    FixedPoint gravity;
-    FixedPoint friction;
+	FixedPoint gravity;
+	FixedPoint friction;
 
 	static bool isColliding;
 	FixedPoint getAway; //Amount to move after collision
 	FixedPoint touchedWall; //left wall: -1, right wall = 1, no wall = 0;
 
 public:
-    Character(FixedPoint posX, float side, std::string charFile);
+	Character(FixedPoint posX, float side, std::string charFile, std::unordered_map<std::string, uint16_t> &nameMap);
 
-    void Print();
+	void Print();
 
-    float getHealthRatio();
+	float getHealthRatio();
 
-    static void Collision(Character* blue, Character* red); //Detects and resolves collision between characters and/or the camera.
-    void BoundaryCollision();
-    void HitCollision(); //Checks collision between own green boxes and target's red boxes.
+	static void Collision(Character* blue, Character* red); //Detects and resolves collision between characters and/or the camera.
+	void BoundaryCollision();
+	void HitCollision(); //Checks collision between own green boxes and target's red boxes.
 
-    Point2d<FixedPoint> getXYCoords();
+	Point2d<FixedPoint> getXYCoords();
 
-    void SetCameraRef(Camera *ref);
-    void setTarget(Character* target);
+	void SetCameraRef(Camera *ref);
+	void setTarget(Character* target);
 
-    void Draw();
-
+	int GetSpriteIndex();
+	glm::mat4 GetSpriteTransform();
 
 	void Input(input_deque *keyPresses);
 
@@ -227,8 +231,8 @@ private:
 
 	bool SuggestSequence(int seq); //returns true on success
 
-    void GotoSequence(int seq);
-    void GotoFrame(int frame);
+	void GotoSequence(int seq);
+	void GotoFrame(int frame);
 
 	void TransitionInto(int state);
 

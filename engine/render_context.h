@@ -20,6 +20,8 @@ private:
 	Shader indexedS;
 	Ubo uniforms;
 
+	int paletteSlotL;
+
 public:
 	RenderContext();
 	RenderContext(SDL_Window *window);
@@ -35,6 +37,9 @@ public:
 		DEFAULT,
 		PALETTE
 	};
+
+	//TODO: move it elsewhere
+	void SetPaletteSlot(int slot);
 };
 
 #endif /* RENDER_CONTEXT_H_GUARD */

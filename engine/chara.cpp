@@ -4,6 +4,7 @@
 #include <string>
 #include <iostream>
 
+
 #include <glad/glad.h>	//These shouldn't be here but w/e for now
 
 #include "chara.h"
@@ -12,27 +13,28 @@
 
 bool Character::isColliding;
 
-const uint64_t SANITY_CHECK = 0x1d150c10c001506f;
+
 const FixedPoint floorPos(32);
 
-Character::Character(FixedPoint xPos, float _side, std::string charFile) :
-	touchedWall(0),
+Character::Character(FixedPoint xPos, float _side, std::string charFile, NameMap &nameMap) :
 	health(10000),
-	side(_side),
 	actTableG{0},
 	actTableA{0},
 	currSeq(0),
 	currFrame(0),
 	hitstop(0),
 	spriteSide(_side),
-
+	side(_side),
 	painType(0),
 	alreadyHit(false),
 	isKickingAss(false),
 	gotHit(0),
 	gravity(0.5),
-	friction(0.1)
+	friction(0.05),
+	touchedWall(0)
 {
+	const uint64_t SANITY_CHECK = 0x1d150c10c001506f;
+
 	root.x = xPos;
 	root.y = floorPos;
 
@@ -169,6 +171,7 @@ Character::Character(FixedPoint xPos, float _side, std::string charFile) :
 
 			if (filepathLenght > 0) //If this string exist then extract the rest and save it.
 			{
+				//Why is this always the same as the path lenght???
 				uint16_t filenameLenght;
 				file.read((char *)&filenameLenght, sizeof(uint16_t));
 
@@ -178,17 +181,9 @@ Character::Character(FixedPoint xPos, float _side, std::string charFile) :
 				file.read((char *)filepath.data(), sizeof(char) * filepathLenght);
 				file.read((char *)filename.data(), sizeof(char) * filenameLenght);
 
-				sequences[i].frames[i2].spriteImage = new Texture();
+				filename.erase(std::find(filename.begin(), filename.end(), '\0'), filename.end());
 
-				std::string defaultPath("images/char/");
-				defaultPath.append(filename);
-
-				std::string palette = "palettes/play2.act";
-				if(pal)
-					palette = "palettes/akicolor.act";
-				sequences[i].frames[i2].spriteImage->Load(defaultPath, palette);
-				sequences[i].frames[i2].spriteImage->Apply();
-				sequences[i].frames[i2].spriteImage->Unload();
+				sequences[i].frames[i2].spriteIndex = nameMap.at(filename);
 			}
 		}
 	}
@@ -226,35 +221,20 @@ void Character::setTarget(Character *t)
 	target = t;
 }
 
-void Character::Draw()
+int Character::GetSpriteIndex()
 {
-	if (framePointer->spriteImage)
-		glBindTexture(GL_TEXTURE_2D, framePointer->spriteImage->id);
-	for (int i = 0; i < 8; i += 2)
-	{
-		imagepos[i] = framePointer->imagepos[i] * spriteSide + (float)(root.x); //x
-		imagepos[i + 1] = framePointer->imagepos[i + 1] + (float)(root.y);		//y
-	}
-	glVertexPointer(2, GL_FLOAT, 0, imagepos);
-	glDrawArrays(GL_QUADS, 0, 4);
+	return framePointer->spriteIndex;
+}
 
-	//Draws hitboxes
-	/*
-	for(int i = 0; i < framePointer->redboxActive; i+=2)
-	{
-        colpos[i] = framePointer->redboxes[i]*side+(float)root.x;	//x
-        colpos[i+1] = framePointer->redboxes[i+1]+(float)root.y; //y
-	}
-
+glm::mat4 Character::GetSpriteTransform()
+{
+	glm::mat4 tranform(1);
 	
-	glActiveTexture(GL_TEXTURE2);
-	glBindTexture(GL_TEXTURE_2D, 0);
-	glColor4f(1.0,1.0,1.0, 0.6);
-	glVertexPointer(2, GL_FLOAT, 0, colpos);
-	glDrawArrays(GL_QUADS, 0, framePointer->redboxActive/2);
-	glActiveTexture(GL_TEXTURE0);
-	glColor3f(1,1,1);
-	*/
+	tranform = glm::scale(tranform, glm::vec3(spriteSide, 1.f, 1.f));
+	tranform = glm::translate(tranform, glm::vec3((root.x)*spriteSide-128.f, root.y-40.f, 0));
+	
+	
+	return tranform;
 }
 
 void Character::Collision(Character *blue, Character *red)
@@ -604,13 +584,13 @@ void Character::ResolveHit(int keypress) //key processing really shouldn't be he
 		if (blocked)
 		{
 			health -= hitTargetFrame->frameProp.damage[3];
-			target->impulses[PUSHBACKx] = hitTargetFrame->frameProp.pushback[1] * -target->side;
+			target->impulses[PUSHBACKx] = hitTargetFrame->frameProp.pushback[1] * -target->side*0.5;
 		}
 		else
 		{
 			frameDuration = hitTargetFrame->frameProp.hitstun;
 			health -= hitTargetFrame->frameProp.damage[2];
-			target->impulses[PUSHBACKx] = hitTargetFrame->frameProp.pushback[0] * -target->side;
+			target->impulses[PUSHBACKx] = hitTargetFrame->frameProp.pushback[0] * -target->side*0.5;
 		}
 
 		if (touchedWall != 0)

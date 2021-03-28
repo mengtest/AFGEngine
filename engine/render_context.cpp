@@ -55,7 +55,10 @@ void RenderContext::SetupGl(SDL_Window *window)
 	//Set texture unit indexes
 	glUniform1i(indexedS.GetLoc("tex0"), 0 ); 
 	glUniform1i(indexedS.GetLoc("palette"), 1 );
+	paletteSlotL = indexedS.GetLoc("paletteSlot");
 	defaultS.Use();	
+
+	
 
 	//Bind transform matrix uniforms.
 	uniforms.Init(sizeof(float)*16);
@@ -97,4 +100,9 @@ void RenderContext::SetShader(int type)
 	default:
 		std::cerr << __FUNCTION__ << ": No such shader type.\n";
 	}
+}
+
+void RenderContext::SetPaletteSlot(int slot)
+{
+	glUniform1i(paletteSlotL, slot);
 }

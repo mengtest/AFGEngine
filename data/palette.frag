@@ -4,12 +4,13 @@ flat in int channel;
 
 uniform sampler2D tex0;
 uniform sampler2D palette;
+uniform int paletteSlot;
 
 out vec4 fragColor;
 
 vec4 indexedSample(vec2 texCoord)
 {
-	vec4 color =  texture(palette, vec2(texture(tex0, texCoord)[channel], 0));
+	vec4 color =  texture(palette, vec2(texture(tex0, texCoord)[channel], paletteSlot*0.5));
 	return vec4(vec3(color), clamp((color.r+color.g+color.b)*256, 0, 1));
 }
 

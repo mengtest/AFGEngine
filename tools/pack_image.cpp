@@ -9,6 +9,7 @@
 #include <iostream>
 #include <memory>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 constexpr unsigned int atlasSize = 1280;
@@ -132,15 +133,19 @@ void WriteVertexData(std::string filename, int nChunks, std::list<ImageMeta> &me
 {
 	constexpr int tX[] = {0,1,1, 1,0,0};
 	constexpr int tY[] = {0,0,1, 1,1,0};
-
 	int nSprites = metas.size();
-	auto chunksPerSprite = new int[nSprites];
+
+	std::unordered_map<std::string, uint16_t> nameMap;
+	nameMap.reserve(nSprites);
+
+	auto chunksPerSprite = new uint16_t[nSprites];
 	auto data = new VertexData8[nChunks*6];
 	
 	int dataI = 0;
 	int spriteI = 0;
 	for(auto &meta: metas)
 	{
+		nameMap.insert({meta.name, spriteI});
 		chunksPerSprite[spriteI] = meta.chunks.size();
 		for(auto &chunk: meta.chunks)
 		{
@@ -161,9 +166,17 @@ void WriteVertexData(std::string filename, int nChunks, std::list<ImageMeta> &me
 
 	std::ofstream vertexFile(filename, std::ios_base::binary);
 	vertexFile.write((char*)&nSprites, sizeof(int));
-	vertexFile.write((char*)chunksPerSprite, sizeof(int)*nSprites);
+	vertexFile.write((char*)chunksPerSprite, sizeof(uint16_t)*nSprites);
 	vertexFile.write((char*)&nChunks, sizeof(int));
 	vertexFile.write((char*)data, nChunks*6*sizeof(VertexData8));
+
+	for(auto& p: nameMap)
+	{
+		uint8_t size = p.first.size();
+		vertexFile.write((char*)&size, 1);
+		vertexFile.write(p.first.c_str(), size);
+		vertexFile.write((char*)&p.second, sizeof(uint16_t));
+	}
 
 	vertexFile.close();
 	delete[] data;
