@@ -3,6 +3,7 @@
 
 #include "render_context.h"
 #include <SDL.h>
+#include <chrono>
 
 class Window
 {
@@ -19,7 +20,9 @@ private:
 	int frameRateChoice;
 	double targetSpf;
 	double realSpf;
+	std::chrono::time_point<std::chrono::high_resolution_clock> startClock; 
 
+	
 public:
 	Window();
 	~Window();

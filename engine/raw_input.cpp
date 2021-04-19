@@ -102,7 +102,7 @@ void GameLoopKeyHandle(SDL_KeyboardEvent &e)
 		}
 		break;
 	case SDL_SCANCODE_F5: //Switches between different framerates
-			//ChangeFramerate();
+			mainWindow->ChangeFramerate();
 		break;
 	case SDL_SCANCODE_ESCAPE:
 			mainWindow->wantsToClose = true;

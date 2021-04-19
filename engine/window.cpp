@@ -13,12 +13,13 @@ Window *mainWindow = nullptr;
 Window::Window() :
 wantsToClose(false),
 fullscreen(false),
-vsync(true),
+vsync(false),
 busyWait(false),
 window(nullptr),
 frameRateChoice(0),
 targetSpf(0.01666),
-realSpf(0)
+realSpf(0),
+startClock(std::chrono::high_resolution_clock::now())
 {
 	if(SDL_Init(SDL_INIT_VIDEO))
 	{
@@ -60,28 +61,33 @@ Window::~Window()
 
 void Window::SleepUntilNextFrame()
 {
-	/* TODO
 	if(!vsync)
 	{
-		if(busyWait) //This is a workaround to some faulty sleep behaviour.
+		std::chrono::duration<double> targetDur(targetSpf);
+		std::chrono::duration<double> dur; 
+		if(busyWait) //Sleepless wait.
 		{
-			while( (realSpf = glfwGetTime()) <= targetSpf)
+			while( (dur = std::chrono::high_resolution_clock::now() - startClock) <= targetDur)
 			{
 				
 			}
 		}
 		else
 		{
-			double time = glfwGetTime();
-			if(time < targetSpf)
+			auto now = std::chrono::high_resolution_clock::now();
+			if((dur = now - startClock) < targetDur)
 			{
-				std::this_thread::sleep_for(std::chrono::milliseconds(1));
+				std::this_thread::sleep_for((targetDur-dur)*0.9);
 			}
-			while( (realSpf = glfwGetTime()) <= targetSpf);
+			while( (dur = std::chrono::high_resolution_clock::now() - startClock) <= targetDur); 
 		}
+		realSpf = dur.count();
 	}
-	glfwSetTime(0);
-	*/
+	else
+	{
+		realSpf = std::chrono::duration<double>(std::chrono::high_resolution_clock::now()-startClock).count();
+	}
+	startClock = std::chrono::high_resolution_clock::now();
 }
 
 void Window::SwapBuffers()
