@@ -3,7 +3,9 @@
 
 Ubo::Ubo(const char* _blockName, unsigned int _bindingPoint):
 blockName(_blockName),
-bindingPoint(_bindingPoint)
+bindingPoint(_bindingPoint),
+buffer(0),
+size(0)
 {}
 
 void Ubo::Init(int _size)

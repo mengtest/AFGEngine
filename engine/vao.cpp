@@ -90,7 +90,8 @@ void Vao::Load()
 		glEnableVertexAttribArray(2);
 		break;
 	case F2F2:
-		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, stride, nullptr);
+		//WAS 3, is this a bug?
+		glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, stride, nullptr);
 		glEnableVertexAttribArray(0);
 		glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, stride, (void*)(sizeof(float)*2));
 		glEnableVertexAttribArray(1);
