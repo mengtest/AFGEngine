@@ -1,0 +1,16 @@
+[submodule "SDL"]
+	path = submodules/SDL
+	url = https://github.com/libsdl-org/SDL.git
+[submodule "submodules/imgui"]
+	path = submodules/imgui
+	url = https://github.com/ocornut/imgui.git
+	branch = docking
+[submodule "submodules/zlib"]
+	path = submodules/zlib
+	url = https://github.com/madler/zlib.git
+[submodule "submodules/libpng"]
+	path = submodules/libpng
+	url = https://github.com/glennrp/libpng.git
+[submodule "submodules/glm"]
+	path = submodules/glm
+	url = https://github.com/g-truc/glm.git
