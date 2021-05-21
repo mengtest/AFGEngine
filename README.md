@@ -1,8 +1,8 @@
 # Fighting Game Engine #
 
-A fighting game engine in C++ that will be used as a base for my game.
-It is currently in very early stages and it's going through many changes, mostly refactoring.
-It's relatively small in scope and it won't be too robust. Although a character editor, scripting support and rollback netcode are planned. Adding new functionality shouldn't be too much of an issue.
+A fighting game engine in C++
+It is currently in very early stages and it's going through many changes.
+A character data editor, scripting support and rollback netcode are planned.
 Don't expect it to be usable for anything serious yet.
 
 ![screenshot](https://user-images.githubusercontent.com/39018575/97825338-20c29b80-1c9d-11eb-9d25-5287eea75cba.png "Rather outdated screenshot")
@@ -25,15 +25,15 @@ Joy input is not supported currently.
 ## Compiling ##
 This project depends on:
 
-* glad
 * GLM
 * SDL 2.1
 * libpng
+* imgui (with opengl3, glad and sdl2 bindings)
 
-Additionally, if you're building the editor by setting AFGE_BUILD_TOOLS to true, you'll also need 
-dear ImGui (with opengl3, glad and sdl2 bindings)
+You'll only need imgui if you're building the editor by setting AFGE_BUILD_TOOLS to true.
 
+These come as git submodules, and it'll work out of the box if you init them.
+You also have the option to use a package manager by setting AFGE_USE_SUBMODULES to off.
 If you're on windows you can use vcpkg or MSYS2 to install the packages for most or all of these.
-There are plans to add git submodules so you don't have to get the dependencies yourself.
-When that's done you'll have to run cmake. The CMake file included should cover everything else.
-Audio and networking capabilities are currently on hold. There are no dependencies for them.
+
+You'll have to run cmake and build. The CMake file included should cover everything else.

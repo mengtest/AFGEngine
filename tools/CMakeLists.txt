@@ -12,16 +12,18 @@ target_sources(PackImage PRIVATE
 #Visual framedata editor
 add_executable(Frametool)
 
-find_package(imgui CONFIG REQUIRED)
-find_package(SDL2 CONFIG REQUIRED)
-find_package(glad REQUIRED)
-find_package(glm CONFIG REQUIRED)
+if(NOT AFGE_USE_SUBMODULES)
+	find_package(imgui CONFIG REQUIRED)
+	find_package(SDL2 CONFIG REQUIRED)
+	find_package(glad REQUIRED)
+	find_package(glm CONFIG REQUIRED)
+endif()
 target_link_libraries(Frametool PRIVATE
-	imgui::imgui
-	SDL2::SDL2
-	SDL2::SDL2main
 	glad::glad
 	glm::glm
+	SDL2::SDL2
+	SDL2::SDL2main
+	imgui::imgui	
 )
 
 target_sources(Frametool PRIVATE

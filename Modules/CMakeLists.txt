@@ -1,12 +1,3 @@
-#RtAudio
-add_library(RTAUDIO STATIC RtAudio/RtAudio.cpp)
-target_include_directories(RTAUDIO PUBLIC RtAudio)
-
-if(WIN32)
-add_compile_definitions(__WINDOWS_DS__)
-target_link_libraries(RTAUDIO PRIVATE ole32 winmm dsound)
-endif()
-
 #FixedPoint
 add_library(FixedPoint STATIC fixed_point/fixed_point.cpp)
 target_compile_definitions(FixedPoint PUBLIC FP_FRACBITS=16)
@@ -22,5 +13,7 @@ set_target_properties(Image PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS ON)
 target_compile_definitions(Image PRIVATE LIB_PNG_WARN=0)
 target_include_directories(Image PUBLIC image)
 
-find_package(PNG REQUIRED)
+if(NOT AFGE_USE_SUBMODULES)
+	find_package(PNG REQUIRED)
+endif()
 target_link_libraries(Image PUBLIC PNG::PNG)

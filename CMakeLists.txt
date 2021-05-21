@@ -1,14 +1,43 @@
 cmake_minimum_required(VERSION 3.13...3.19)
-project (AFGEngine LANGUAGES CXX)
+cmake_policy(SET CMP0077 NEW)
+project (AFGEngine LANGUAGES C CXX)
 
-#Only the image packer depends on it for now.
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 set( CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin CACHE STRING "" )
 set( CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin CACHE STRING "" )
 
+set (CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake" )
+
 set( AFGE_BUILD_TOOLS ON CACHE BOOL "Build tools to edit game data")
+set( AFGE_USE_SUBMODULES ON CACHE BOOL "Use git submodules. Turn off if you're using a package manager instead.")
+
+include(glad)
+if(AFGE_USE_SUBMODULES)
+	set(SKIP_INSTALL_ALL ON)
+	add_subdirectory(submodules/zlib)
+	set(ZLIB_INCLUDE_DIRS
+		"${CMAKE_CURRENT_SOURCE_DIR}/submodules/zlib"
+		"${CMAKE_CURRENT_BINARY_DIR}/submodules/zlib"
+	)
+	set(ZLIB_LIBRARIES zlibstatic)
+
+	set(PNG_BUILD_ZLIB ON)
+	set(PNG_SHARED OFF)
+	set(PNG_EXECUTABLES OFF)
+	set(PNG_TESTS OFF)
+	add_subdirectory(submodules/libpng)
+	target_include_directories(png_static PUBLIC
+		"${CMAKE_CURRENT_SOURCE_DIR}/submodules/libpng"
+		"${CMAKE_CURRENT_BINARY_DIR}/submodules/libpng"
+	)
+	add_library(PNG::PNG ALIAS png_static)
+
+	add_subdirectory(submodules/glm)
+	add_subdirectory(submodules/SDL)
+	include(imgui)
+endif()
 
 add_subdirectory(modules)
 add_subdirectory(engine)
@@ -16,3 +45,4 @@ add_subdirectory(engine)
 if(AFGE_BUILD_TOOLS)
 	add_subdirectory(tools)
 endif()
+

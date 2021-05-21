@@ -38,7 +38,7 @@ int main(int, char**)
 	SDL_GL_SetSwapInterval(1); // Enable vsync
 
 
-	bool err = gladLoadGLLoader((GLADloadproc)SDL_GL_GetProcAddress) == 0;.
+	bool err = gladLoadGLLoader((GLADloadproc)SDL_GL_GetProcAddress) == 0;
 	if (err)
 	{
 		fprintf(stderr, "Failed to initialize OpenGL loader!\n");

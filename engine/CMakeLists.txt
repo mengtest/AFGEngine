@@ -20,19 +20,20 @@ target_sources(AFGEngine PRIVATE
 	ubo.cpp
 )
 
-find_package(SDL2 CONFIG REQUIRED)
-find_package(glad REQUIRED)
-find_package(glm CONFIG REQUIRED)
-
-#External
-target_link_libraries(AFGEngine PRIVATE SDL2::SDL2 SDL2::SDL2main)
-target_link_libraries(AFGEngine PRIVATE glad::glad)
-target_link_libraries(AFGEngine PRIVATE glm::glm)
+if(NOT AFGE_USE_SUBMODULES)
+	find_package(SDL2 CONFIG REQUIRED)
+	find_package(glad REQUIRED)
+	find_package(glm CONFIG REQUIRED)
+endif()
 
 #Internal
-target_link_libraries(AFGEngine PRIVATE RTAUDIO)
 target_link_libraries(AFGEngine PRIVATE FixedPoint)
 target_link_libraries(AFGEngine PRIVATE Geometry)
 target_link_libraries(AFGEngine PRIVATE Image)
 
-install(TARGETS AFGEngine RUNTIME DESTINATION debug)
+#External
+target_link_libraries(AFGEngine PRIVATE glm::glm)
+target_link_libraries(AFGEngine PRIVATE glad::glad)
+target_link_libraries(AFGEngine PRIVATE SDL2::SDL2 SDL2::SDL2main)
+
+#install(TARGETS AFGEngine RUNTIME DESTINATION debug)
