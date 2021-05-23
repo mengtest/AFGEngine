@@ -11,25 +11,18 @@ target_sources(AFGEngine PRIVATE
 	main.cpp
 	#netplay.cpp
 	raw_input.cpp
-	shader.cpp
-	texture.cpp
 	util.cpp
 	window.cpp
 	render_context.cpp
-	vao.cpp
-	ubo.cpp
 )
 
-if(NOT AFGE_USE_SUBMODULES)
-	find_package(SDL2 CONFIG REQUIRED)
-	find_package(glad REQUIRED)
-	find_package(glm CONFIG REQUIRED)
-endif()
-
 #Internal
-target_link_libraries(AFGEngine PRIVATE FixedPoint)
-target_link_libraries(AFGEngine PRIVATE Geometry)
-target_link_libraries(AFGEngine PRIVATE Image)
+target_link_libraries(AFGEngine PRIVATE
+	FixedPoint
+	Geometry
+	Image
+	Common
+)
 
 #External
 target_link_libraries(AFGEngine PRIVATE glm::glm)

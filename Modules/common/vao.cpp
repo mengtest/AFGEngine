@@ -9,10 +9,13 @@ type(_type), usage(_usage), loaded(false), stride(0), totalSize(0), vaoId(0), vb
 	switch(type)
 	{
 	case F2F2:
-		stride = 4 * sizeof(float) ;
+		stride = 4 * sizeof(float);
 		break;
 	case F2F2I1:
-		stride = 5*sizeof(short);
+		stride = 5 * sizeof(short);
+		break;
+	case F3F3:
+		stride = 6 * sizeof(float);
 		break;
 	}
 }
@@ -89,8 +92,13 @@ void Vao::Load()
 		glVertexAttribIPointer(2, 1, GL_UNSIGNED_SHORT, stride, (void*)(4*sizeof(short)));
 		glEnableVertexAttribArray(2);
 		break;
+	case F3F3:
+		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, stride, nullptr);
+		glEnableVertexAttribArray(0);
+		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, stride, (void*)(sizeof(float)*3));
+		glEnableVertexAttribArray(1);
+		break;
 	case F2F2:
-		//WAS 3, is this a bug?
 		glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, stride, nullptr);
 		glEnableVertexAttribArray(0);
 		glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, stride, (void*)(sizeof(float)*2));

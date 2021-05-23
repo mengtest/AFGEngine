@@ -15,7 +15,7 @@ public:
 	
 	void Init(int size);
 	void Bind(unsigned int program);
-	void SetData(void* data);
+	void SetData(const void* data);
 };
 
 #endif /* UBO_H_GUARD */

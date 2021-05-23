@@ -1,7 +1,7 @@
 #ifndef RENDER_CONTEXT_H_GUARD
 #define RENDER_CONTEXT_H_GUARD
-#include "shader.h"
-#include "ubo.h"
+#include <shader.h>
+#include <ubo.h>
 #include <SDL.h>
 #include <glm/mat4x4.hpp>
 

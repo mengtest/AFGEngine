@@ -10,7 +10,8 @@ public:
 	enum AttribType
 	{
 		F2F2,
-		F2F2I1
+		F2F2I1,
+		F3F3
 	};
 
 private:

@@ -28,7 +28,7 @@ void Ubo::Bind(unsigned int program)
 	glUniformBlockBinding(program, index, bindingPoint);
 }
 
-void Ubo::SetData(void* data)
+void Ubo::SetData(const void* data)
 {
 	//glBindBuffer(GL_UNIFORM_BUFFER, buffer);
 	glBufferSubData(GL_UNIFORM_BUFFER, 0, size, data);

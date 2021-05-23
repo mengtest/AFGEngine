@@ -1,5 +1,5 @@
 #include "render_context.h"
-#include "shader.h"
+#include <shader.h>
 
 #include <glad/glad.h>
 #include <SDL.h>

@@ -18,11 +18,11 @@
 #include "chara.h"
 #include "hud.h"
 #include "raw_input.h"
-#include "shader.h"
-#include "texture.h"
+#include <shader.h>
+#include <texture.h>
 #include "util.h"
 #include "window.h"
-#include "vao.h"
+#include <vao.h>
 
 #ifdef NETPLAY
 #include "netplay.h"

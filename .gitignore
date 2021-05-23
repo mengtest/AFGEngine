@@ -7,6 +7,6 @@
 /audio/
 /keyconf.bin
 /char/backups/
-/win64/
+/build/
 AFGEngine.exe
 compile_commands.json

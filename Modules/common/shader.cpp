@@ -4,7 +4,6 @@
 #include <fstream>
 #include <string>
 
-
 const char *vertex = R"()";
 const char *fragment = R"()";
 

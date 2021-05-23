@@ -1,5 +1,5 @@
 #include "window.h"
-#include "shader.h"
+#include <shader.h>
 
 #include <SDL.h>
 
