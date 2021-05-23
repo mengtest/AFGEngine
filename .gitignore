@@ -1,12 +1,21 @@
 
-# Other
+#vscode
 .vscode/
 *.code-workspace
+
+#Original data
 /data/images/src/
+
+#clangd
 .cache/
-/audio/
+
+#Executable artifacts
 /keyconf.bin
-/char/backups/
+*.ini
+
+#build artifacts
 /build/
 AFGEngine.exe
 compile_commands.json
+
+
