@@ -9,7 +9,6 @@
 class Window
 {
 public:
-	bool wantsToClose;
 	bool fullscreen;
 	bool vsync;
 
@@ -35,7 +34,7 @@ public:
 	void SleepUntilNextFrame();
 	void UpdateClientRect();
 
-	//Returns true if it gets a quit event.
+	//Returns true until it gets a quit event.
 	bool PollEvents();
 
 	double GetSpf();

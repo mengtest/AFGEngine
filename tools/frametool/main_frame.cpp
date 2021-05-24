@@ -1,7 +1,7 @@
 #include "main_frame.h"
 
-/* #include "filedialog.h"*/
 #include "ini.h" 
+
 
 #include <imgui.h>
 #include <imgui_internal.h>
@@ -16,9 +16,14 @@ bool show_demo_window = true;
 
 MainFrame::MainFrame():
 currState{},
-x(0),y(150)
+x(0),y(-150)
 {
 	LoadSettings();
+
+	NameMap names = render.LoadGraphics("data/images/vaki.png", "data/images/vaki.vt8");
+	render.LoadPalette("data/palettes/play2.act");
+	
+	fd.Load("data/char/vaki.char", names);
 }
 
 MainFrame::~MainFrame()
@@ -124,7 +129,7 @@ void MainFrame::DrawUi()
 	if (show_demo_window)
 		ImGui::ShowDemoWindow(&show_demo_window);
 
-	ImGui::Text("%i %i", clientRect.x, clientRect.y);
+	ImGui::Text("%i %i", x, y);
 
 	RenderUpdate();
 }
@@ -195,17 +200,17 @@ void MainFrame::UpdateBackProj(float x, float y)
 	glViewport(0, 0, x, y);
 }
 
-void MainFrame::HandleMouseDrag(int x_, int y_, bool dragRight, bool dragLeft)
+void MainFrame::HandleMouseDrag(int x_, int y_, bool dragLeft, bool dragRight)
 {
-/* 	if(dragRight)
+ 	/* if(dragRight)
 	{
 		boxPane.BoxDrag(x_, y_);
-	}
-	else if(dragLeft)
+	} */
+	if(dragLeft)
 	{
 		x += x_;
-		y += y_;
-	} */
+		y -= y_;
+	}
 }
 
 void MainFrame::RightClick(int x_, int y_)

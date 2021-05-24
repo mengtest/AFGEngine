@@ -28,10 +28,10 @@ static void ReadLine(ImGuiContext*, ImGuiSettingsHandler*, void* entry, const ch
 		gSettings.theme = i;
 	} else if (sscanf(line, "FontSize=%f", &x) == 1){
 		gSettings.fontSize = x;
-	} else if (sscanf(line, "pos=%i,%i", &i, &j) == 1){
+	} else if (sscanf(line, "Pos=%i,%i", &i, &j) == 2){
 		gSettings.posX = i;
 		gSettings.posY = j;
-	} else if (sscanf(line, "size=%i,%i", &i, &j) == 1){
+	} else if (sscanf(line, "Size=%i,%i", &i, &j) == 2){
 		gSettings.winSizeX = i;
 		gSettings.winSizeY = j;
 	} else if (sscanf(line, "Maximized=%i", &i) == 1){
@@ -46,8 +46,8 @@ static void Write(ImGuiContext* ctx, ImGuiSettingsHandler* handler, ImGuiTextBuf
 	buf->appendf("Zoom=%i\n", gSettings.zoomLevel);
 	buf->appendf("Theme=%i\n", gSettings.theme);
 	buf->appendf("FontSize=%f\n", gSettings.fontSize);
-	buf->appendf("pos=%hi,%hi\n", gSettings.posX, gSettings.posY);
-	buf->appendf("size=%hi,%hi\n", gSettings.winSizeX, gSettings.winSizeY);
+	buf->appendf("Pos=%hi,%hi\n", gSettings.posX, gSettings.posY);
+	buf->appendf("Size=%hi,%hi\n", gSettings.winSizeX, gSettings.winSizeY);
 	buf->appendf("Maximized=%i\n", gSettings.maximized);
 	buf->append("\n");
 }

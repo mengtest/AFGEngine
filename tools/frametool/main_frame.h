@@ -2,6 +2,7 @@
 #define MAINFRAME_H_GUARD
 #include "render.h"
 #include "draw_window.h"
+#include "framedata.h"
 
 #include <glm/mat4x4.hpp>
 #include <string>
@@ -14,7 +15,7 @@ public:
 	
 	void Draw();
 	void UpdateBackProj(float x, float y);
-	void HandleMouseDrag(int x, int y, bool dragRight, bool dragLeft);
+	void HandleMouseDrag(int x, int y, bool dragLeft, bool dragRight);
 	bool HandleKeys(uint64_t vkey);
 
 	void RightClick(int x, int y);
@@ -23,6 +24,7 @@ public:
 	void SetClientRect(int x, int y);
 
 private:
+	Framedata fd;
 	struct vec2d
 	{
 		int x, y;

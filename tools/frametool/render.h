@@ -47,6 +47,9 @@ public:
 	int highLightN = -1;
 	
 	Render();
+	std::unordered_map<std::string, uint16_t> LoadGraphics(const char* pngFile, const char* vtxFile);
+	void LoadPalette(const char* file);
+
 	void Draw();
 	void UpdateProj(float w, float h);
 

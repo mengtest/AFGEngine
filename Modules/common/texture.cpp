@@ -30,14 +30,14 @@ Texture::~Texture()
 		Unload();
 }
 
-void Texture::Load(std::string imageFile, std::string paletteFile, bool alphaFix)
+void Texture::Load(std::string imageFile, std::string paletteFile, bool doNotFixAlphaGamma)
 {
 	filename = imageFile;
 
 	const char *palette = nullptr;
 	if(!paletteFile.empty())
 		palette = paletteFile.c_str();
-	image.reset(new ImageData(imageFile.c_str(), palette, alphaFix));
+	image.reset(new ImageData(imageFile.c_str(), palette, doNotFixAlphaGamma));
 	isLoaded = true;
 }
 
@@ -90,7 +90,7 @@ void Texture::Apply(bool repeat, bool linearFilter)
 			std::cout << filename.c_str() << " unhandled format. "<< image->bytesPerPixel << " channels.\n";
 			break;
 	}
-	
+
 	glTexImage2D(GL_TEXTURE_2D, 0, intType, image->width, image->height, 0, extType, GL_UNSIGNED_BYTE, image->data);
 
 }

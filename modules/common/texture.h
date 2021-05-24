@@ -21,8 +21,8 @@ public:
 	Texture(Texture&& texture);
 	~Texture();
 
-	//Set alphaFix to true to NOT modify the image when loading it. False leaves white borders.
-	void Load(std::string imageFile, std::string paletteFile = std::string(), bool alphaFix = false);
+	//Set doNotFixAlphaGamma to true to NOT modify the image when loading it.
+	void Load(std::string imageFile, std::string paletteFile = std::string(), bool doNotFixAlphaGamma = false);
 	void Apply(bool repeat = false, bool linearFilter = false);
 	void Unapply();
 	void Unload();

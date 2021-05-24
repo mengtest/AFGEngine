@@ -22,4 +22,5 @@ target_sources(Frametool PRIVATE
 	render.cpp
 	window.cpp
 	ini.cpp
+	framedata.cpp
 )

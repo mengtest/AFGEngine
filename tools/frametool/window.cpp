@@ -17,7 +17,6 @@
 Window *mainWindow = nullptr;
 
 Window::Window() :
-wantsToClose(false),
 fullscreen(false),
 vsync(false),
 window(nullptr),
@@ -31,6 +30,13 @@ startClock(std::chrono::high_resolution_clock::now())
 		std::cerr << SDL_GetError();
 		throw std::runtime_error("Couldn't init SDL.");
 	}
+
+	IMGUI_CHECKVERSION();
+	ImGui::CreateContext();
+	ImGuiIO& io = ImGui::GetIO();
+	io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
+	io.IniFilename = "frametool.ini";
+	InitIni();
 	
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
@@ -43,8 +49,8 @@ startClock(std::chrono::high_resolution_clock::now())
 	
 	window = SDL_CreateWindow(
 		"Frametool",
-		SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 1280, 720,
-		SDL_WINDOW_OPENGL|SDL_WINDOW_RESIZABLE|SDL_WINDOW_ALLOW_HIGHDPI);
+		gSettings.posX, gSettings.posY, gSettings.winSizeX, gSettings.winSizeY,
+		SDL_WINDOW_OPENGL|SDL_WINDOW_RESIZABLE|SDL_WINDOW_ALLOW_HIGHDPI | (gSettings.maximized ? SDL_WINDOW_MAXIMIZED : 0));
 
 	if(!window)
 	{
@@ -68,13 +74,6 @@ startClock(std::chrono::high_resolution_clock::now())
 		SDL_GL_SetSwapInterval(1);
 		vsync = SDL_GL_GetSwapInterval();
 	}
-
-	IMGUI_CHECKVERSION();
-	ImGui::CreateContext();
-	ImGuiIO& io = ImGui::GetIO();
-	io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
-	io.IniFilename = "frametool.ini";
-	InitIni();
 
 	ImGui_ImplSDL2_InitForOpenGL(window, glcontext);
 	ImGui_ImplOpenGL3_Init("#version 330");
@@ -104,26 +103,47 @@ bool Window::PollEvents()
 		switch(event.type)
 		{
 			case SDL_QUIT:
-				mainWindow->wantsToClose = true;
-				return true;
+				return false;
 			case SDL_WINDOWEVENT:
 				switch(event.window.event)
 				{
 					case SDL_WINDOWEVENT_SIZE_CHANGED:
 						mf->SetClientRect(event.window.data1, event.window.data2);
+						gSettings.winSizeX = event.window.data1;
+						gSettings.winSizeY = event.window.data2;
+						break;
+					case SDL_WINDOWEVENT_MOVED:
+						gSettings.posX = event.window.data1;
+						gSettings.posY = event.window.data2;
+						break;
+					case SDL_WINDOWEVENT_MAXIMIZED:
+						gSettings.maximized = 1;
+						break;
+					case SDL_WINDOWEVENT_RESTORED:
+						gSettings.maximized = 0;
 						break;
 					case SDL_WINDOWEVENT_CLOSE:
-						return true;
+						return false;
 				}
+				break;
+			case SDL_MOUSEMOTION:
+				if(!ImGui::GetIO().WantCaptureMouse)
+				{
+					mf->HandleMouseDrag(event.motion.xrel, event.motion.yrel,
+						event.motion.state & SDL_BUTTON_LMASK, event.motion.state & SDL_BUTTON_RMASK);
+				}
+				break;
+			case SDL_MOUSEBUTTONDOWN:
+			case SDL_MOUSEBUTTONUP:
 				break;
 			case SDL_KEYDOWN:
 			case SDL_KEYUP:
-				//GameLoopKeyHandle(event.key);
+				//
 				break;
 		}
 	}
 
-	return false;
+	return true;
 }
 
 void Window::UpdateClientRect()
