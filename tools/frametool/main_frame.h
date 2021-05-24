@@ -3,6 +3,7 @@
 #include "render.h"
 #include "draw_window.h"
 #include "framedata.h"
+#include "main_pane.h"
 
 #include <glm/mat4x4.hpp>
 #include <string>
@@ -54,6 +55,8 @@ private:
 
 	int mDeltaX = 0, mDeltaY = 0;
 	int x=0, y=0;
+
+	MainPane mainPane;
 	
 };
 

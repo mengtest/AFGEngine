@@ -2,11 +2,11 @@
 
 #include "ini.h" 
 
-
 #include <imgui.h>
 #include <imgui_internal.h>
 #include <imgui_impl_opengl3.h>
 #include <imgui_impl_sdl.h>
+#include <SDL_scancode.h>
 
 #include <glad/glad.h>
 #include <glm/vec3.hpp>
@@ -16,6 +16,7 @@ bool show_demo_window = true;
 
 MainFrame::MainFrame():
 currState{},
+mainPane(&render, &fd, currState),
 x(0),y(-150)
 {
 	LoadSettings();
@@ -126,72 +127,47 @@ void MainFrame::DrawUi()
 		ImGui::EndPopup();
 	}
 
+	mainPane.Draw();
+
 	if (show_demo_window)
 		ImGui::ShowDemoWindow(&show_demo_window);
-
-	ImGui::Text("%i %i", x, y);
 
 	RenderUpdate();
 }
 
 void MainFrame::RenderUpdate()
 {
-/* 	Sequence *seq;
-	if((seq = framedata.get_sequence(currState.seq)) &&
-		seq->frames.size() > 0)
+	if(!fd.sequences.empty() && fd.sequences[currState.seq].frames.size() > 0)
 	{
-		auto &frame =  seq->frames[currState.frame];
-		currState.spriteId = frame.AF.spriteId;
-		render.GenerateHitboxVertices(frame.hitboxes);
-		render.offsetX = (frame.AF.offset_x)*1;
-		render.offsetY = (frame.AF.offset_y)*1;
-		render.SetImageColor(frame.AF.rgba);
-		render.rotX = frame.AF.rotation[0];
-		render.rotY = frame.AF.rotation[1];
-		render.rotZ = frame.AF.rotation[2];
-		render.scaleX = frame.AF.scale[0];
-		render.scaleY = frame.AF.scale[1];
-		
-		switch (frame.AF.blend_mode)
-		{
-		case 2:
-			render.blendingMode = Render::additive;
-			break;
-		case 3:
-			render.blendingMode = Render::substractive;
-			break;
-		default:
-			render.blendingMode = Render::normal;
-			break;
-		}
+		auto &frame =  fd.sequences[currState.seq].frames[currState.frame];
+		render.spriteId = frame.spriteIndex;
+		//render.GenerateHitboxVertices(frame.hitboxes);
 	}
 	else
 	{
-		currState.spriteId = -1;
-		
+		render.spriteId = -1;
 		render.DontDraw();
 	}
-	render.SwitchImage(currState.spriteId); */
 }
 
 void MainFrame::AdvancePattern(int dir)
 {
-/* 	currState.seq+= dir;
+ 	currState.seq+= dir;
 	if(currState.seq < 0)
 		currState.seq = 0;
-	else if(currState.seq >= framedata.get_sequence_count())
-		currState.seq = framedata.get_sequence_count()-1;
-	currState.frame = 0; */
+	else if(currState.seq >= fd.sequences.size())
+		currState.seq = fd.sequences.size()-1;
+	currState.frame = 0; 
 }
 
 void MainFrame::AdvanceFrame(int dir)
 {
-/* 	auto seq = framedata.get_sequence(currState.seq);
+ 	auto seq = fd.sequences[currState.seq];
 	currState.frame += dir;
 	if(currState.frame < 0)
 		currState.frame = 0;
-	else if(seq && currState.frame >= seq->frames.size())
-		currState.frame = seq->frames.size()-1; */
+	else if(currState.frame >= seq.frames.size())
+		currState.frame = seq.frames.size()-1;
 }
 
 void MainFrame::UpdateBackProj(float x, float y)
@@ -220,28 +196,27 @@ void MainFrame::RightClick(int x_, int y_)
 
 bool MainFrame::HandleKeys(uint64_t vkey)
 {
-	/* switch (vkey)
+	switch (vkey)
 	{
-	case VK_UP:
+	case SDL_SCANCODE_UP:
 		AdvancePattern(-1);
 		return true;
-	case VK_DOWN:
+	case SDL_SCANCODE_DOWN:
 		AdvancePattern(1);
 		return true;
-	case VK_LEFT:
+	case SDL_SCANCODE_LEFT:
 		AdvanceFrame(-1);
 		return true;
-	case VK_RIGHT:
+	case SDL_SCANCODE_RIGHT:
 		AdvanceFrame(+1);
 		return true;
-	case 'Z':
+/* 	case SDL_SCANCODE_Z:
 		boxPane.AdvanceBox(-1);
 		return true;
-	case 'X':
+	case SDL_SCANCODE_X:
 		boxPane.AdvanceBox(+1);
-		return true;
+		return true; */
 	}
-	*/
 	return false;
 }
 

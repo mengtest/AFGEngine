@@ -23,4 +23,5 @@ target_sources(Frametool PRIVATE
 	window.cpp
 	ini.cpp
 	framedata.cpp
+	main_pane.cpp
 )

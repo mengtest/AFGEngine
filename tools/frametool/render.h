@@ -33,12 +33,12 @@ private:
 	Shader sTextured;
 	Texture texture;
 	float colorRgba[4];
-
-	int curImageId;
 	
 	void SetModelView(glm::mat4&& view);
+	int nSprites;
 
 public:
+	int spriteId;
 	int x, offsetX;
 	int y, offsetY;
 	float scale;

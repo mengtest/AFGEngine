@@ -22,7 +22,8 @@ Render::Render():
 vSprite(Vao::F2F2I1, GL_STATIC_DRAW),
 vGeometry(Vao::F3F3, GL_STREAM_DRAW),
 colorRgba{1,1,1,1},
-curImageId(-1),
+nSprites(0),
+spriteId(-1),
 quadsToDraw(0),
 x(0), offsetX(0),
 y(0), offsetY(0),
@@ -48,9 +49,6 @@ uniforms("Common", 1)
 	uniforms.Bind(sSimple.program);
 	uniforms.Bind(sTextured.program);
 
-	/* vSprite.Prepare(sizeof(imageVertex), imageVertex);
-	vSprite.Load(); */
-
 	float lines[]
 	{
 		-10000, 0, -1,	1,1,1,
@@ -63,9 +61,6 @@ uniforms("Common", 1)
 	geoParts[LINES] = vGeometry.Prepare(sizeof(lines), lines);
 	geoParts[BOXES] = vGeometry.Prepare(sizeof(float)*6*4*maxBoxes, nullptr);
 	vGeometry.Load();
-
-/* 	UpdateProj(clientRect.x, clientRect.y);
-	glViewport(0, 0, clientRect.x, clientRect.y); */
 
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -100,7 +95,8 @@ std::unordered_map<std::string, uint16_t> Render::LoadGraphics(const char *pngFi
 
 	std::unordered_map<std::string, uint16_t> nameMap;
 
-	int nSprites, nChunks;
+	
+	int nChunks;
 	std::ifstream vertexFile(vtxFile, std::ios_base::binary);
 
 	vertexFile.read((char *)&nSprites, sizeof(int));
@@ -170,12 +166,10 @@ void Render::Draw()
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, texture.id);
 	vSprite.Bind();
-	static int indext = 0;
-	vSprite.Draw(0);
-	indext++;
-	if(indext == 800)
-		indext = 0;
-	
+
+	if(spriteId > 0 && spriteId < nSprites)
+		vSprite.Draw(spriteId);
+
 	//Reset state
 	/* glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	glBlendEquation(GL_FUNC_ADD); */
