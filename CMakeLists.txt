@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.13...3.19)
-project (AFGEngine LANGUAGES C CXX)
+project (AFGEngine VERSION 0.2 LANGUAGES C CXX)
 
 set(CMAKE_POLICY_DEFAULT_CMP0077 NEW)
 
