@@ -7,6 +7,7 @@
 #include <glad/glad.h>
 #include <iostream>
 #include <fstream>
+#include <imgui.h>
 
 #include "hitbox.h"
 
@@ -20,7 +21,7 @@ struct VertexData8
 
 Render::Render():
 vSprite(Vao::F2F2I1, GL_STATIC_DRAW),
-vGeometry(Vao::F3F3, GL_STREAM_DRAW),
+vGeometry(Vao::F3F3, GL_STREAM_DRAW, maxBoxes*5*sizeof(uint16_t)),
 colorRgba{1,1,1,1},
 nSprites(0),
 spriteId(-1),
@@ -65,6 +66,8 @@ uniforms("Common", 1)
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	//glEnable(GL_DEPTH_TEST);
+	glEnable(GL_PRIMITIVE_RESTART);
+	glPrimitiveRestartIndex(0xFFFF);
 }
 
 void Render::LoadPalette(const char *file)
@@ -141,12 +144,10 @@ void Render::Draw()
 
 	//Lines
 	sSimple.Use();
-	glm::mat4 view = glm::mat4(1.f);
-	view = glm::scale(view, glm::vec3(scale, scale, 1.f));
+	glm::mat4 view = glm::scale(glm::mat4(1.f), glm::vec3(scale, scale, 1.f));
 	view = glm::translate(view, glm::vec3(x,y,0.f));
 	SetModelView(std::move(view));
 	glUniform1f(lAlphaS, 0.25f);
-
 	vGeometry.Bind();
 	vGeometry.Draw(geoParts[LINES], 0, GL_LINES);
 
@@ -170,17 +171,18 @@ void Render::Draw()
 	if(spriteId > 0 && spriteId < nSprites)
 		vSprite.Draw(spriteId);
 
-	//Reset state
-	/* glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-	glBlendEquation(GL_FUNC_ADD); */
-
 	//Boxes
-	/* sSimple.Use();
+	sSimple.Use();
+	view = glm::mat4(1.f);
+	view = glm::scale(view, glm::vec3(scale, scale, 1.f));
+	view = glm::translate(view, glm::vec3(x,y,0.f));
+	SetModelView(std::move(view));
+
 	vGeometry.Bind();
 	glUniform1f(lAlphaS, 0.6f);
-	vGeometry.DrawQuads(GL_LINE_LOOP, quadsToDraw);
+	glDrawElementsBaseVertex(GL_LINE_LOOP, quadsToDraw, GL_UNSIGNED_SHORT, nullptr, 4); //4 is the offset after lines. w/e
 	glUniform1f(lAlphaS, 0.3f);
-	vGeometry.DrawQuads(GL_TRIANGLE_FAN, quadsToDraw); */
+	glDrawElementsBaseVertex(GL_TRIANGLE_FAN, quadsToDraw, GL_UNSIGNED_SHORT, nullptr, 4);
 }
 
 void Render::SetModelView(glm::mat4&& view)
@@ -194,7 +196,7 @@ void Render::UpdateProj(float w, float h)
 	projection = glm::ortho<float>(0, w, 0, h, -1024.f, 1024.f);
 }
 
-void Render::GenerateHitboxVertices(const BoxList &hitboxes)
+void Render::GenerateHitboxVertices(const std::vector<int> &hitboxes, color_t pickedColor)
 {
 	int size = hitboxes.size();
 	if(size <= 0)
@@ -202,61 +204,66 @@ void Render::GenerateHitboxVertices(const BoxList &hitboxes)
 		quadsToDraw = 0;
 		return;
 	}
+	
+	//r, g, b, z order
+	constexpr float colors[][4]={
+		{1, 1, 1, 1},		//gray
+		{0.2, 1, 0.2, 2},	//green
+		{1, 0.2, 0.2, 7}	//red
+	};
 
-	const float *color;
-	//red, green, blue, z order
-	constexpr float collisionColor[] 	{1, 1, 1, 1};
-	constexpr float greenColor[] 		{0.2, 1, 0.2, 2};
-	constexpr float shieldColor[] 		{0, 0, 1, 3}; //Not only for shield
-	constexpr float clashColor[]		{1, 1, 0, 4};
-	constexpr float projectileColor[] 	{0, 1, 1, 5}; //飛び道具
-	constexpr float purple[] 			{0.5, 0, 1, 6}; //特別
-	constexpr float redColor[] 			{1, 0.2, 0.2, 7};
-	constexpr float hiLightColor[]		{1, 0.5, 1, 10};
+	const float *color = colors[pickedColor];
 
 	constexpr int tX[] = {0,1,1,0};
 	constexpr int tY[] = {0,0,1,1};
 
-	int floats = size*4*6; //4 Vertices with 6 attributes.
-	if(clientQuads.size() < floats)
-		clientQuads.resize(floats);
 	
-	int dataI = 0;
-	for(int i = 0; i < hitboxes.size(); i++)
+
+	int floats = size*6; //6 Vertices with 6 attributes.
+	if(clientQuads.size() < floats + acumQuads)
+		clientQuads.resize(floats + acumQuads);
+
+	int elements = (size/4)*5;
+	if(clientElements.size() < elements + acumElements)
+		clientElements.resize(elements + acumElements);
+	
+	int dataI = acumQuads;
+	for(int i = 0; i < size; i+=4)
 	{
-		const Hitbox& hitbox = hitboxes[i];
-
-		if (highLightN == i)
-			color = hiLightColor;
-		else if(i==0)
-			color = collisionColor;
-		else if (i >= 1 && i <= 8)
-			color = greenColor;
-		else if(i >=9 && i <= 10)
-			color = shieldColor;
-		else if(i == 11)
-			color = clashColor;
-		else if(i == 12)
-			color = projectileColor;
-		else if(i>12 && i<=24)
-			color = purple;
-		else
-			color = redColor;
-
 		for(int j = 0; j < 4*6; j+=6)
 		{
 			//X, Y, Z, R, G, B
-			clientQuads[dataI+j+0] = hitbox.xy[0] + (hitbox.xy[2]-hitbox.xy[0])*tX[j/5];
-			clientQuads[dataI+j+1] = hitbox.xy[1] + (hitbox.xy[3]-hitbox.xy[1])*tY[j/5];
+			clientQuads[dataI+j+0] = hitboxes[i+0] + (hitboxes[i+2]-hitboxes[i+0])*tX[j/6];
+			clientQuads[dataI+j+1] = hitboxes[i+1] + (hitboxes[i+3]-hitboxes[i+1])*tY[j/6];
 			clientQuads[dataI+j+2] = color[3]+1000.f;
 			clientQuads[dataI+j+3] = color[0];
 			clientQuads[dataI+j+4] = color[1];
 			clientQuads[dataI+j+5] = color[2];
 		}
 		dataI += 4*6;
+
+		int eI = (i/4)*5 + acumElements;
+		for(int offset=0; offset < 4; offset++)
+			clientElements[eI+offset] = offset+i+acumSize;
+		clientElements[eI+4] = 0xFFFF;
 	}
-	quadsToDraw = size;
-	vGeometry.UpdateBuffer(geoParts[BOXES], clientQuads.data(), dataI*sizeof(float));
+
+	acumQuads = dataI;
+	acumElements += (elements);
+	acumSize += size;
+}
+
+void Render::LoadHitboxVertices()
+{
+	vGeometry.UpdateBuffer(geoParts[BOXES], clientQuads.data(), acumQuads*sizeof(float));
+	vGeometry.UpdateElementBuffer(clientElements.data(), (acumElements)*sizeof(uint16_t));
+	quadsToDraw = acumElements;
+	
+	acumQuads = 0;
+	acumElements = 0;
+	acumSize = 0;
+
+	ImGui::Text("%i", quadsToDraw);
 }
 
 void Render::DontDraw()

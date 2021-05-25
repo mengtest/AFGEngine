@@ -2,8 +2,9 @@
 #include <glad/glad.h>
 #include <iostream>
 
-Vao::Vao(AttribType _type, unsigned int _usage):
-type(_type), usage(_usage), loaded(false), stride(0), totalSize(0), vaoId(0), vboId(0)
+Vao::Vao(AttribType _type, unsigned int _usage, size_t eboSize):
+type(_type), usage(_usage), loaded(false), stride(0), totalSize(0), eboSize(eboSize),
+vaoId(0), vboId(0), eboId(0)
 {
 	glGenVertexArrays(1, &vaoId);
 	switch(type)
@@ -18,12 +19,20 @@ type(_type), usage(_usage), loaded(false), stride(0), totalSize(0), vaoId(0), vb
 		stride = 6 * sizeof(float);
 		break;
 	}
+
+	if(eboSize)
+	{
+		glGenBuffers(1, &eboId);
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, eboId);
+		glBufferData(GL_ELEMENT_ARRAY_BUFFER, eboSize, nullptr, _usage); 
+	}
 }
 
 Vao::~Vao()
 {
 	glDeleteVertexArrays(1, &vaoId);
 	glDeleteBuffers(1, &vboId);
+	glDeleteBuffers(1, &eboId);
 }
 
 int Vao::Prepare(size_t size, void *ptr)
@@ -57,7 +66,14 @@ void Vao::UpdateBuffer(int which, void *data, size_t count)
 
 	glBindBuffer(GL_ARRAY_BUFFER, vboId);
 	glBufferSubData(GL_ARRAY_BUFFER, dataPointers[which].location*stride, count, data);
+}
 
+void Vao::UpdateElementBuffer(void *data, size_t count)
+{
+	if(count > eboSize)
+		count = eboSize;
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, eboId);
+	glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, count, data);
 }
 
 void Vao::Bind()

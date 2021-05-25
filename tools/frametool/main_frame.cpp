@@ -141,7 +141,11 @@ void MainFrame::RenderUpdate()
 	{
 		auto &frame =  fd.sequences[currState.seq].frames[currState.frame];
 		render.spriteId = frame.spriteIndex;
-		//render.GenerateHitboxVertices(frame.hitboxes);
+		
+		render.GenerateHitboxVertices(frame.colbox, Render::gray);
+		render.GenerateHitboxVertices(frame.greenboxes, Render::green);
+		render.GenerateHitboxVertices(frame.redboxes, Render::red);
+		render.LoadHitboxVertices();
 	}
 	else
 	{

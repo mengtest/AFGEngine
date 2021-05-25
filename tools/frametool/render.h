@@ -26,7 +26,11 @@ private:
 	};
 	int geoParts[GEO_SIZE];
 	std::vector<float> clientQuads;
+	std::vector<uint16_t> clientElements;
 	int quadsToDraw;
+	size_t acumSize = 0;
+	size_t acumQuads = 0;
+	size_t acumElements = 0;
 
 	int lAlphaS;
 	Shader sSimple;
@@ -38,6 +42,13 @@ private:
 	int nSprites;
 
 public:
+	enum color_t 
+	{
+		gray = 0,
+		green,
+		red,
+	};
+
 	int spriteId;
 	int x, offsetX;
 	int y, offsetY;
@@ -53,7 +64,8 @@ public:
 	void Draw();
 	void UpdateProj(float w, float h);
 
-	void GenerateHitboxVertices(const BoxList &hitboxes);
+	void GenerateHitboxVertices(const std::vector<int> &boxes, color_t pickedColor);
+	void LoadHitboxVertices();
 
 	void DontDraw();
 	void SetImageColor(float *rgbaArr);

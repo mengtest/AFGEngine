@@ -54,7 +54,7 @@ void MainPane::Draw()
 
 	if(!frameData->sequences.empty())
 	{
-		auto seq = frameData->sequences[cs.seq];
+		auto &seq = frameData->sequences[cs.seq];
 
 		int nframes = seq.frames.size() - 1;
 		if(nframes >= 0)
@@ -95,9 +95,9 @@ void MainPane::Draw()
 			if(im::InputText("Pattern name", &seq.name))
 			{
 				decoratedNames[cs.seq] = seq.name;
+				
 			}
 
-			ImGui::InputText("Code name", &seq.name);
 			ImGui::InputInt("fn", &seq.frameNumber);
 			ImGui::InputInt("Level", &seq.level);
 			ImGui::InputInt("Meter", &seq.metercost);
@@ -115,6 +115,7 @@ void MainPane::Draw()
 			if(im::TreeNode("Frame data"))
 			{
 				ImGui::InputInt("Sprite id", &frame.spriteIndex);
+				
 				im::TreePop();
 				im::Separator();
 			}

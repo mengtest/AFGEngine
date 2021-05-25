@@ -28,19 +28,23 @@ private:
 	};
 
 	size_t totalSize;
+	size_t eboSize;
 	std::vector<memPtr> dataPointers;
 	unsigned int vaoId;
 	unsigned int vboId;
+	unsigned int eboId;
+
 
 
 public:
-	Vao(AttribType type, unsigned int usage);
+	Vao(AttribType type, unsigned int usage, size_t eboSize = 0);
 	~Vao();
 
 	//Returns index of object that can be drawn.
 	int Prepare(size_t size, void *ptr);
 	void Draw(int which, size_t count = 0, int mode = GL_TRIANGLES);
 	void UpdateBuffer(int which, void *data, size_t count = 0);
+	void UpdateElementBuffer(void *data, size_t count);
 	void Bind();
 	void Load();
 	

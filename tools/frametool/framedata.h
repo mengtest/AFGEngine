@@ -110,25 +110,18 @@ struct Frame_property
 	int state = 0;
 
 	int painType = 0;
+	float spriteOffset[2]; //x,y
 };
 
 struct Frame
 {
 	Frame_property frameProp;
 	//Boxes are defined by BL, BR, TR, TL points, in that order.
-	float imagepos[8]; //Relative to root;
-	float greenboxes[32*4*2]; //Limit of 32 boxes per frame * all four sides* (x,y)
-	float redboxes[32*4*2]; //probably getting replaced by std::vector
-	float colbox[8];
-
-	// Max usable index?
-	int greenboxActive = 0;
-	int redboxActive = 0;
-	int colboxActive = 0;
-
+	std::vector<int> greenboxes;
+	std::vector<int> redboxes;
+	std::vector<int> colbox;
 
 	int nextFrame = -1;
-
 	int spriteIndex = 0;
 };
 

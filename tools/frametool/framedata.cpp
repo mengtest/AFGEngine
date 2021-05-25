@@ -114,7 +114,7 @@ bool Framedata::Load(std::string charFile, NameMap &nameMap)
 		sequences[i].frameNumber = seqlength; //TODO
 		for (uint8_t i2 = 0; i2 < seqlength; ++i2)
 		{
-			file.read((char *)&sequences[i].frames[i2].imagepos, sizeof(float) * 8); //TODO remove
+			file.ignore(sizeof(float) * 8); //deprecated imagepos
 
 			//How many boxes are used per frame
 			int16_t activeGreens;
@@ -124,23 +124,38 @@ bool Framedata::Load(std::string charFile, NameMap &nameMap)
 			file.read((char *)&activeReds, sizeof(int16_t));
 			file.read((char *)&activeCols, sizeof(int8_t));
 
-			sequences[i].frames[i2].greenboxActive = activeGreens;
-			sequences[i].frames[i2].redboxActive = activeReds;
-			sequences[i].frames[i2].colboxActive = activeCols;
+			sequences[i].frames[i2].greenboxes.resize(activeGreens/2);
+			sequences[i].frames[i2].redboxes.resize(activeReds/2);
+			sequences[i].frames[i2].colbox.resize(activeCols/2);
 
-			if (activeGreens > 256 || activeReds > 256 )
-			{
-				std::cerr << "Seq " << i << " frame " << i2 << " exceeds the box limit. At: " << activeGreens << " " << activeReds << "\n";
-				goto errorlog;
+			uint16_t framePropSize = 0;
+			file.read(rv(framePropSize), sizeof(uint16_t)); 
+			file.read((char *)&sequences[i].frames[i2].frameProp, framePropSize);
+
+			float greenboxes[32*4*2];
+			float redboxes[32*4*2];
+			float colbox[1*4*2];
+			file.read(rptr(greenboxes), sizeof(float) * activeGreens);
+			file.read(rptr(redboxes), sizeof(float) * activeReds);
+			file.read(rptr(colbox), sizeof(float) * activeCols);
+			for(int bi = 0; bi < activeGreens; bi+=8){
+				sequences[i].frames[i2].greenboxes[bi/2+0] = greenboxes[bi];
+				sequences[i].frames[i2].greenboxes[bi/2+1] = greenboxes[bi+1];
+				sequences[i].frames[i2].greenboxes[bi/2+2] = greenboxes[bi+4];
+				sequences[i].frames[i2].greenboxes[bi/2+3] = greenboxes[bi+5];
 			}
-
-			file.ignore(sizeof(uint16_t)); //ignores an uint16_t containing FrameProp bytes
-			file.read((char *)&sequences[i].frames[i2].frameProp, sizeof(Frame_property));
-
-			file.read((char *)sequences[i].frames[i2].greenboxes, sizeof(float) * activeGreens);
-			file.read((char *)sequences[i].frames[i2].redboxes, sizeof(float) * activeReds);
-
-			file.read(rptr(sequences[i].frames[i2].colbox), sizeof(float) * activeCols);
+			for(int bi = 0; bi < activeReds; bi+=8){
+				sequences[i].frames[i2].redboxes[bi/2+0] = redboxes[bi];
+				sequences[i].frames[i2].redboxes[bi/2+1] = redboxes[bi+1];
+				sequences[i].frames[i2].redboxes[bi/2+2] = redboxes[bi+4];
+				sequences[i].frames[i2].redboxes[bi/2+3] = redboxes[bi+5];
+			}
+			for(int bi = 0; bi < activeCols; bi+=8){
+				sequences[i].frames[i2].colbox[bi/2+0] = colbox[bi];
+				sequences[i].frames[i2].colbox[bi/2+1] = colbox[bi+1];
+				sequences[i].frames[i2].colbox[bi/2+2] = colbox[bi+4];
+				sequences[i].frames[i2].colbox[bi/2+3] = colbox[bi+5];
+			}
 
 			uint16_t filepathLenght;
 			file.read((char *)&filepathLenght, sizeof(uint16_t));
