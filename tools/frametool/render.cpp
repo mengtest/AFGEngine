@@ -65,7 +65,7 @@ uniforms("Common", 1)
 
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-	//glEnable(GL_DEPTH_TEST);
+	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_PRIMITIVE_RESTART);
 	glPrimitiveRestartIndex(0xFFFF);
 }
@@ -206,10 +206,10 @@ void Render::GenerateHitboxVertices(const std::vector<int> &hitboxes, color_t pi
 	}
 	
 	//r, g, b, z order
-	constexpr float colors[][4]={
-		{1, 1, 1, 1},		//gray
-		{0.2, 1, 0.2, 2},	//green
-		{1, 0.2, 0.2, 7}	//red
+	constexpr float colors[][3]={
+		{1, 1, 1},		//gray
+		{0.2, 1, 0.2},	//green
+		{1, 0.2, 0.2}	//red
 	};
 
 	const float *color = colors[pickedColor];
@@ -217,7 +217,6 @@ void Render::GenerateHitboxVertices(const std::vector<int> &hitboxes, color_t pi
 	constexpr int tX[] = {0,1,1,0};
 	constexpr int tY[] = {0,0,1,1};
 
-	
 
 	int floats = size*6; //6 Vertices with 6 attributes.
 	if(clientQuads.size() < floats + acumQuads)
@@ -235,7 +234,7 @@ void Render::GenerateHitboxVertices(const std::vector<int> &hitboxes, color_t pi
 			//X, Y, Z, R, G, B
 			clientQuads[dataI+j+0] = hitboxes[i+0] + (hitboxes[i+2]-hitboxes[i+0])*tX[j/6];
 			clientQuads[dataI+j+1] = hitboxes[i+1] + (hitboxes[i+3]-hitboxes[i+1])*tY[j/6];
-			clientQuads[dataI+j+2] = color[3]+1000.f;
+			clientQuads[dataI+j+2] = zOrder+1000.f;
 			clientQuads[dataI+j+3] = color[0];
 			clientQuads[dataI+j+4] = color[1];
 			clientQuads[dataI+j+5] = color[2];
@@ -251,6 +250,7 @@ void Render::GenerateHitboxVertices(const std::vector<int> &hitboxes, color_t pi
 	acumQuads = dataI;
 	acumElements += (elements);
 	acumSize += size;
+	zOrder++;
 }
 
 void Render::LoadHitboxVertices()
@@ -262,6 +262,7 @@ void Render::LoadHitboxVertices()
 	acumQuads = 0;
 	acumElements = 0;
 	acumSize = 0;
+	zOrder = 0;
 
 	ImGui::Text("%i", quadsToDraw);
 }

@@ -31,6 +31,7 @@ private:
 	size_t acumSize = 0;
 	size_t acumQuads = 0;
 	size_t acumElements = 0;
+	float zOrder = 0;
 
 	int lAlphaS;
 	Shader sSimple;
