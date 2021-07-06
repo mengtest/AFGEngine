@@ -15,6 +15,8 @@ public:
 	void RegenerateNames();
 
 private:
+
+	void DrawFrame(Frame &frame);
 	bool copyThisFrame = true;
 	std::string *decoratedNames;
 };

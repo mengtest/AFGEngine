@@ -28,12 +28,12 @@ namespace flag
 		CROUCH_BLOCK = 0x10,
 		STAND_BLOCK = 0x20,
 		AIR_BLOCK = 0x40,
-		SINGLE_HIT = 0x80,
+		SINGLE_HIT = 0x80, //unused 
 
 		CANCELLABLE = 0x100,
 		CANCEL_WHIFF = 0x200,
-		JUMP_C_HIT = 0x400,
-		JUMP_C_BLOCK = 0x800,
+		JUMP_C_HIT = 0x400, //u
+		JUMP_C_BLOCK = 0x800, //u
 		_UNUSED13 = 0x1000,
 		_UNUSED14 = 0x2000,
 		_UNUSED15 = 0x4000,
@@ -97,7 +97,8 @@ struct Frame_property
 	uint32_t flags = 0;
 	float vel[2] = {0}; // x,y
 	float accel[2] = {0};
-	int damage[4] = {0}; // P-damage on hit and block plus R-damage on hit and block.
+
+	int damage[4] = {0}; // P-damage on hit and block plus R-damage on hit and block. 0 and 1 are unused
 	float proration = 0;
 	int mgain[2] = {0}; //Meter gain on hit and block respectively.
 	int hitstun = 0;
@@ -121,7 +122,6 @@ struct Frame
 	std::vector<int> redboxes;
 	std::vector<int> colbox;
 
-	int nextFrame = -1;
 	int spriteIndex = 0;
 };
 
@@ -143,7 +143,6 @@ class Framedata
 public:
 	std::vector<Sequence> sequences;
 
-private:
 	int actTableG[64]; //Array to translate act:: constants to their assigned sequence.
 	int actTableA[64]; //Aerial counterpart
 	Motion_Data motionListDataG[32]; //List of motion inputs. Not only for special attack usage.
@@ -153,7 +152,7 @@ private:
 
 public:
 	bool Load(std::string charFile, std::unordered_map<std::string, uint16_t> &nameMap);
-
+	std::string GetDecoratedName(int n);
 };
 
 

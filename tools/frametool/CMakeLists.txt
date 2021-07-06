@@ -7,12 +7,14 @@ if(NOT AFGE_USE_SUBMODULES)
 	find_package(glad REQUIRED)
 	find_package(glm CONFIG REQUIRED)
 endif()
+
 target_link_libraries(Frametool PRIVATE
 	glad::glad
 	glm::glm
 	SDL2::SDL2
 	SDL2::SDL2main
 	imgui::imgui
+	imguiFD
 	Common
 )
 
@@ -24,4 +26,5 @@ target_sources(Frametool PRIVATE
 	ini.cpp
 	framedata.cpp
 	main_pane.cpp
+	imgui_utils.cpp
 )

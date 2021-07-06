@@ -6,6 +6,7 @@
 #include <imgui_internal.h>
 #include <imgui_impl_opengl3.h>
 #include <imgui_impl_sdl.h>
+#include <ImGuiFileDialog.h>
 #include <SDL_scancode.h>
 
 #include <glad/glad.h>
@@ -259,28 +260,29 @@ void MainFrame::LoadTheme(int i )
 
 void MainFrame::Menu(unsigned int errorPopupId)
 {
+
 	if (ImGui::BeginMenuBar())
 	{
-		//ImGui::Separator();
-		/* if (ImGui::BeginMenu("File"))
+		if (ImGui::BeginMenu("File"))
 		{
 			if (ImGui::MenuItem("New file"))
 			{
-				framedata.initEmpty();
+				//todo clean fd
 				currentFilePath.clear();
 				mainPane.RegenerateNames();
 			}
 			if (ImGui::MenuItem("Close file"))
 			{
-				framedata.Free();
+				//todo
 				currentFilePath.clear();
 			}
 
 			ImGui::Separator();
-			if (ImGui::MenuItem("Load from .txt..."))
+			if (ImGui::MenuItem("Load char file..."))
 			{
-				std::string &&file = FileDialog(fileType::TXT);
-				if(!file.empty())
+				ImGuiFileDialog::Instance()->OpenDialog("ChooseFileDlgKey", "Choose File", ".char", ".");
+				/* std::string &&file = FileDialog(fileType::TXT);
+				if(!file.empty())w
 				{
 					if(!LoadFromIni(&framedata, &cg, file))
 					{
@@ -292,94 +294,38 @@ void MainFrame::Menu(unsigned int errorPopupId)
 						mainPane.RegenerateNames();
 						render.SwitchImage(-1);
 					}
-				}
-			}
-
-			if (ImGui::MenuItem("Load HA6..."))
-			{
-				std::string &&file = FileDialog(fileType::HA6);
-				if(!file.empty())
-				{
-					if(!framedata.load(file.c_str()))
-					{
-						ImGui::OpenPopup(errorPopupId);
-					}
-					else
-					{
-						currentFilePath = file;
-						mainPane.RegenerateNames();
-					}
-				}
-			}
-
-			if (ImGui::MenuItem("Load HA6 and Patch..."))
-			{
-				std::string &&file = FileDialog(fileType::HA6);
-				if(!file.empty())
-				{
-					if(!framedata.load(file.c_str(), true))
-					{
-						ImGui::OpenPopup(errorPopupId);
-					}
-					else
-						mainPane.RegenerateNames();
-					currentFilePath.clear();
-				}
+				} */
 			}
 
 			ImGui::Separator();
 			//TODO: Implement hotkeys, someday.
 			if (ImGui::MenuItem("Save")) 
 			{
-				if(currentFilePath.empty())
+				/* if(currentFilePath.empty())
 					currentFilePath = FileDialog(fileType::HA6, true);
 				if(!currentFilePath.empty())
 				{
 					framedata.save(currentFilePath.c_str());
-				}
+				} */
 			}
 
 			if (ImGui::MenuItem("Save as...")) 
 			{
-				std::string &&file = FileDialog(fileType::HA6, true);
+				/* std::string &&file = FileDialog(fileType::HA6, true);
 				if(!file.empty())
 				{
 					framedata.save(file.c_str());
 					currentFilePath = file;
-				}
+				} */
 			}
 
 			ImGui::Separator();
-			if (ImGui::MenuItem("Load CG...")) 
+			if (ImGui::MenuItem("Exit"))
 			{
-				std::string &&file = FileDialog(fileType::CG);
-				if(!file.empty())
-				{
-					if(!cg.load(file.c_str()))
-					{
-						ImGui::OpenPopup(errorPopupId);	
-					}
-					render.SwitchImage(-1);
-				}
-			}
 
-			if (ImGui::MenuItem("Load palette...")) 
-			{
-				std::string &&file = FileDialog(fileType::PAL);
-				if(!file.empty())
-				{
-					if(!cg.loadPalette(file.c_str()))
-					{
-						ImGui::OpenPopup(errorPopupId);	
-					}
-					render.SwitchImage(-1);
-				}
 			}
-
-			ImGui::Separator();
-			if (ImGui::MenuItem("Exit")) PostQuitMessage(0);
 			ImGui::EndMenu();
-		} */
+		}
 		if (ImGui::BeginMenu("Preferences"))
 		{
 			if (ImGui::BeginMenu("Switch preset style"))
@@ -412,6 +358,28 @@ void MainFrame::Menu(unsigned int errorPopupId)
 			ImGui::EndMenu();
 		}
 		ImGui::EndMenuBar();
+	}
+
+	if (ImGuiFileDialog::Instance()->Display("ChooseFileDlgKey")) 
+	{
+		// action if OK
+		if (ImGuiFileDialog::Instance()->IsOk())
+		{
+			auto selection = ImGuiFileDialog::Instance()->GetSelection();
+			ImGui::OpenPopup("Invalid file");
+		}
+		else
+			ImGuiFileDialog::Instance()->Close();
+	}
+
+	ImGui::SetNextWindowPos(ImGui::GetMainViewport()->GetCenter(), ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
+	if (ImGui::BeginPopupModal("Invalid file", NULL, ImGuiWindowFlags_AlwaysAutoResize))
+	{
+		ImGui::Text("There was a problem loading the file.\n"
+			"The file couldn't be accessed or it's not a valid file.\n\n");
+		ImGui::Separator();
+		if (ImGui::Button("OK", ImVec2(120, 0))) { ImGui::CloseCurrentPopup(); }
+		ImGui::EndPopup();
 	}
 }
 

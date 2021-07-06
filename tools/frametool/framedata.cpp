@@ -7,6 +7,8 @@
 #include <fstream>
 #include <iostream>
 #include <string>
+#include <sstream>
+#include <iomanip>
 
 #define rv(X) ((char*)&X)
 #define rptr(X) ((char*)X)
@@ -188,6 +190,15 @@ errorlog:
 	return false;
 }
 
+std::string Framedata::GetDecoratedName(int n)
+{
+	std::stringstream ss;
+	ss.flags(std::ios_base::right);
+	
+	ss << std::setfill('0') << std::setw(3) << n << " " << sequences[n].name;
+	return ss.str();
+}
+
 /* 
 glm::mat4 Framedata::GetSpriteTransform()
 {
@@ -198,5 +209,4 @@ glm::mat4 Framedata::GetSpriteTransform()
 	
 	
 	return tranform;
-}
- */
+} */

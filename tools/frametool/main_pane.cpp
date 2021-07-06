@@ -1,6 +1,8 @@
 #include "main_pane.h"
 #include <imgui.h>
 #include <imgui_stdlib.h>	
+#include "imgui_utils.h"
+
 
 MainPane::MainPane(Render* render, Framedata *framedata, FrameState &fs) : DrawWindow(render, framedata, fs),
 decoratedNames(nullptr)
@@ -19,7 +21,7 @@ void MainPane::RegenerateNames()
 
 		for(int i = 0; i < count; i++)
 		{
-			decoratedNames[i] = frameData->sequences[i].name;
+			decoratedNames[i] = frameData->GetDecoratedName(i);
 		}
 	}
 	else
@@ -94,8 +96,7 @@ void MainPane::Draw()
 		{
 			if(im::InputText("Pattern name", &seq.name))
 			{
-				decoratedNames[cs.seq] = seq.name;
-				
+				decoratedNames[cs.seq] = frameData->GetDecoratedName(cs.seq);
 			}
 
 			ImGui::InputInt("fn", &seq.frameNumber);
@@ -104,8 +105,15 @@ void MainPane::Draw()
 			ImGui::Checkbox("Loops", &seq.loops);
 			ImGui::InputInt("Begin loop", &seq.beginLoop);
 			ImGui::InputInt("Go to seq", &seq.gotoSeq);
-			ImGui::InputInt("machine state", &seq.machineState);
-			
+			const char* const states[] = {
+				"GROUNDED",
+				"AIRBORNE",
+				"BUSY_GRND",
+				"BUSY_AIR",
+				"PAIN_GRND",
+				"PAIN_AIR"
+			};
+			im::Combo("Machine state", &seq.machineState, states, IM_ARRAYSIZE(states));
 			im::TreePop();
 			im::Separator();
 		}
@@ -114,8 +122,7 @@ void MainPane::Draw()
 			Frame &frame = seq.frames[cs.frame];
 			if(im::TreeNode("Frame data"))
 			{
-				ImGui::InputInt("Sprite id", &frame.spriteIndex);
-				
+				DrawFrame(frame);
 				im::TreePop();
 				im::Separator();
 			}
@@ -152,9 +159,71 @@ void MainPane::Draw()
 				im::Separator();
 			} */
 		}
+		
+		if (im::TreeNode("ACT"))
+		{
+			for( int i = 0; i < 32; i++)
+			{
+				im::PushID(i); 
+				im::Text("A %s", frameData->motionListDataA[i].motionStr.c_str());
+				im::SameLine();
+				im::Text("G %s", frameData->motionListDataG[i].motionStr.c_str());
+				im::PopID();
+			};
+			im::TreePop();
+			im::Separator();
+		}
 		im::EndChild();
 	}
 
 	im::End();
 }
 
+void MainPane::DrawFrame(Frame &frame)
+{
+	ImGui::InputInt("Sprite id", &frame.spriteIndex);
+	ImGui::InputInt("Duration", &frame.frameProp.duration);
+	ImGui::InputFloat2("Vel", frame.frameProp.vel);
+	ImGui::InputFloat2("Acc", frame.frameProp.accel);
+	ImGui::InputInt4("Dmg", frame.frameProp.damage);
+	ImGui::InputFloat("Proration", &frame.frameProp.proration);
+	ImGui::InputInt("Hitstun", &frame.frameProp.hitstun);
+	ImGui::InputInt("Blockstun", &frame.frameProp.blockstun);
+	ImGui::InputInt("Hitstun", &frame.frameProp.hitstun);
+	ImGui::InputInt("CH stop", &frame.frameProp.ch_stop);
+	ImGui::InputInt("Hitstop", &frame.frameProp.hitstop);
+	ImGui::InputFloat2("Push", frame.frameProp.push);
+	ImGui::InputFloat2("Pushback", frame.frameProp.pushback);
+	ImGui::InputInt("Pain", &frame.frameProp.painType);
+	ImGui::InputFloat2("Offset", frame.frameProp.spriteOffset);
+
+	const char* const states[] = {
+		"STANDING",
+		"CROUCHED",
+		"AIRBORNE",
+		"OTG"
+	};
+	ImGui::Combo("State", &frame.frameProp.state, states, IM_ARRAYSIZE(states));
+
+	unsigned int flagIndex = -1;
+	BitField("Set 1", &frame.frameProp.flags, &flagIndex);
+	switch (flagIndex)
+	{
+		case 0: Tooltip("FRICTION"); break;
+		case 1: Tooltip("GRAVITY"); break;
+		case 2: Tooltip("KEEP_VEL"); break;
+		case 3: Tooltip("KEEP_ACC"); break;
+		case 4: Tooltip("CROUCH_BLOCK"); break;
+		case 5: Tooltip("STAND_BLOCK"); break;
+		case 6: Tooltip("AIR_BLOCK"); break;
+		case 7: Tooltip("UNUSED_SINGLE_HIT"); break;
+		case 8: Tooltip("CANCELLABLE"); break;
+		case 9: Tooltip("CANCEL_WHIFF"); break;
+		case 10: Tooltip("UNUSED_JUMP_C_HIT"); break;
+		case 11: Tooltip("UNUSED_JUMP_C_BLOCK"); break;
+		case 12: Tooltip("Unused"); break;
+
+		case 15: Tooltip("IGNORE_INPUT"); break;
+		case 16: Tooltip("RESET_INFLICTED_VEL"); break;
+	}
+}
