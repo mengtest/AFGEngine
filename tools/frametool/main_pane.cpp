@@ -35,6 +35,12 @@ void MainPane::Draw()
 		
 	namespace im = ImGui;
 	im::Begin("Left Pane",0);
+	if(!frameData->loaded)
+	{
+		im::Text("Load a file first.");
+		im::End();
+		return;
+	}
 	if (im::BeginCombo("Pattern", decoratedNames[cs.seq].c_str(), ImGuiComboFlags_HeightLargest))
 	{
 		auto count = frameData->sequences.size();
@@ -99,12 +105,11 @@ void MainPane::Draw()
 				decoratedNames[cs.seq] = frameData->GetDecoratedName(cs.seq);
 			}
 
-			ImGui::InputInt("fn", &seq.frameNumber);
-			ImGui::InputInt("Level", &seq.level);
-			ImGui::InputInt("Meter", &seq.metercost);
-			ImGui::Checkbox("Loops", &seq.loops);
-			ImGui::InputInt("Begin loop", &seq.beginLoop);
-			ImGui::InputInt("Go to seq", &seq.gotoSeq);
+			ImGui::InputInt("Level", &seq.props.level);
+			ImGui::InputInt("Meter", &seq.props.metercost);
+			ImGui::Checkbox("Loops", &seq.props.loops);
+			ImGui::InputInt("Begin loop", &seq.props.beginLoop);
+			ImGui::InputInt("Go to seq", &seq.props.gotoSeq);
 			const char* const states[] = {
 				"GROUNDED",
 				"AIRBORNE",
@@ -113,7 +118,7 @@ void MainPane::Draw()
 				"PAIN_GRND",
 				"PAIN_AIR"
 			};
-			im::Combo("Machine state", &seq.machineState, states, IM_ARRAYSIZE(states));
+			im::Combo("Machine state", &seq.props.machineState, states, IM_ARRAYSIZE(states));
 			im::TreePop();
 			im::Separator();
 		}

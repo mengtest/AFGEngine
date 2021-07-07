@@ -14,7 +14,6 @@
 [submodule "submodules/glm"]
 	path = submodules/glm
 	url = https://github.com/g-truc/glm.git
-[submodule "submodules/ImGuiFileDialog"]
-	path = submodules/ImGuiFileDialog
-	url = https://github.com/aiekick/ImGuiFileDialog.git
-	branch = Lib_Only
+[submodule "submodules/nfd"]
+	path = submodules/nfd
+	url = https://github.com/btzy/nativefiledialog-extended.git

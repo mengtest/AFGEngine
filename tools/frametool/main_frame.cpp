@@ -6,8 +6,8 @@
 #include <imgui_internal.h>
 #include <imgui_impl_opengl3.h>
 #include <imgui_impl_sdl.h>
-#include <ImGuiFileDialog.h>
 #include <SDL_scancode.h>
+#include <nfd.h>
 
 #include <glad/glad.h>
 #include <glm/vec3.hpp>
@@ -22,10 +22,10 @@ x(0),y(-150)
 {
 	LoadSettings();
 
-	NameMap names = render.LoadGraphics("data/images/vaki.png", "data/images/vaki.vt8");
+	render.LoadGraphics("data/images/vaki.png", "data/images/vaki.vt8");
 	render.LoadPalette("data/palettes/play2.act");
 	
-	fd.Load("data/char/vaki.char", names);
+	//fd.Load("data/char/vaki.char", render.gfxNames);
 }
 
 MainFrame::~MainFrame()
@@ -267,40 +267,60 @@ void MainFrame::Menu(unsigned int errorPopupId)
 		{
 			if (ImGui::MenuItem("New file"))
 			{
-				//todo clean fd
+				fd.Clear();
 				currentFilePath.clear();
 				mainPane.RegenerateNames();
 			}
 			if (ImGui::MenuItem("Close file"))
 			{
-				//todo
+				fd.Close();
 				currentFilePath.clear();
 			}
 
 			ImGui::Separator();
-			if (ImGui::MenuItem("Load char file..."))
+			if (ImGui::MenuItem("Load char file... (OLD)"))
 			{
-				ImGuiFileDialog::Instance()->OpenDialog("ChooseFileDlgKey", "Choose File", ".char", ".");
-				/* std::string &&file = FileDialog(fileType::TXT);
-				if(!file.empty())w
-				{
-					if(!LoadFromIni(&framedata, &cg, file))
+				nfdchar_t* outPath = nullptr;
+				nfdfilteritem_t filterItem[2] = {{"Character file", "char"}};
+				nfdresult_t result = NFD_OpenDialog(&outPath, filterItem, 1, "data/char");
+				if (result == NFD_OKAY && outPath) {
+					if(!fd.LoadV5(outPath, render.gfxNames))
 					{
 						ImGui::OpenPopup(errorPopupId);
 					}
 					else
 					{
-						currentFilePath.clear();
+						currentFilePath = outPath;
 						mainPane.RegenerateNames();
-						render.SwitchImage(-1);
 					}
-				} */
+					NFD_FreePath(outPath);
+				}
+			}
+
+			if (ImGui::MenuItem("Load char file..."))
+			{
+				nfdchar_t* outPath = nullptr;
+				nfdfilteritem_t filterItem[2] = {{"Character file", "char"}};
+				nfdresult_t result = NFD_OpenDialog(&outPath, filterItem, 1, "data/char");
+				if (result == NFD_OKAY && outPath) {
+					if(!fd.Load(outPath))
+					{
+						ImGui::OpenPopup(errorPopupId);
+					}
+					else
+					{
+						currentFilePath = outPath;
+						mainPane.RegenerateNames();
+					}
+					NFD_FreePath(outPath);
+				}
 			}
 
 			ImGui::Separator();
 			//TODO: Implement hotkeys, someday.
 			if (ImGui::MenuItem("Save")) 
 			{
+				
 				/* if(currentFilePath.empty())
 					currentFilePath = FileDialog(fileType::HA6, true);
 				if(!currentFilePath.empty())
@@ -311,12 +331,14 @@ void MainFrame::Menu(unsigned int errorPopupId)
 
 			if (ImGui::MenuItem("Save as...")) 
 			{
-				/* std::string &&file = FileDialog(fileType::HA6, true);
-				if(!file.empty())
-				{
-					framedata.save(file.c_str());
-					currentFilePath = file;
-				} */
+				nfdchar_t* savePath = nullptr;
+				nfdfilteritem_t filterItem[2] = {{"Character file", "char"}};
+				nfdresult_t result = NFD_SaveDialog(&savePath, filterItem, 1, "data/char", currentFilePath.c_str());
+				if (result == NFD_OKAY && savePath) {
+					fd.Save(savePath);
+					currentFilePath = savePath;
+					NFD_FreePath(savePath);
+				}
 			}
 
 			ImGui::Separator();
@@ -360,27 +382,6 @@ void MainFrame::Menu(unsigned int errorPopupId)
 		ImGui::EndMenuBar();
 	}
 
-	if (ImGuiFileDialog::Instance()->Display("ChooseFileDlgKey")) 
-	{
-		// action if OK
-		if (ImGuiFileDialog::Instance()->IsOk())
-		{
-			auto selection = ImGuiFileDialog::Instance()->GetSelection();
-			ImGui::OpenPopup("Invalid file");
-		}
-		else
-			ImGuiFileDialog::Instance()->Close();
-	}
-
-	ImGui::SetNextWindowPos(ImGui::GetMainViewport()->GetCenter(), ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
-	if (ImGui::BeginPopupModal("Invalid file", NULL, ImGuiWindowFlags_AlwaysAutoResize))
-	{
-		ImGui::Text("There was a problem loading the file.\n"
-			"The file couldn't be accessed or it's not a valid file.\n\n");
-		ImGui::Separator();
-		if (ImGui::Button("OK", ImVec2(120, 0))) { ImGui::CloseCurrentPopup(); }
-		ImGui::EndPopup();
-	}
 }
 
 void MainFrame::WarmStyle()

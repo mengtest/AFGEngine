@@ -1,7 +1,3 @@
-/* #include <cmath>
-#include <deque>
-*/
-
 #include "framedata.h"
 
 #include <fstream>
@@ -13,8 +9,20 @@
 #define rv(X) ((char*)&X)
 #define rptr(X) ((char*)X)
 
-bool Framedata::Load(std::string charFile, NameMap &nameMap)
+constexpr const char *charSignature = "AFGECharacterFile";
+constexpr uint32_t currentVersion = 99'0;
+
+struct BoxSizes
 {
+	int8_t greens;
+	int8_t reds;
+	int8_t collision;
+};
+
+//Ver 5 old loading function.
+bool Framedata::LoadV5(std::string charFile, NameMap &nameMap)
+{
+	const uint64_t SANITY_CHECK = 0x1d150c10c001506f;
 	//loads character from a file and fills sequences/frames and all that yadda.
 	std::ifstream file(charFile, std::ios_base::in | std::ios_base::binary);
 	if (!file.is_open())
@@ -25,7 +33,7 @@ bool Framedata::Load(std::string charFile, NameMap &nameMap)
 
 	uint64_t sanity_check;
 	uint16_t header_bytes;
-	CharFileHeader h;
+	CharFileHeader_old h;
 
 	file.read(rv(sanity_check), sizeof(uint64_t));
 	if (sanity_check != SANITY_CHECK)
@@ -35,7 +43,7 @@ bool Framedata::Load(std::string charFile, NameMap &nameMap)
 	}
 
 	file.read(rv(header_bytes), sizeof(uint16_t));
-	if(header_bytes != sizeof(CharFileHeader))
+	if(header_bytes != sizeof(CharFileHeader_old))
 	{
 		std::cerr << "File header size discrepancy.\n";
 		return false;
@@ -53,9 +61,6 @@ bool Framedata::Load(std::string charFile, NameMap &nameMap)
 		actTableG[i] -= 1;
 		actTableA[i] -= 1;
 	}
-
-	int motionLenG;
-	int motionLenA;
 
 	file.read(rv(motionLenG), sizeof(int));
 	file.read(rv(motionLenA), sizeof(int));
@@ -100,20 +105,18 @@ bool Framedata::Load(std::string charFile, NameMap &nameMap)
 		sequences[i].name.resize(namelength);
 		file.read(rptr(sequences[i].name.data()), namelength);
 
-		file.read((char *)&sequences[i].level, sizeof(int));
-		file.read((char *)&sequences[i].metercost, sizeof(int));
-		file.read((char *)&sequences[i].loops, sizeof(bool));
-		file.read((char *)&sequences[i].beginLoop, sizeof(int));
-		file.read((char *)&sequences[i].gotoSeq, sizeof(int));
-		sequences[i].gotoSeq -= 1;
-
-		file.read((char *)&sequences[i].machineState, sizeof(int));
+		file.read((char *)&sequences[i].props.level, sizeof(int));
+		file.read((char *)&sequences[i].props.metercost, sizeof(int));
+		file.read((char *)&sequences[i].props.loops, sizeof(bool));
+		file.read((char *)&sequences[i].props.beginLoop, sizeof(int));
+		file.read((char *)&sequences[i].props.gotoSeq, sizeof(int));
+		file.read((char *)&sequences[i].props.machineState, sizeof(int));
+		sequences[i].props.gotoSeq -= 1;
 
 		uint8_t seqlength;
 		file.read((char *)&seqlength, sizeof(uint8_t));
 
 		sequences[i].frames.resize(seqlength);
-		sequences[i].frameNumber = seqlength; //TODO
 		for (uint8_t i2 = 0; i2 < seqlength; ++i2)
 		{
 			file.ignore(sizeof(float) * 8); //deprecated imagepos
@@ -182,12 +185,201 @@ bool Framedata::Load(std::string charFile, NameMap &nameMap)
 	}
 
 	file.close();
+	loaded = true;
 	return true;
 
 errorlog:
 	std::cerr << charFile << "\n";
 	file.close();
 	return false;
+}
+
+
+bool Framedata::Load(std::string charFile)
+{
+	//loads character from a file and fills sequences/frames and all that yadda.
+	std::ifstream file(charFile, std::ios_base::in | std::ios_base::binary);
+	if (!file.is_open())
+	{
+		std::cerr << "Couldn't open character file.\n";
+		return false;
+	}
+
+	CharFileHeader header;
+	file.read(rv(header), sizeof(CharFileHeader));
+	if(strcmp(charSignature, header.signature))
+	{
+		std::cerr << "Signature mismatch.\n";
+		return false;
+	}
+	if(header.version != currentVersion)
+	{
+		std::cerr << "Format version mismatch.\n";
+		return false;
+	}
+
+	{ //To be removed
+		int table_size;
+		file.read(rv(table_size), sizeof(int));
+		file.read(rptr(actTableG), sizeof(int) * table_size);
+		file.read(rptr(actTableA), sizeof(int) * table_size);
+
+		file.read(rv(motionLenG), sizeof(int));
+		file.read(rv(motionLenA), sizeof(int));
+
+		for (int i = 0; i < motionLenG; ++i)
+		{
+			file.read(rv(motionListDataG[i].bufLen), sizeof(int));
+			file.read(rv(motionListDataG[i].seqRef), sizeof(int));
+
+			int strSize;
+			file.read(rv(strSize), sizeof(int));
+
+			std::string fullMotionStr(strSize, '\0');
+			file.read(rptr(fullMotionStr.data()), strSize);
+
+			file.read(rv(motionListDataG[i].button), sizeof(char));
+
+			motionListDataG[i].motionStr = fullMotionStr;
+		}
+
+		for (int i = 0; i < motionLenA; ++i)
+		{
+			file.read((char *)&motionListDataA[i].bufLen, sizeof(int));
+			file.read((char *)&motionListDataA[i].seqRef, sizeof(int));
+
+			int strSize;
+			file.read((char *)&strSize, sizeof(int));
+
+			std::string fullMotionStr(strSize, '\0');
+
+			file.read((char *)fullMotionStr.data(), strSize);
+			file.read(&motionListDataA[i].button, sizeof(char));
+
+			motionListDataA[i].motionStr = fullMotionStr;
+		}
+	}
+
+	sequences.resize(header.sequences_n);
+	for (uint16_t i = 0; i < header.sequences_n; ++i)
+	{
+		auto &currSeq = sequences[i];
+		uint8_t namelength;
+		file.read(rv(namelength), sizeof(namelength));
+		currSeq.name.resize(namelength);
+		file.read(rptr(currSeq.name.data()), namelength);
+
+		file.read(rv(currSeq.props), sizeof(seqProp));
+
+		uint8_t seqlength;
+		file.read(rv(seqlength), sizeof(seqlength));
+		currSeq.frames.resize(seqlength);
+		for (uint8_t i2 = 0; i2 < seqlength; ++i2)
+		{
+			auto &currFrame = currSeq.frames[i2];
+
+			//How many boxes are used per frame
+			BoxSizes bs;
+			file.read(rv(bs), sizeof(BoxSizes));
+			currFrame.greenboxes.resize(bs.greens);
+			currFrame.redboxes.resize(bs.reds);
+			currFrame.colbox.resize(bs.collision);
+
+			file.read(rv(currFrame.frameProp), sizeof(Frame_property));
+
+			file.read(rptr(currFrame.greenboxes.data()), sizeof(int) * bs.greens);
+			file.read(rptr(currFrame.redboxes.data()), sizeof(int) * bs.reds);
+			file.read(rptr(currFrame.colbox.data()), sizeof(int) * bs.collision);
+
+			file.read(rv(currFrame.spriteIndex), sizeof(int));
+		}
+	}
+
+	file.close();
+	loaded = true;
+	return true;
+}
+
+void Framedata::Save(std::string charFile)
+{
+	//loads character from a file and fills sequences/frames and all that yadda.
+	std::ofstream file(charFile, std::ios_base::out | std::ios_base::binary);
+	if (!file.is_open())
+	{
+		std::cerr << "Couldn't open character file.\n";
+		return;
+	}
+
+	CharFileHeader header;
+	header.sequences_n = sequences.size();
+	header.version = 99'0;
+	strncpy_s(header.signature, charSignature, 32);
+	file.write(rv(header), sizeof(CharFileHeader));
+
+	int table_size = 64;
+	file.write(rv(table_size), sizeof(int));
+	file.write(rptr(actTableG), sizeof(int) * table_size);
+	file.write(rptr(actTableA), sizeof(int) * table_size);
+
+	file.write(rv(motionLenG), sizeof(int));
+	file.write(rv(motionLenA), sizeof(int));
+
+	for (int i = 0; i < motionLenG; ++i)
+	{
+		file.write(rv(motionListDataG[i].bufLen), sizeof(int));
+		file.write(rv(motionListDataG[i].seqRef), sizeof(int));
+
+		int strSize = motionListDataG[i].motionStr.size();
+		file.write(rv(strSize), sizeof(int));
+		file.write(rptr(motionListDataG[i].motionStr.data()), strSize);
+		file.write(rv(motionListDataG[i].button), sizeof(char));
+	}
+
+	for (int i = 0; i < motionLenA; ++i)
+	{
+		file.write(rv(motionListDataA[i].bufLen), sizeof(int));
+		file.write(rv(motionListDataA[i].seqRef), sizeof(int));
+
+		int strSize = motionListDataA[i].motionStr.size();
+		file.write(rv(strSize), sizeof(int));
+		file.write(rptr(motionListDataA[i].motionStr.data()), strSize);
+		file.write(rv(motionListDataA[i].button), sizeof(char));
+	}
+
+	for (uint16_t i = 0; i < header.sequences_n; ++i)
+	{
+		auto &currSeq = sequences[i];
+		uint8_t namelength = currSeq.name.size();
+		file.write(rv(namelength), sizeof(namelength));
+		file.write(rptr(currSeq.name.data()), namelength);
+
+		file.write(rv(currSeq.props), sizeof(seqProp));
+
+		uint8_t seqlength = currSeq.frames.size();
+		file.write(rv(seqlength), sizeof(seqlength));
+		for (uint8_t i2 = 0; i2 < seqlength; ++i2)
+		{
+			auto &currFrame = currSeq.frames[i2];
+
+			//How many boxes are used per frame
+			BoxSizes bs;
+			bs.greens = currFrame.greenboxes.size();
+			bs.reds = currFrame.redboxes.size();
+			bs.collision = currFrame.colbox.size();
+			file.write(rv(bs), sizeof(BoxSizes));
+
+			file.write(rv(currFrame.frameProp), sizeof(Frame_property));
+
+			file.write(rptr(currFrame.greenboxes.data()), sizeof(int) * bs.greens);
+			file.write(rptr(currFrame.redboxes.data()), sizeof(int) * bs.reds);
+			file.write(rptr(currFrame.colbox.data()), sizeof(int) * bs.collision);
+
+			file.write(rv(currFrame.spriteIndex), sizeof(int));
+		}
+	}
+
+	file.close();
+	return;
 }
 
 std::string Framedata::GetDecoratedName(int n)
@@ -197,6 +389,19 @@ std::string Framedata::GetDecoratedName(int n)
 	
 	ss << std::setfill('0') << std::setw(3) << n << " " << sequences[n].name;
 	return ss.str();
+}
+
+void Framedata::Clear()
+{
+	sequences.clear();
+	sequences.resize(1000);
+	loaded = true;
+}
+
+void Framedata::Close()
+{
+	sequences.clear();
+	loaded = false;
 }
 
 /* 

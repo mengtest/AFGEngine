@@ -14,7 +14,7 @@ target_link_libraries(Frametool PRIVATE
 	SDL2::SDL2
 	SDL2::SDL2main
 	imgui::imgui
-	imguiFD
+	nfd
 	Common
 )
 

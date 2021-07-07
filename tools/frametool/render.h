@@ -6,6 +6,7 @@
 #include <vao.h>
 #include <ubo.h>
 #include "hitbox.h"
+#include "types.h"
 
 #include <vector>
 #include <unordered_map>
@@ -59,7 +60,8 @@ public:
 	int highLightN = -1;
 	
 	Render();
-	std::unordered_map<std::string, uint16_t> LoadGraphics(const char* pngFile, const char* vtxFile);
+	NameMap gfxNames;
+	void LoadGraphics(const char* pngFile, const char* vtxFile);
 	void LoadPalette(const char* file);
 
 	void Draw();

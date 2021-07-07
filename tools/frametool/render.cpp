@@ -90,7 +90,7 @@ void Render::LoadPalette(const char *file)
 	glActiveTexture(GL_TEXTURE0);
 }
 
-std::unordered_map<std::string, uint16_t> Render::LoadGraphics(const char *pngFile, const char *vtxFile)
+void Render::LoadGraphics(const char *pngFile, const char *vtxFile)
 {
 	texture.Load(pngFile, "", true);
 	texture.Apply(true);
@@ -132,7 +132,7 @@ std::unordered_map<std::string, uint16_t> Render::LoadGraphics(const char *pngFi
 	delete[] vertexData;
 	delete[] chunksPerSprite;
 
-	return nameMap;
+	gfxNames = nameMap;
 }
 
 void Render::Draw()

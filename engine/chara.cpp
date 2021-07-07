@@ -129,9 +129,10 @@ Character::Character(FixedPoint xPos, float _side, std::string charFile, NameMap
 		file.read((char *)&seqlength, sizeof(uint8_t));
 
 		sequences[i].frames.resize(seqlength);
-		sequences[i].frameNumber = seqlength;
+		sequences[i].frameNumber = seqlength; //Keep?
 		for (uint8_t i2 = 0; i2 < seqlength; ++i2)
 		{
+			//Remove.
 			file.read((char *)&sequences[i].frames[i2].imagepos, sizeof(float) * 8);
 
 			//How many boxes are used per frame

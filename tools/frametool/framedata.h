@@ -10,12 +10,10 @@
 
 //#include <fixed_point.h>
 
+#include "types.h"
 #include <cstdint>
 #include <string>
-#include <unordered_map>
 #include <vector>
-
-typedef std::unordered_map<std::string, uint16_t> NameMap;
 
 namespace flag
 {
@@ -77,10 +75,17 @@ namespace state
 	}
 }
 
-struct CharFileHeader //header for .char files.
+struct CharFileHeader_old //old header
 {
 	uint16_t sequences_n;
 	uint8_t version;
+};
+
+struct CharFileHeader //header for .char files.
+{
+	char signature[32];
+	uint32_t version;
+	uint16_t sequences_n;
 };
 
 struct Motion_Data
@@ -125,15 +130,19 @@ struct Frame
 	int spriteIndex = 0;
 };
 
-struct Sequence
+struct seqProp
 {
-	int frameNumber = 0;
 	int level = 0;
 	int metercost = 0;
 	bool loops = false;
 	int beginLoop = 0;
 	int gotoSeq = 0;
 	int machineState = 0;
+};
+
+struct Sequence
+{
+	seqProp props;
 	std::vector<Frame> frames;
 	std::string name;
 };
@@ -147,12 +156,17 @@ public:
 	int actTableA[64]; //Aerial counterpart
 	Motion_Data motionListDataG[32]; //List of motion inputs. Not only for special attack usage.
 	Motion_Data motionListDataA[32];
-
-	const uint64_t SANITY_CHECK = 0x1d150c10c001506f;
+	int motionLenG;
+	int motionLenA;
 
 public:
-	bool Load(std::string charFile, std::unordered_map<std::string, uint16_t> &nameMap);
+	bool Load(std::string charFile);
+	bool LoadV5(std::string charFile, std::unordered_map<std::string, uint16_t> &nameMap);
+	void Clear();
+	void Close();
+	void Save(std::string charFile);
 	std::string GetDecoratedName(int n);
+	bool loaded = false;
 };
 
 
