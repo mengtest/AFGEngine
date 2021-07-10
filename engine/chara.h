@@ -77,8 +77,9 @@ namespace state
 
 struct CharFileHeader //header for .char files.
 {
+	char signature[32];
+	uint32_t version;
 	uint16_t sequences_n;
-	uint8_t version;
 };
 
 struct Motion_Data
@@ -95,6 +96,7 @@ struct Frame_property
 	uint32_t flags = 0;
 	float vel[2] = {0}; // x,y
 	float accel[2] = {0};
+
 	int damage[4] = {0}; // P-damage on hit and block plus R-damage on hit and block.
 	float proration = 0;
 	int mgain[2] = {0}; //Meter gain on hit and block respectively.
@@ -108,38 +110,39 @@ struct Frame_property
 	int state = 0;
 
 	int painType = 0;
+	float spriteOffset[2]; //x,y
 };
 
 struct Frame
 {
+	
 	Frame_property frameProp;
+
 	//Boxes are defined by BL, BR, TR, TL points, in that order.
-	float imagepos[8]; //Relative to root;
-	float greenboxes[32*4*2]; //Limit of 32 boxes per frame * all four sides* (x,y)
-	float redboxes[32*4*2]; //probably getting replaced by std::vector
+	typedef std::vector<Rect2d<FixedPoint>> boxes_t;
+	boxes_t greenboxes;
+	boxes_t redboxes;
 	Rect2d<FixedPoint> colbox;
 
-	// Max usable index?
-	int greenboxActive = 0;
-	int redboxActive = 0;
-	int colboxActive = 0;
-
-
-	int nextFrame = -1;
-
+	//int nextFrame = -1;
 	int spriteIndex = 0;
 };
 
-struct Sequence
+struct seqProp
 {
-	int frameNumber = 0;
 	int level = 0;
 	int metercost = 0;
 	bool loops = false;
 	int beginLoop = 0;
 	int gotoSeq = 0;
 	int machineState = 0;
+};
+
+struct Sequence
+{
+	seqProp props;
 	std::vector<Frame> frames;
+	std::string name;
 };
 
 class Character
@@ -203,7 +206,7 @@ private:
 	FixedPoint touchedWall; //left wall: -1, right wall = 1, no wall = 0;
 
 public:
-	Character(FixedPoint posX, float side, std::string charFile, std::unordered_map<std::string, uint16_t> &nameMap);
+	Character(FixedPoint posX, float side, std::string charFile);
 
 	void Print();
 

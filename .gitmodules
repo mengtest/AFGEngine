@@ -17,3 +17,6 @@
 [submodule "submodules/nfd"]
 	path = submodules/nfd
 	url = https://github.com/btzy/nativefiledialog-extended.git
+[submodule "submodules/lua"]
+	path = submodules/lua
+	url = https://github.com/walterschell/Lua.git

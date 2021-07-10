@@ -16,12 +16,15 @@ target_sources(AFGEngine PRIVATE
 	render_context.cpp
 )
 
-#Internal
 target_link_libraries(AFGEngine PRIVATE
+	#Internal
 	FixedPoint
 	Geometry
 	Image
 	Common
+
+	#External
+	sol2::sol2
 )
 
 #External

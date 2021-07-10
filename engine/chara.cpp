@@ -4,19 +4,28 @@
 #include <string>
 #include <iostream>
 
-
 #include <glad/glad.h>	//These shouldn't be here but w/e for now
 
 #include "chara.h"
 #include "chara_input.h"
 #include "raw_input.h" //Used only by Character::ResolveHit
 
+#include <sol/sol.hpp>
+
 bool Character::isColliding;
-
-
 const FixedPoint floorPos(32);
 
-Character::Character(FixedPoint xPos, float _side, std::string charFile, NameMap &nameMap) :
+#define rv(X) ((char*)&X)
+#define rptr(X) ((char*)X)
+
+struct BoxSizes
+{
+	int8_t greens;
+	int8_t reds;
+	int8_t collision;
+};
+
+Character::Character(FixedPoint xPos, float _side, std::string charFile) :
 	health(10000),
 	actTableG{0},
 	actTableA{0},
@@ -33,7 +42,8 @@ Character::Character(FixedPoint xPos, float _side, std::string charFile, NameMap
 	friction(0.05),
 	touchedWall(0)
 {
-	const uint64_t SANITY_CHECK = 0x1d150c10c001506f;
+	constexpr const char *charSignature = "AFGECharacterFile";
+	constexpr uint32_t currentVersion = 99'1;
 
 	root.x = xPos;
 	root.y = floorPos;
@@ -42,164 +52,143 @@ Character::Character(FixedPoint xPos, float _side, std::string charFile, NameMap
 	std::ifstream file(charFile, std::ios_base::in | std::ios_base::binary);
 	if (!file.is_open())
 	{
-		std::cerr << "Couldn't open character file: ";
-		goto errorlog;
+		std::cerr << "Couldn't open character file.\n";
 	}
 
-	uint64_t sanity_check;
-	uint16_t header_bytes;
-	CharFileHeader h;
-
-	file.read((char *)&sanity_check, sizeof(uint64_t));
-	if (sanity_check != SANITY_CHECK)
+	CharFileHeader header;
+	file.read(rv(header), sizeof(CharFileHeader));
+	if(strcmp(charSignature, header.signature))
 	{
-		std::cerr << "This is not a proper character file: ";
-		goto errorlog;
+		std::cerr << "Signature mismatch.\n";
+	}
+	if(header.version != currentVersion)
+	{
+		std::cerr << "Format version mismatch.\n";
 	}
 
-	file.read((char *)&header_bytes, sizeof(uint16_t));
-	file.read((char *)&h, header_bytes);
+	{//Remove
+		int motionLenG;
+		int motionLenA;
 
-	int table_size;
-	file.read((char *)&table_size, sizeof(int));
-	file.read((char *)actTableG, sizeof(int) * table_size);
-	file.read((char *)actTableA, sizeof(int) * table_size);
+		file.read((char *)&motionLenG, sizeof(int));
+		file.read((char *)&motionLenA, sizeof(int));
 
-	for (int i = 0; i < 64; ++i)
-	{
-		actTableG[i] -= 1;
-		actTableA[i] -= 1;
+		for (int i = 0; i < motionLenG; ++i)
+		{
+			file.read((char *)&motionListDataG[i].bufLen, sizeof(int));
+			file.read((char *)&motionListDataG[i].seqRef, sizeof(int));
+
+			int strSize;
+			file.read((char *)&strSize, sizeof(int));
+
+			std::string fullMotionStr(strSize, '\0');
+
+			file.read((char *)fullMotionStr.data(), strSize);
+			file.read(&motionListDataG[i].button, sizeof(char));
+
+			motionListDataG[i].motionStr = fullMotionStr;
+		}
+
+		for (int i = 0; i < motionLenA; ++i)
+		{
+			file.read((char *)&motionListDataA[i].bufLen, sizeof(int));
+			file.read((char *)&motionListDataA[i].seqRef, sizeof(int));
+
+			int strSize;
+			file.read((char *)&strSize, sizeof(int));
+
+			std::string fullMotionStr(strSize, '\0');
+
+			file.read((char *)fullMotionStr.data(), strSize);
+			file.read(&motionListDataA[i].button, sizeof(char));
+
+			motionListDataA[i].motionStr = fullMotionStr;
+		}
 	}
 
-	int motionLenG;
-	int motionLenA;
-
-	file.read((char *)&motionLenG, sizeof(int));
-	file.read((char *)&motionLenA, sizeof(int));
-
-	for (int i = 0; i < motionLenG; ++i)
+	sequences.resize(header.sequences_n);
+	for (uint16_t i = 0; i < header.sequences_n; ++i)
 	{
-		file.read((char *)&motionListDataG[i].bufLen, sizeof(int));
-		file.read((char *)&motionListDataG[i].seqRef, sizeof(int));
+		auto &currSeq = sequences[i];
+		uint8_t namelength;
+		file.read(rv(namelength), sizeof(namelength));
+		file.ignore(namelength);
 
-		int strSize;
-		file.read((char *)&strSize, sizeof(int));
-
-		std::string fullMotionStr(strSize, '\0');
-
-		file.read((char *)fullMotionStr.data(), strSize);
-		file.read(&motionListDataG[i].button, sizeof(char));
-
-		motionListDataG[i].motionStr = fullMotionStr;
-	}
-
-	for (int i = 0; i < motionLenA; ++i)
-	{
-		file.read((char *)&motionListDataA[i].bufLen, sizeof(int));
-		file.read((char *)&motionListDataA[i].seqRef, sizeof(int));
-
-		int strSize;
-		file.read((char *)&strSize, sizeof(int));
-
-		std::string fullMotionStr(strSize, '\0');
-
-		file.read((char *)fullMotionStr.data(), strSize);
-		file.read(&motionListDataA[i].button, sizeof(char));
-
-		motionListDataA[i].motionStr = fullMotionStr;
-	}
-
-	sequences.resize(h.sequences_n);
-	for (uint16_t i = 0; i < h.sequences_n; ++i)
-	{
-		uint8_t namelength = 0;
-		file.read((char *)&namelength, sizeof(uint8_t));
-		file.ignore(namelength); //We proceed to skip the sequence name string since we won't use it at all.
-
-		file.read((char *)&sequences[i].level, sizeof(int));
-		file.read((char *)&sequences[i].metercost, sizeof(int));
-		file.read((char *)&sequences[i].loops, sizeof(bool));
-		file.read((char *)&sequences[i].beginLoop, sizeof(int));
-		file.read((char *)&sequences[i].gotoSeq, sizeof(int));
-		sequences[i].gotoSeq -= 1;
-
-		file.read((char *)&sequences[i].machineState, sizeof(int));
+		file.read(rv(currSeq.props), sizeof(seqProp));
 
 		uint8_t seqlength;
-		file.read((char *)&seqlength, sizeof(uint8_t));
-
-		sequences[i].frames.resize(seqlength);
-		sequences[i].frameNumber = seqlength; //Keep?
+		file.read(rv(seqlength), sizeof(seqlength));
+		currSeq.frames.resize(seqlength);
 		for (uint8_t i2 = 0; i2 < seqlength; ++i2)
 		{
-			//Remove.
-			file.read((char *)&sequences[i].frames[i2].imagepos, sizeof(float) * 8);
+			auto &currFrame = currSeq.frames[i2];
 
-			//How many boxes are used per frame
-			int16_t activeGreens;
-			int16_t activeReds;
-			int8_t activeCols; //as in collision box, not column.
-			file.read((char *)&activeGreens, sizeof(int16_t));
-			file.read((char *)&activeReds, sizeof(int16_t));
-			file.read((char *)&activeCols, sizeof(int8_t));
+			BoxSizes bs;
+			file.read(rv(bs), sizeof(BoxSizes));
+			std::vector<int> greens(bs.greens);
+			std::vector<int> reds(bs.reds);
+			std::vector<int> collision(bs.collision);
 
-			sequences[i].frames[i2].greenboxActive = activeGreens;
-			sequences[i].frames[i2].redboxActive = activeReds;
-			sequences[i].frames[i2].colboxActive = activeCols;
+			file.read(rv(currFrame.frameProp), sizeof(Frame_property));
 
-			if (activeGreens > 32 * 2 * 2 || activeReds > 32 * 2 * 2)
+			file.read(rptr(greens.data()), sizeof(int) * bs.greens);
+			file.read(rptr(reds.data()), sizeof(int) * bs.reds);
+			file.read(rptr(collision.data()), sizeof(int) * bs.collision);
+
+			for(int bi = 0; bi < bs.greens; bi+=4)
 			{
-				std::cerr << "Seq " << i << " frame " << i2 << " exceeds the box limit. At: " << activeGreens << " " << activeReds << " in: ";
-				goto errorlog;
+				currFrame.greenboxes.push_back(
+					Rect2d<FixedPoint>(
+						Point2d<FixedPoint>(greens[bi+0],greens[bi+1]),
+						Point2d<FixedPoint>(greens[bi+2],greens[bi+3]))
+				);
+			}
+			for(int bi = 0; bi < bs.reds; bi+=4)
+			{
+				currFrame.redboxes.push_back(
+					Rect2d<FixedPoint>(
+						Point2d<FixedPoint>(reds[bi+0],reds[bi+1]),
+						Point2d<FixedPoint>(reds[bi+2],reds[bi+3]))
+				);
 			}
 
-			file.ignore(sizeof(uint16_t)); //ignores an uint16_t containing FrameProp bytes
-			file.read((char *)&sequences[i].frames[i2].frameProp, sizeof(Frame_property));
-
-			file.read((char *)sequences[i].frames[i2].greenboxes, sizeof(float) * activeGreens);
-			file.read((char *)sequences[i].frames[i2].redboxes, sizeof(float) * activeReds);
-
-			float colbox[1 * 4 * 2];
-			file.read((char *)colbox, sizeof(float) * activeCols);
-
-			sequences[i].frames[i2].colbox.bottomLeft.x = colbox[0];
-			sequences[i].frames[i2].colbox.bottomLeft.y = colbox[1];
-			sequences[i].frames[i2].colbox.topRight.x = colbox[4];
-			sequences[i].frames[i2].colbox.topRight.y = colbox[5];
-
-			uint16_t filepathLenght;
-			file.read((char *)&filepathLenght, sizeof(uint16_t));
-
-			if (filepathLenght > 0) //If this string exist then extract the rest and save it.
+			if(bs.collision>0)
 			{
-				//Why is this always the same as the path lenght???
-				uint16_t filenameLenght;
-				file.read((char *)&filenameLenght, sizeof(uint16_t));
-
-				std::string filepath(filepathLenght, '\0');
-				std::string filename(filenameLenght, '\0');
-
-				file.read((char *)filepath.data(), sizeof(char) * filepathLenght);
-				file.read((char *)filename.data(), sizeof(char) * filenameLenght);
-
-				filename.erase(std::find(filename.begin(), filename.end(), '\0'), filename.end());
-
-				sequences[i].frames[i2].spriteIndex = nameMap.at(filename);
+				sequences[i].frames[i2].colbox.bottomLeft.x = collision[0];
+				sequences[i].frames[i2].colbox.bottomLeft.y = collision[1];
+				sequences[i].frames[i2].colbox.topRight.x = collision[2];
+				sequences[i].frames[i2].colbox.topRight.y = collision[3];
 			}
+
+			file.read(rv(currFrame.spriteIndex), sizeof(int));
 		}
 	}
 
 	file.close();
+
+	sol::state lua;
+	lua.open_libraries(sol::lib::base);
+	auto result = lua.script_file("data/char/moves.lua");
+	if(!result.valid()){
+		sol::error err = result;
+		std::cerr << "The code has failed to run!\n"
+		          << err.what() << "\nPanicking and exiting..."
+		          << std::endl;
+	}
+	sol::table actTable = lua["ActTable"];
+	for(const auto &val : actTable)
+	{
+		int index = val.first.as<int>();
+		sol::table arr = val.second;
+		actTableG[index] = arr[2];
+		actTableA[index] = arr[3];
+	}
 
 	GotoSequence(actTableG[0]);
 	GotoFrame(0);
 
 	//TransitionInto(state::GROUNDED);
 	return;
-
-errorlog:
-	std::cerr << charFile << "\n";
-	file.close();
 }
 
 void Character::Print()
@@ -289,53 +278,25 @@ void Character::Collision(Character *blue, Character *red)
 
 void Character::HitCollision()
 {
-	int greenboxN = framePointer->greenboxActive;
-	int redboxN = target->framePointer->redboxActive;
-
-	int i_s = 0;
-	int i2_s = 0;
-
-	if (side == -1)
-		i_s = 2;
-	if (target->side == -1)
-		i2_s = 2;
-
-	int myX = root.x;
-	int myY = root.y;
-	int hisX = target->root.x;
-	int hisY = target->root.y;
-
-	float A0, A1, A4, A5; //BL(x,y) TR(x,y)
-	float B0, B1, B4, B5;
-
 	bool isHit = false;
-	for (int i = i_s; i < greenboxN; i += 8)
+	for(auto hurtbox : framePointer->greenboxes)
 	{
-
-		A0 = framePointer->greenboxes[i] * side + myX;
-		A1 = framePointer->greenboxes[i + 1] + myY;
-		A4 = framePointer->greenboxes[i + 4] * side + myX;
-		A5 = framePointer->greenboxes[i + 5] + myY;
-
-		for (int i2 = i2_s; i2 < redboxN; i2 += 8)
+		if(spriteSide == -1)
+			hurtbox = hurtbox.FlipHorizontal();
+		hurtbox = hurtbox.Translate(root);
+		for(auto hitbox : target->framePointer->redboxes)
 		{
-
-			B0 = target->framePointer->redboxes[i2] * target->side + hisX;
-			B1 = target->framePointer->redboxes[i2 + 1] + hisY;
-			B4 = target->framePointer->redboxes[i2 + 4] * target->side + hisX;
-			B5 = target->framePointer->redboxes[i2 + 5] + hisY;
-
-			//std::cout << framePointer << "\t" << target->framePointer << "\n";
-			//std::cout << A4 << "<"<< B0 << " "<< B4 << "<"<< A0 << " "<< A5 << "<"<< B1 << " "<< B5 << "<"<< A1<< "\n";
-
-			if (!(A4 < B0 || B4 < A0 || A5 < B1 || B5 < A1)) //It's easier to test if they are (not) separated than checking if they're touching.
+			if(target->spriteSide == -1)
+				hitbox = hitbox.FlipHorizontal();
+			hitbox = hitbox.Translate(target->root);
+			if(hitbox.Intersects(hurtbox))
 			{
-				//std::cout << "hit";
 				isHit = true;
 				goto break_from_all;
 			}
 		}
 	}
+
 break_from_all:
 	if (isHit)
 	{
@@ -383,24 +344,24 @@ bool Character::SuggestSequence(int seq)
 	if(seq == -1)
 		return false;
 
-	if (sequences[currSeq].machineState == state::BUSY_GRND) //Checks if it should ignore the next command
+	if (sequences[currSeq].props.machineState == state::BUSY_GRND) //Checks if it should ignore the next command
 	{
 		if (!isKickingAss && !(framePointer->frameProp.flags & flag::CANCEL_WHIFF))
 			return false;
 		if (!(framePointer->frameProp.flags & flag::CANCELLABLE)) //if not cancellable
 			return false;
-		if (!(sequences[seq].machineState == state::BUSY_GRND || sequences[seq].machineState == state::BUSY_AIR)) //if next is not attack
+		if (!(sequences[seq].props.machineState == state::BUSY_GRND || sequences[seq].props.machineState == state::BUSY_AIR)) //if next is not attack
 			return false;
 		GotoSequence(seq);
 		return true;
 	}
-	else if (sequences[currSeq].machineState == state::BUSY_AIR)
+	else if (sequences[currSeq].props.machineState == state::BUSY_AIR)
 	{
 		if (!isKickingAss && !(framePointer->frameProp.flags & flag::CANCEL_WHIFF))
 			return false;
 		if (!(framePointer->frameProp.flags & flag::CANCELLABLE)) //if not cancellable
 			return false;
-		if (sequences[seq].machineState != state::BUSY_AIR) //if next is not attack
+		if (sequences[seq].props.machineState != state::BUSY_AIR) //if next is not attack
 			return false;
 		GotoSequence(seq);
 		return true;
@@ -415,7 +376,7 @@ bool Character::SuggestSequence(int seq)
 	/*if(next == trig::A_5SIDESWITCH && actual != trig::CMD_5)
 		return false;*/
 
-	if (sequences[currSeq].gotoSeq == seq) //Don't interrupt it by the next sequence, which will be shown anyway.
+	if (sequences[currSeq].props.gotoSeq == seq) //Don't interrupt it by the next sequence, which will be shown anyway.
 		return false;
 
 	if (currentState == state::PAIN_GRND || currentState == state::PAIN_AIR) //You're in pain, what can you do?
@@ -451,7 +412,7 @@ void Character::GotoSequence(int seq)
 	currFrame = 0;
 	GotoFrame(0);
 
-	TransitionInto(sequences[currSeq].machineState);
+	TransitionInto(sequences[currSeq].props.machineState);
 }
 
 void Character::GotoFrame(int frame)
@@ -702,15 +663,15 @@ void Character::UpdateGround()
 	--frameDuration;
 	if (frameDuration == 0)
 	{
-		if (currFrame < sequences[currSeq].frameNumber - 1)
+		if (currFrame < sequences[currSeq].frames.size() - 1)
 		{
 			currFrame += 1;
 			GotoFrame(currFrame);
 		}
-		else if (sequences[currSeq].loops)
-			GotoFrame(sequences[currSeq].beginLoop);
+		else if (sequences[currSeq].props.loops)
+			GotoFrame(sequences[currSeq].props.beginLoop);
 		else //If it doesn't loop go to the next specified sequence.
-			GotoSequence(sequences[currSeq].gotoSeq);
+			GotoSequence(sequences[currSeq].props.gotoSeq);
 	}
 }
 
@@ -802,23 +763,23 @@ void Character::UpdateAirborne()
 		vel.y = 0;
 		root.y = floorPos;
 		if (currentState == state::BUSY_AIR)
-			GotoSequence(sequences[sequences[currSeq].gotoSeq].gotoSeq);
+			GotoSequence(sequences[sequences[currSeq].props.gotoSeq].props.gotoSeq);
 		else
-			GotoSequence(sequences[currSeq].gotoSeq);
+			GotoSequence(sequences[currSeq].props.gotoSeq);
 		//TransitionInto(sequences[currSeq].machineState);
 	}
 
 	--frameDuration;
 	if (frameDuration == 0)
 	{
-		if (currFrame < sequences[currSeq].frameNumber - 1)
+		if (currFrame < sequences[currSeq].frames.size() - 1)
 		{
 			currFrame += 1;
 			GotoFrame(currFrame);
 		}
-		else if (sequences[currSeq].loops)
-			GotoFrame(sequences[currSeq].beginLoop);
+		else if (sequences[currSeq].props.loops)
+			GotoFrame(sequences[currSeq].props.beginLoop);
 		else //If it doesn't loop go the next specified sequence..
-			GotoSequence(sequences[currSeq].gotoSeq);
+			GotoSequence(sequences[currSeq].props.gotoSeq);
 	}
 }

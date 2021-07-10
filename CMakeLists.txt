@@ -15,9 +15,10 @@ set( CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin CACHE STRING "" )
 set (CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake" )
 
 set( AFGE_BUILD_TOOLS ON CACHE BOOL "Build tools to edit game data")
-set( AFGE_USE_SUBMODULES ON CACHE BOOL "Use git submodules. Turn off if you're using a package manager instead.")
+set( AFGE_USE_SUBMODULES ON CACHE BOOL "Use git submodules. Turn off if you want to use a package manager instead.")
 
 include(glad)
+include(sol2)
 if(AFGE_USE_SUBMODULES)
 	set(SKIP_INSTALL_ALL ON)
 	add_subdirectory(submodules/zlib)

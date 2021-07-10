@@ -152,8 +152,6 @@ class Framedata
 public:
 	std::vector<Sequence> sequences;
 
-	int actTableG[64]; //Array to translate act:: constants to their assigned sequence.
-	int actTableA[64]; //Aerial counterpart
 	Motion_Data motionListDataG[32]; //List of motion inputs. Not only for special attack usage.
 	Motion_Data motionListDataA[32];
 	int motionLenG;
@@ -161,10 +159,11 @@ public:
 
 public:
 	bool Load(std::string charFile);
-	bool LoadV5(std::string charFile, std::unordered_map<std::string, uint16_t> &nameMap);
+	bool LoadOld(std::string charFile);
 	void Clear();
 	void Close();
 	void Save(std::string charFile);
+	
 	std::string GetDecoratedName(int n);
 	bool loaded = false;
 };

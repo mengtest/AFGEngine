@@ -24,10 +24,6 @@
 #include "window.h"
 #include <vao.h>
 
-#ifdef NETPLAY
-#include "netplay.h"
-#endif
-
 int inputDelay = 0;
 
 const char *texNames[] ={
@@ -42,14 +38,6 @@ int gameState = GS_MENU;
 
 int main(int argc, char** argv)
 {
-	#ifdef NETPLAY
-	if(argc > 1) //Netplay
-	{
-		if(!NetplayArgs(argc, argv))
-			return 0;
-	}
-	#endif
-
 	mainWindow = new Window();
 
 	//reads configurable keys
@@ -157,7 +145,6 @@ void PlayLoop()
 		VaoTexOnly.Load();
 	}
 
-	NameMap nameMap;
 	Vao VaoChar(Vao::F2F2I1, GL_STATIC_DRAW);
 	{
 		int nSprites, nChunks;
@@ -171,17 +158,15 @@ void PlayLoop()
 		auto vertexData = new VertexData8[nChunks*6]; 
 		vertexFile.read((char *)vertexData, nChunks*6*sizeof(VertexData8));
 
-		nameMap.reserve(nSprites);
 		unsigned int chunkCount = 0;
 		for(int i = 0; i < nSprites; i++)
 		{
 			uint8_t strLen;
 			vertexFile.read((char*)&strLen, 1);
-			std::string name(strLen,1);
-			uint16_t index;
-			vertexFile.read((char*)name.data(), strLen);
-			vertexFile.read((char*)&index, sizeof(uint16_t));
-			nameMap.insert({name,index});
+
+			//Ignore namemap's name and index.
+			vertexFile.ignore(strLen);
+			vertexFile.ignore(sizeof(uint16_t));
 
 			VaoChar.Prepare(sizeof(VertexData8)*6*chunksPerSprite[i], &vertexData[6*chunkCount]);
 			chunkCount += chunksPerSprite[i];
@@ -195,8 +180,8 @@ void PlayLoop()
 	}
 	Camera view;
 
-	Character player(-50, 1, "data/char/vaki.char", nameMap);
-	Character player2(50, -1, "data/char/vaki.char", nameMap);
+	Character player(-50, 1, "data/char/vaki.char");
+	Character player2(50, -1, "data/char/vaki.char");
 
 	player.SetCameraRef(&view);
 	player2.SetCameraRef(&view);

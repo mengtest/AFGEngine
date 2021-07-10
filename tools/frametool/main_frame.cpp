@@ -25,7 +25,7 @@ x(0),y(-150)
 	render.LoadGraphics("data/images/vaki.png", "data/images/vaki.vt8");
 	render.LoadPalette("data/palettes/play2.act");
 	
-	//fd.Load("data/char/vaki.char", render.gfxNames);
+	fd.Load("data/char/vaki.char");
 }
 
 MainFrame::~MainFrame()
@@ -284,7 +284,7 @@ void MainFrame::Menu(unsigned int errorPopupId)
 				nfdfilteritem_t filterItem[2] = {{"Character file", "char"}};
 				nfdresult_t result = NFD_OpenDialog(&outPath, filterItem, 1, "data/char");
 				if (result == NFD_OKAY && outPath) {
-					if(!fd.LoadV5(outPath, render.gfxNames))
+					if(!fd.LoadOld(outPath))
 					{
 						ImGui::OpenPopup(errorPopupId);
 					}
