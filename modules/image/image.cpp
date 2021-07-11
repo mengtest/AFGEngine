@@ -109,7 +109,7 @@ bool ImageData::WriteAsPng(const char* file_name, const char* palette_file) cons
 	png_color *palette = nullptr;
 	if(palette_file)
 	{
-		png_color *palette = (png_color*)png_malloc(png_ptr, 256*sizeof(png_color));
+		palette = (png_color*)png_malloc(png_ptr, 256*sizeof(png_color));
 		std::ifstream pltefile;
 
 		pltefile.open(palette_file, std::ifstream::in | std::ifstream::binary);
@@ -132,8 +132,11 @@ bool ImageData::WriteAsPng(const char* file_name, const char* palette_file) cons
 		png_set_PLTE(png_ptr, info_ptr, palette, 256);
 	}
 	
-	png_byte trans_alpha = 0;
-	png_set_tRNS(png_ptr, info_ptr, &trans_alpha, 1, nullptr);
+	if(bytesPerPixel == 1)
+	{
+		png_byte trans_alpha = 0;
+		png_set_tRNS(png_ptr, info_ptr, &trans_alpha, 1, nullptr);
+	}
 
 	png_bytep * row_pointers;
 	row_pointers = png_bytepp(malloc (sizeof(png_bytep) * height) );

@@ -19,6 +19,7 @@ set( AFGE_USE_SUBMODULES ON CACHE BOOL "Use git submodules. Turn off if you want
 
 include(glad)
 include(sol2)
+include(includes)
 if(AFGE_USE_SUBMODULES)
 	set(SKIP_INSTALL_ALL ON)
 	add_subdirectory(submodules/zlib)

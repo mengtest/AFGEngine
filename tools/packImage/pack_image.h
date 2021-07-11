@@ -7,8 +7,6 @@
 #include <cstdint>
 #include <iostream>
 
-constexpr int border = 1;
-
 typedef Rect2d<int> Rect;
 typedef Point2d<int> Point;
 
@@ -28,6 +26,7 @@ struct ChunkMeta
 {
 	Point pos;
 	Point tex;
+	int atlasId;
 };
 
 struct ImageMeta
@@ -35,40 +34,20 @@ struct ImageMeta
 	std::unique_ptr<ImageData> data;
 	std::string name;
 	std::list<ChunkMeta> chunks;
-	int atlasId;
 
 	void CalculateChunks(int chunkSize)
 	{
 		ImageData &image = *data; 
 		Rect size = GetImageBoundaries(image);
 		//Size of rect in chunks. At least 1.
-		int wChunks = 1 + (size.topRight - size.bottomLeft).x/chunkSize;
-		int hChunks = 1 + (size.topRight - size.bottomLeft).y/chunkSize;
+		auto dif = (size.topRight - size.bottomLeft);
+		int wChunks = dif.x/chunkSize + !!(dif.x%chunkSize);
+		int hChunks = dif.y/chunkSize + !!(dif.y%chunkSize);
 
 		Rect requiredSize(
 			size.bottomLeft.x, size.bottomLeft.y,
 			size.bottomLeft.x + wChunks*chunkSize, size.bottomLeft.y + hChunks*chunkSize
 		);
-		//Boundary check and adjustment
-		int xTranslate = image.width - requiredSize.topRight.x;
-		int yTranslate = image.height - requiredSize.topRight.y;
-		if(xTranslate < 0)
-		{
-			requiredSize = requiredSize.Translate(xTranslate, 0);
-		}
-		if(yTranslate < 0)
-		{
-			requiredSize = requiredSize.Translate(0, yTranslate);
-		}
-		//The image is too small for all the chunks to fit.
-		//If it becomes an issue I could support for rectangular chunks.
-		if(requiredSize.bottomLeft.x < 0 || requiredSize.bottomLeft.y < 0)
-		{
-			std::cerr << __func__ << ": Chunks do not fit in image.\n" <<
-				"Image (w,h) " << image.width << " " << image.height <<
-				". Chunk size " << chunkSize << " (w,h) " << wChunks << " " << hChunks << "\n";
-			abort();
-		}
 
 		for(int y = requiredSize.bottomLeft.y; y < requiredSize.topRight.y; y += chunkSize)
 		{
@@ -85,6 +64,8 @@ struct ImageMeta
 	}
 };
 
+void WriteVertexData(std::string filename, int nChunks, std::list<ImageMeta> &metas, int chunkSize, float width, float height);
+
 
 struct Atlas
 {
@@ -92,10 +73,13 @@ struct Atlas
 	ImageData image;
 	int x, y;
 	uint32_t chunkSize;
+	int border;
 
-	Atlas(uint32_t width, uint32_t height, uint32_t bytesPerPixel, uint32_t _chunkSize, int _id = 0):
-	id(_id), image(width, height, bytesPerPixel), x(0), y(0), chunkSize(_chunkSize+border*2)
-	{}
+	Atlas(uint32_t width, uint32_t height, uint32_t bytesPerPixel, uint32_t _chunkSize, bool _border = false, int _id = 0):
+	id(_id), image(width, height, bytesPerPixel), x(0), y(0), border(_border), chunkSize(_chunkSize)
+	{
+		chunkSize+=border*2;
+	}
 
 	bool Advance()
 	{
@@ -120,32 +104,33 @@ struct Atlas
 		return (available >= chunkN);
 	}
 
-	bool CopyToAtlas(ImageMeta &src)
+	std::pair<bool, std::list<ChunkMeta>::iterator> CopyToAtlas(ImageMeta &src, std::list<ChunkMeta>::iterator offset)
 	{
 		std::list<ChunkMeta> &chunks = src.chunks;
-		if(!Fits(chunks.size()))
+		/* if(!Fits(chunks.size()))
 		{
 			std::cout << "Switching atlas channel...\n";
 			return false;
-		}
+		} */
 
-		src.atlasId = id;
-		for(ChunkMeta &chunk : chunks)
+		for(auto i = offset; i!=chunks.end(); i++)
 		{
+			ChunkMeta &chunk = *i;
+			chunk.atlasId = id;
 			if(!CopyChunk(image, *src.data, x, y, chunk.pos.x-border, chunk.pos.y-border, chunkSize))
 			{
-				std::cerr << __func__ << " failed.\n";
-				return false;
+				std::cerr << __func__ << " failed.\tyn";
+				abort();
 			}
 			chunk.tex.x = x+border;
 			chunk.tex.y = y+border;
 			if(!Advance())
 			{
-				std::cerr << "The atlas is full. "<<src.name<<" couldn't be copied properly.\n";
-				return false;
+				std::cerr << "Atlas filled. Last image: "<<src.name<<".\n";
+				return {false, ++i};
 			}
 		}
-		return true;
+		return {true, chunks.end()};
 	}
 };
 
