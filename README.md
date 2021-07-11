@@ -2,7 +2,8 @@
 
 A fighting game engine in C++
 It is currently in very early stages and it's going through many changes.
-A character data editor, scripting support and rollback netcode are planned.
+A character data editor and scripting support are in progress.
+Rollback netplay code is planned.
 Don't expect it to be usable for anything serious yet.
 
 ![screenshot](https://user-images.githubusercontent.com/39018575/97825338-20c29b80-1c9d-11eb-9d25-5287eea75cba.png "Rather outdated screenshot")
@@ -23,17 +24,8 @@ Joy input is not supported currently.
 
 -----------------------
 ## Compiling ##
-This project depends on:
 
-* GLM
-* SDL 2.1
-* libpng
-* imgui (with opengl3, glad and sdl2 bindings)
-
-You'll only need imgui if you're building the editor by setting AFGE_BUILD_TOOLS to true.
-
-These come as git submodules, and it'll work out of the box if you init them.
-You also have the option to use a package manager by setting AFGE_USE_SUBMODULES to off.
-If you're on windows you can use vcpkg or MSYS2 to install the packages for most or all of these.
-
-You'll have to run cmake and build. The CMake file included should cover everything else.
+Clone the repo, init the submodules, run cmake with your preferred settings and build.
+Set AFGE_BUILD_TOOLS to true if you want to build the developer tools.
+There's also an option to use a package manager instead of using the submodules by
+setting AFGE_USE_SUBMODULES to off, but it's not well maintained.

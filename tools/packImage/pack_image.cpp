@@ -66,104 +66,127 @@ int main(int argc, char **argv)
 	//Iterate through all images in the folder and calculate how to chop them up.
 	int nChunks8 = 0; int nChunks32 = 0;
 	std::list<ImageMeta> images8bpp, images32bpp;
-	for(const fs::directory_entry &file : fs::directory_iterator(folderIn))
-	{
-		ImageMeta im {
-			std::make_unique<ImageData>(file.path().generic_string().c_str()),
-			file.path().filename().string()
-		};
-		if(im.data->data)
+	try {
+		for(const fs::directory_entry &file : fs::directory_iterator(folderIn))
 		{
+			ImageMeta im {
+				std::make_unique<ImageData>(file.path().generic_string().c_str()),
+				file.path().filename().string()
+			};
+			if(im.data->data)
+			{
+				
+				if(im.data->bytesPerPixel == 1)
+				{
+					im.CalculateChunks(chunkSize);
+					nChunks8 += im.chunks.size();
+					images8bpp.push_back(std::move(im));
+				}
+				else 
+				{
+					im.CalculateChunks(chunkSize);
+					nChunks32 += im.chunks.size();
+					images32bpp.push_back(std::move(im));
+				}
+			}
 			
-			if(im.data->bytesPerPixel == 1)
-			{
-				im.CalculateChunks(chunkSize);
-				nChunks8 += im.chunks.size();
-				images8bpp.push_back(std::move(im));
-			}
-			else 
-			{
-				im.CalculateChunks(chunkSize);
-				nChunks32 += im.chunks.size();
-				images32bpp.push_back(std::move(im));
-			}
 		}
-		
+	}
+	catch(fs::filesystem_error const& ex)
+	{
+		std::cout << "Filesystem error: "<< ex.what() << '\n'<<"Make sure the input folder actually exists and is accessible.";
+		return 1;
 	}
 
 	//Calculate size of atlas.
 	int channelChunks8 = nChunks8/4 + 1;
+	int width8, height8, width32, height32;
+	CalcSizeInChunks(channelChunks8, width8, height8);
+	CalcSizeInChunks(nChunks32, width32, height32);
 
-	int width8 = sqrt(channelChunks8);
-	while(width8*width8 < channelChunks8)
-		width8++;
-	width8--;
-	int height8 = channelChunks8/width8 + !!(channelChunks8%width8);
-
+	int chunkSizeWBorder = chunkSize;
 	if(border)
-	{
-		width8*=chunkSize+2;
-		height8*=chunkSize+2;
-	}
-	else
-	{
-		width8*=chunkSize;
-		height8*=chunkSize;
-	}
+		chunkSizeWBorder += 2;
 
+	width8*=chunkSizeWBorder;
+	height8*=chunkSizeWBorder;
+	width32*=chunkSizeWBorder;
+	height32*=chunkSizeWBorder;
+
+	//Write image data.
 	if(nChunks8)
 	{
 		std::cout << "Read " << images8bpp.size() << " 8bpp images.\n" << nChunks8 << " chunks required ("<<channelChunks8<<" per channel)\n";
 		std::cout << "Output image: "<<width8<<"x"<<height8<<"\n\n";
+
+		std::vector<std::unique_ptr<Atlas>> atlases;
+		atlases.reserve(4);
+		for(int i = 0; i < 4; i++)
+		{
+			atlases.push_back(std::make_unique<Atlas>(width8, height8, 1, chunkSize, border, i));
+			memset(atlases[i]->image.data, 0, atlases[i]->image.GetMemSize());
+		}
+
+		//Fill each channel of the atlas with image data.
+		auto atlasI = atlases.begin();
+		for(auto &im: images8bpp)
+		{
+			auto result = (*atlasI)->CopyToAtlas(im, im.chunks.begin());
+			if(!result.first)
+			{
+				atlasI++;
+				if(atlasI == atlases.end())
+				{
+					std::cout << "Not enough atlases.\n";
+					break;
+				}
+				//Copy the image that couldn't be copied.
+				(*atlasI)->CopyToAtlas(im, result.second);
+			}
+		}
+		
+		//Group the atlases into a single image.
+		ImageData composite(width8, height8, 4);
+		for(int y = 0; y < height8; y++)
+		{
+			for(int x = 0; x < width8; x++)
+			{
+				for(int ch = 0; ch < 4; ch++)
+				{
+					ImageData &srcIm = atlases[ch]->image;
+					composite.data[y*composite.width*composite.bytesPerPixel + x*composite.bytesPerPixel + ch] =
+						srcIm.data[y*srcIm.width*srcIm.bytesPerPixel + x*srcIm.bytesPerPixel];
+				}
+			}
+		}
+
+		std::cout << "Writing file... ";
+		std::string pngO = filenameOut+"8.png";
+		composite.WriteAsPng(pngO.c_str());
+		WriteVertexData(filenameOut+".vt8", nChunks8, images8bpp, chunkSize, width8, height8);
+		std::cout << "Done\n\n";
 	}
 	if(nChunks32)
-		std::cout << "Read " << images32bpp.size() << " 32bpp images.\n" << nChunks32 << " chunks required\n\n";
-
-	std::vector<std::unique_ptr<Atlas>> atlases;
-	atlases.reserve(4);
-	for(int i = 0; i < 4; i++)
 	{
-		atlases.push_back(std::make_unique<Atlas>(width8, height8, 1, chunkSize, +border, i));
-		memset(atlases[i]->image.data, 0, atlases[i]->image.GetMemSize());
-	}
+		std::cout << "Read " << images32bpp.size() << " 32bpp images.\n" << nChunks32 << " chunks required\n";
+		std::cout << "Output image: "<<width32<<"x"<<height32<<"\n\n";
 
-	auto atlasI = atlases.begin();
-	for(auto &im: images8bpp)
-	{
-		auto result = (*atlasI)->CopyToAtlas(im, im.chunks.begin());
-		if(!result.first)
+		Atlas atlas(width32, height32, 4, chunkSize, border, 0);
+		memset(atlas.image.data, 0, atlas.image.GetMemSize());
+
+		//Fill the atlas with image data.
+		for(auto &im: images32bpp)
 		{
-			atlasI++;
-			if(atlasI == atlases.end())
-			{
-				std::cout << "Not enough atlases.\n";
-				break;
-			}
-			//Copy the image that couldn't be copied.
-			(*atlasI)->CopyToAtlas(im, result.second);
+			atlas.CopyToAtlas(im, im.chunks.begin());
 		}
+
+		std::cout << "Writing file... ";
+		std::string pngO = filenameOut+"32.png";
+		atlas.image.WriteAsPng(pngO.c_str());
+		WriteVertexData(filenameOut+".vt9", nChunks32, images32bpp, chunkSize, width32, height32);
+
+		std::cout << "Done\n\n";
 	}
-	
-	ImageData composite(width8, height8, 4);
-	for(int y = 0; y < height8; y++)
-	{
-		for(int x = 0; x < width8; x++)
-		{
-			for(int ch = 0; ch < 4; ch++)
-			{
-				ImageData &srcIm = atlases[ch]->image;
-				composite.data[y*composite.width*composite.bytesPerPixel + x*composite.bytesPerPixel + ch] =
-					srcIm.data[y*srcIm.width*srcIm.bytesPerPixel + x*srcIm.bytesPerPixel];
-			}
-		}
-	}
-
-	std::cout << "Writing file... ";
-	composite.WriteAsPng("vaki.png");
-	std::cout << "Done\n";
-
-	WriteVertexData("vaki.vt8", nChunks8, images8bpp, chunkSize, width8, height8);
-
 
 	return 0;
 }
@@ -264,9 +287,8 @@ uint32_t xDst, uint32_t yDst, uint32_t xSrc, uint32_t ySrc, uint32_t chunkSize)
 		std::cerr << __func__ << ": Number of channels differ.";
 		return false;
 	}
-
+//	xSrc+chunkSize > src.width
 	if(	xDst+chunkSize > dst.width || yDst+chunkSize > dst.height
-	||	xSrc+chunkSize > src.width || ySrc+chunkSize > src.height
 	||	xDst < 0 || yDst < 0 || xSrc < 0 || ySrc < 0 
 	)
 	{
@@ -274,14 +296,22 @@ uint32_t xDst, uint32_t yDst, uint32_t xSrc, uint32_t ySrc, uint32_t chunkSize)
 		return false;
 	}
 
+	int chunkXSize = xSrc+chunkSize - src.width;
+	if(chunkXSize < 0)
+		chunkXSize = chunkSize;
+	
+	int chunkYSize = ySrc+chunkSize - src.height;
+	if(chunkYSize < 0)
+		chunkYSize = chunkSize;
+
 	int mul = dst.bytesPerPixel;
-	for(unsigned int row = 0; row < chunkSize; row++)
+	for(unsigned int row = 0; row < chunkYSize; row++)
 	{
 		//Y + X + row, chunkSize
 		memcpy(
 			dst.data + (yDst+row)*dst.width*mul + xDst*mul,
 			src.data + (ySrc+row)*src.width*mul + xSrc*mul,
-			chunkSize
+			chunkXSize*mul
 		);
 	}
 
@@ -340,4 +370,13 @@ void WriteVertexData(std::string filename, int nChunks, std::list<ImageMeta> &me
 	vertexFile.close();
 	delete[] data;
 	delete[] chunksPerSprite;
+}
+
+void CalcSizeInChunks(int chunks, int &width, int &height, bool pow2)
+{
+	width = sqrt(chunks);
+	while(width*width < chunks)
+		width++;
+	width--;
+	height = chunks/width + !!(chunks%width);
 }

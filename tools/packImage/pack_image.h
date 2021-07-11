@@ -15,6 +15,8 @@ bool IsChunkTrans(const ImageData &im, uint32_t xStart, uint32_t yStart, uint32_
 bool IsPixelTrans(const ImageData &im, uint32_t x, uint32_t y);
 bool CopyChunk(ImageData &dst, const ImageData &src, 
 	uint32_t xDst, uint32_t yDst, uint32_t xSrc, uint32_t ySrc, uint32_t chunkSize);
+void CalcSizeInChunks(int chunks, int &width, int &height, bool pow2 = false);
+
 
 struct VertexData8
 {
