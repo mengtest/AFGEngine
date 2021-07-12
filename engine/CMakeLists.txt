@@ -14,6 +14,7 @@ target_sources(AFGEngine PRIVATE
 	util.cpp
 	window.cpp
 	render_context.cpp
+	sprite.cpp
 )
 
 target_link_libraries(AFGEngine PRIVATE

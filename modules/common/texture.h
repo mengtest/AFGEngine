@@ -22,7 +22,7 @@ public:
 	~Texture();
 
 	//Set doNotFixAlphaGamma to true to NOT modify the image when loading it.
-	void Load(std::string imageFile, std::string paletteFile = std::string(), bool doNotFixAlphaGamma = false);
+	void Load(std::string imageFile, bool doNotFixAlphaGamma = false, std::string paletteFile = std::string());
 	void Apply(bool repeat = false, bool linearFilter = false);
 	void Unapply();
 	void Unload();

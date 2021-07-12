@@ -92,7 +92,7 @@ void Render::LoadPalette(const char *file)
 
 void Render::LoadGraphics(const char *pngFile, const char *vtxFile)
 {
-	texture.Load(pngFile, "", true);
+	texture.Load(pngFile, true);
 	texture.Apply(true);
 	//texture.Unload();
 

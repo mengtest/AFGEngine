@@ -3,8 +3,8 @@
 .vscode/
 *.code-workspace
 
-#Original data
-/data/images/src/
+#Original image data
+/data/char/vaki/src/
 
 #clangd
 .cache/

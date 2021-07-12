@@ -26,11 +26,11 @@
 
 int inputDelay = 0;
 
+//TODO: Remove
 const char *texNames[] ={
 	"data/images/background.png",
 	"data/images/hud.png",
-	"data/images/font.png",
-	"data/images/vaki.png",
+	"data/images/font.png"
 	};
 
 int gameState = GS_MENU;
@@ -98,17 +98,14 @@ int LoadPaletteTEMP()
 
 void PlayLoop()
 {
-	//texture load
+	//TODO: Remove
 	std::vector<Texture> activeTextures;
-	activeTextures.reserve(4);
-	for(int i = 0; i < 4; ++i)
+	activeTextures.reserve(3);
+	for(int i = 0; i < 3; ++i)
 	{
 		Texture texture;
 
-		if(i==3)
-			texture.Load(texNames[i], "", true);
-		else
-			texture.Load(texNames[i]);
+		texture.Load(texNames[i]);
 		
 		if(i<2)
 			texture.Apply(false,true);
@@ -145,39 +142,6 @@ void PlayLoop()
 		VaoTexOnly.Load();
 	}
 
-	Vao VaoChar(Vao::F2F2I1, GL_STATIC_DRAW);
-	{
-		int nSprites, nChunks;
-		std::ifstream vertexFile("data/images/vaki.vt8", std::ios_base::binary);
-
-		vertexFile.read((char *)&nSprites, sizeof(int));
-		auto chunksPerSprite = new uint16_t[nSprites];
-		vertexFile.read((char *)chunksPerSprite, sizeof(uint16_t)*nSprites);
-
-		vertexFile.read((char *)&nChunks, sizeof(int));
-		auto vertexData = new VertexData8[nChunks*6]; 
-		vertexFile.read((char *)vertexData, nChunks*6*sizeof(VertexData8));
-
-		unsigned int chunkCount = 0;
-		for(int i = 0; i < nSprites; i++)
-		{
-			uint8_t strLen;
-			vertexFile.read((char*)&strLen, 1);
-
-			//Ignore namemap's name and index.
-			vertexFile.ignore(strLen);
-			vertexFile.ignore(sizeof(uint16_t));
-
-			VaoChar.Prepare(sizeof(VertexData8)*6*chunksPerSprite[i], &vertexData[6*chunkCount]);
-			chunkCount += chunksPerSprite[i];
-		}
-		std::cout << "Chunks read: "<<chunkCount<<"/"<<nChunks<<"\n";
-		vertexFile.close();
-
-		VaoChar.Load();
-		delete[] vertexData;
-		delete[] chunksPerSprite;
-	}
 	Camera view;
 
 	Character player(-50, 1, "data/char/vaki.char");
@@ -249,14 +213,14 @@ void PlayLoop()
 		//Draw characters
 		mainWindow->context.SetShader(RenderContext::PALETTE);
 		glBindTexture(GL_TEXTURE_2D, activeTextures[T_CHAR].id);
-		VaoChar.Bind();
+		/* VaoChar.Bind();
 		mainWindow->context.SetPaletteSlot(1);
 		mainWindow->context.SetModelView(viewMatrix*player2.GetSpriteTransform());
 		VaoChar.Draw(player2.GetSpriteIndex());
 
 		mainWindow->context.SetPaletteSlot(0);
 		mainWindow->context.SetModelView(viewMatrix*player.GetSpriteTransform());
-		VaoChar.Draw(player.GetSpriteIndex());
+		VaoChar.Draw(player.GetSpriteIndex()); */
 
 		//Draw HUD
 		VaoTexOnly.Bind();

@@ -18,10 +18,15 @@ bool CopyChunk(ImageData &dst, const ImageData &src,
 void CalcSizeInChunks(int chunks, int &width, int &height, bool pow2 = false);
 
 
-struct VertexData8
+struct VertexData1
 {
 	unsigned short x,y,s,t;
 	unsigned short atlasId;
+};
+
+struct VertexData4
+{
+	unsigned short x,y,s,t;
 };
 
 struct ChunkMeta
@@ -66,7 +71,7 @@ struct ImageMeta
 	}
 };
 
-void WriteVertexData(std::string filename, int nChunks, std::list<ImageMeta> &metas, int chunkSize, float width, float height);
+void WriteVertexData(std::string filename, int nChunks, std::list<ImageMeta> &metas, int chunkSize, float width, float height, bool is8bpp=true);
 
 
 struct Atlas

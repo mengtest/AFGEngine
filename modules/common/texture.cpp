@@ -30,7 +30,7 @@ Texture::~Texture()
 		Unload();
 }
 
-void Texture::Load(std::string imageFile, std::string paletteFile, bool doNotFixAlphaGamma)
+void Texture::Load(std::string imageFile, bool doNotFixAlphaGamma, std::string paletteFile)
 {
 	filename = imageFile;
 

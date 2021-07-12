@@ -167,7 +167,6 @@ Character::Character(FixedPoint xPos, float _side, std::string charFile) :
 	file.close();
 
 	sol::state lua;
-	lua.open_libraries(sol::lib::base);
 	auto result = lua.script_file("data/char/moves.lua");
 	if(!result.valid()){
 		sol::error err = result;
@@ -393,21 +392,7 @@ void Character::GotoSequence(int seq)
 		return;
 
 	isKickingAss = false;
-	/*int cmd = sequences[seq].trigger;
-	//std::cout << cmd << "\n";
-	if(cmd < trig::A_8LAND || cmd > trig::A_9LAND) //Do not mirror when landing.
-	{
-		/*if(spriteSide != side)
-		{*/
 	spriteSide = side;
-	/*if(cmd == trig::CMD_5)
-			{
-				SuggestSequence(trig2Seq[trig::A_5SIDESWITCH]);
-				return;
-			}
-		//}
-	}*/
-
 	currSeq = seq;
 	currFrame = 0;
 	GotoFrame(0);

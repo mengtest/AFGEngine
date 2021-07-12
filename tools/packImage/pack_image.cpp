@@ -27,6 +27,9 @@ int main(int argc, char **argv)
 	args::Flag borderFlag(parser, "border", "Add a 1px border around each tile to avoid texture bleeding.", {'b',"border"});
 	args::ValueFlag<int> tileSize(parser, "size",
 		"The size in pixel of a square tile. Defaults to 16.", {'s', "size"}, 16);
+	args::Group group(parser, "Exclusive options:", args::Group::Validators::Xor);
+    args::Flag only8(group, "only8", "Only process 8bpp images", {"8bpp"});
+    args::Flag only32(group, "only32", "Only process 32bpp images", {"32bpp"});
     try
     {
         parser.ParseCLI(argc, argv);
@@ -42,6 +45,12 @@ int main(int argc, char **argv)
         return 0;
     }
     catch (const args::ParseError& e)
+    {
+        std::cerr << e.what() << std::endl;
+        std::cerr << parser;
+        return 1;
+    }
+	catch (args::ValidationError e)
     {
         std::cerr << e.what() << std::endl;
         std::cerr << parser;
@@ -75,14 +84,16 @@ int main(int argc, char **argv)
 			};
 			if(im.data->data)
 			{
-				
 				if(im.data->bytesPerPixel == 1)
 				{
-					im.CalculateChunks(chunkSize);
-					nChunks8 += im.chunks.size();
-					images8bpp.push_back(std::move(im));
+					if(!only32)
+					{
+						im.CalculateChunks(chunkSize);
+						nChunks8 += im.chunks.size();
+						images8bpp.push_back(std::move(im));
+					}
 				}
-				else 
+				else if(!only8)
 				{
 					im.CalculateChunks(chunkSize);
 					nChunks32 += im.chunks.size();
@@ -98,24 +109,18 @@ int main(int argc, char **argv)
 		return 1;
 	}
 
-	//Calculate size of atlas.
-	int channelChunks8 = nChunks8/4 + 1;
-	int width8, height8, width32, height32;
-	CalcSizeInChunks(channelChunks8, width8, height8);
-	CalcSizeInChunks(nChunks32, width32, height32);
-
 	int chunkSizeWBorder = chunkSize;
 	if(border)
 		chunkSizeWBorder += 2;
 
-	width8*=chunkSizeWBorder;
-	height8*=chunkSizeWBorder;
-	width32*=chunkSizeWBorder;
-	height32*=chunkSizeWBorder;
-
-	//Write image data.
+	//Calculate size of atlas and write image data.
 	if(nChunks8)
 	{
+		int width8, height8;
+		int channelChunks8 = nChunks8/4 + 1;
+		CalcSizeInChunks(channelChunks8, width8, height8);
+		width8*=chunkSizeWBorder;
+		height8*=chunkSizeWBorder;
 		std::cout << "Read " << images8bpp.size() << " 8bpp images.\n" << nChunks8 << " chunks required ("<<channelChunks8<<" per channel)\n";
 		std::cout << "Output image: "<<width8<<"x"<<height8<<"\n\n";
 
@@ -163,11 +168,15 @@ int main(int argc, char **argv)
 		std::cout << "Writing file... ";
 		std::string pngO = filenameOut+"8.png";
 		composite.WriteAsPng(pngO.c_str());
-		WriteVertexData(filenameOut+".vt8", nChunks8, images8bpp, chunkSize, width8, height8);
+		WriteVertexData(filenameOut+".vt1", nChunks8, images8bpp, chunkSize, width8, height8);
 		std::cout << "Done\n\n";
 	}
 	if(nChunks32)
 	{
+		int width32, height32;
+		CalcSizeInChunks(nChunks32, width32, height32);
+		width32*=chunkSizeWBorder;
+		height32*=chunkSizeWBorder;
 		std::cout << "Read " << images32bpp.size() << " 32bpp images.\n" << nChunks32 << " chunks required\n";
 		std::cout << "Output image: "<<width32<<"x"<<height32<<"\n\n";
 
@@ -183,7 +192,7 @@ int main(int argc, char **argv)
 		std::cout << "Writing file... ";
 		std::string pngO = filenameOut+"32.png";
 		atlas.image.WriteAsPng(pngO.c_str());
-		WriteVertexData(filenameOut+".vt9", nChunks32, images32bpp, chunkSize, width32, height32);
+		WriteVertexData(filenameOut+".vt4", nChunks32, images32bpp, chunkSize, width32, height32, false);
 
 		std::cout << "Done\n\n";
 	}
@@ -297,11 +306,11 @@ uint32_t xDst, uint32_t yDst, uint32_t xSrc, uint32_t ySrc, uint32_t chunkSize)
 	}
 
 	int chunkXSize = xSrc+chunkSize - src.width;
-	if(chunkXSize < 0)
+	if(chunkXSize <= 0)
 		chunkXSize = chunkSize;
 	
 	int chunkYSize = ySrc+chunkSize - src.height;
-	if(chunkYSize < 0)
+	if(chunkYSize <= 0)
 		chunkYSize = chunkSize;
 
 	int mul = dst.bytesPerPixel;
@@ -318,7 +327,7 @@ uint32_t xDst, uint32_t yDst, uint32_t xSrc, uint32_t ySrc, uint32_t chunkSize)
 	return true; 
 }
 
-void WriteVertexData(std::string filename, int nChunks, std::list<ImageMeta> &metas, int chunkSize, float width, float height)
+void WriteVertexData(std::string filename, int nChunks, std::list<ImageMeta> &metas, int chunkSize, float width, float height, bool is8bpp)
 {
 	constexpr int tX[] = {0,1,1, 1,0,0};
 	constexpr int tY[] = {0,0,1, 1,1,0};
@@ -328,7 +337,11 @@ void WriteVertexData(std::string filename, int nChunks, std::list<ImageMeta> &me
 	nameMap.reserve(nSprites);
 
 	auto chunksPerSprite = new uint16_t[nSprites];
-	auto data = new VertexData8[nChunks*6];
+	void* dataRaw;
+	if(is8bpp)
+		dataRaw = malloc(sizeof(VertexData1)*nChunks*6);
+	else
+		dataRaw = malloc(sizeof(VertexData4)*nChunks*6);
 	
 	int dataI = 0;
 	int spriteI = 0;
@@ -340,13 +353,26 @@ void WriteVertexData(std::string filename, int nChunks, std::list<ImageMeta> &me
 		{
 			for(int i = 0; i < 6; i++)
 			{
-				data[dataI+i].x = chunk.pos.x + chunkSize*tX[i];
-				data[dataI+i].y = chunk.pos.y + chunkSize*tY[i];
+				if(is8bpp)
+				{
+					VertexData1 *data = (VertexData1*)dataRaw;
+					data[dataI+i].x = chunk.pos.x + chunkSize*tX[i];
+					data[dataI+i].y = chunk.pos.y + chunkSize*tY[i];
 
-				data[dataI+i].s = (float)(chunk.tex.x + chunkSize*tX[i])*UINT16_MAX/width;
-				data[dataI+i].t = (float)(chunk.tex.y + chunkSize*tY[i])*UINT16_MAX/height;
+					data[dataI+i].s = (float)(chunk.tex.x + chunkSize*tX[i])*UINT16_MAX/width;
+					data[dataI+i].t = (float)(chunk.tex.y + chunkSize*tY[i])*UINT16_MAX/height;
 
-				data[dataI+i].atlasId = chunk.atlasId;
+					data[dataI+i].atlasId = chunk.atlasId;
+				}
+				else
+				{
+					VertexData4 *data = (VertexData4*)dataRaw;
+					data[dataI+i].x = chunk.pos.x + chunkSize*tX[i];
+					data[dataI+i].y = chunk.pos.y + chunkSize*tY[i];
+
+					data[dataI+i].s = (float)(chunk.tex.x + chunkSize*tX[i])*UINT16_MAX/width;
+					data[dataI+i].t = (float)(chunk.tex.y + chunkSize*tY[i])*UINT16_MAX/height;
+				}
 			}
 			dataI += 6;
 		}
@@ -354,10 +380,16 @@ void WriteVertexData(std::string filename, int nChunks, std::list<ImageMeta> &me
 	}
 
 	std::ofstream vertexFile(filename, std::ios_base::binary);
+	int type = is8bpp;
+	vertexFile.write((char*)&type, sizeof(int));
 	vertexFile.write((char*)&nSprites, sizeof(int));
 	vertexFile.write((char*)chunksPerSprite, sizeof(uint16_t)*nSprites);
 	vertexFile.write((char*)&nChunks, sizeof(int));
-	vertexFile.write((char*)data, nChunks*6*sizeof(VertexData8));
+
+	if(is8bpp)
+		vertexFile.write((char*)dataRaw, nChunks*6*sizeof(VertexData1));
+	else
+		vertexFile.write((char*)dataRaw, nChunks*6*sizeof(VertexData4));
 
 	for(auto& p: nameMap)
 	{
@@ -368,7 +400,7 @@ void WriteVertexData(std::string filename, int nChunks, std::list<ImageMeta> &me
 	}
 
 	vertexFile.close();
-	delete[] data;
+	free(dataRaw);
 	delete[] chunksPerSprite;
 }
 

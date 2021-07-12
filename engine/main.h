@@ -1,22 +1,6 @@
 #ifndef MAIN_H3_INCLUDED
 #define MAIN_H3_INCLUDED
 
-
-/*enum //menu static texture list
-{
-    T_ELEMENTS,
-    T_FONTBIG,
-    T_FONTSMALL,
-    T_BACKGROUND1,
-    T_BACKGROUND2
-};*/
-
-struct VertexData8
-{
-	unsigned short x,y,s,t;
-	unsigned short atlasId;
-};
-
 enum //gamestate
 {
     GS_MENU,
