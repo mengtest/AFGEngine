@@ -9,6 +9,7 @@
 #include <iostream>
 #include <fixed_point.h>
 
+const FixedPoint stageWidth(300);
 
 Camera::Camera(float _maxScale) :
 scale(1.f),
@@ -16,7 +17,8 @@ widthBoundary(internalWidth),
 limitRatio(FixedPoint(6)/FixedPoint(7)),
 maxScale(_maxScale)
 {
-
+	if(maxScale*(internalWidth/2)>stageWidth)
+		maxScale = (stageWidth*2)/internalWidth;
 }
 
 Camera::Camera() : Camera(1.1f)
@@ -25,7 +27,7 @@ Camera::Camera() : Camera(1.1f)
 }
 
 
-const FixedPoint stageWidth(480);
+
 
 glm::mat4 Camera::Calculate(Point2d<FixedPoint> p1, Point2d<FixedPoint> p2)
 {
@@ -37,6 +39,7 @@ glm::mat4 Camera::Calculate(Point2d<FixedPoint> p1, Point2d<FixedPoint> p2)
 		scale = dif.abs()/(widthBoundary*limitRatio);
 		if(scale > maxScale)
 			scale = maxScale;
+		std::cout <<(float)(scale*internalWidth)<<"\n";
 	}
 	else
 	{

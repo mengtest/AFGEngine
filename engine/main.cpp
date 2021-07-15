@@ -23,6 +23,7 @@
 #include "util.h"
 #include "window.h"
 #include <vao.h>
+#include "gfx_handler.h"
 
 int inputDelay = 0;
 
@@ -73,12 +74,12 @@ int main(int argc, char** argv)
 
 int LoadPaletteTEMP()
 {
-	std::ifstream pltefile("data/palettes/play2.act", std::ifstream::in | std::ifstream::binary);
+	std::ifstream pltefile("data/palettes/col1.act", std::ifstream::in | std::ifstream::binary);
 	uint8_t palette[256*3*2];
 
 	pltefile.read((char*)palette, 256*3);
 	pltefile.close();
-	pltefile.open("data/palettes/akicolor.act", std::ifstream::in | std::ifstream::binary);
+	pltefile.open("data/palettes/col2.act", std::ifstream::in | std::ifstream::binary);
 	pltefile.read((char*)(palette+256*3), 256*3);
 
 	GLuint paletteGlId;
@@ -130,10 +131,10 @@ void PlayLoop()
 	Vao VaoTexOnly(Vao::F2F2, GL_DYNAMIC_DRAW);
 	{
 		float stageVertices[] = {
-			-480, 0, 	0, 0,
-			480, 0,  	1, 0,
-			480, 540,  	1, 1,
-			-480, 540,	0, 1
+			-300, 0, 	0, 0,
+			300, 0,  	1, 0,
+			300, 450,  	1, 1,
+			-300, 450,	0, 1
 		};
 		
 		hudId = VaoTexOnly.Prepare(GetHudData().size()*sizeof(float), nullptr);
@@ -142,10 +143,16 @@ void PlayLoop()
 		VaoTexOnly.Load();
 	}
 
-	Camera view;
+	Camera view(1.5);
 
-	Character player(-50, 1, "data/char/vaki.char");
-	Character player2(50, -1, "data/char/vaki.char");
+	Character player(-50, 1, "data/char/vaki/vaki.char");
+	Character player2(50, -1, "data/char/vaki/vaki.char");
+	
+	GfxHandler gfx;
+	mainWindow->context.PushShaderUboBind(&gfx.indexedS);
+	mainWindow->context.PushShaderUboBind(&gfx.rectS);
+	gfx.LoadGfxFromDef("data/char/vaki/def.lua");
+	gfx.LoadingDone();
 
 	player.SetCameraRef(&view);
 	player2.SetCameraRef(&view);
@@ -211,23 +218,22 @@ void PlayLoop()
 		VaoTexOnly.Draw(stageId, 0, GL_TRIANGLE_FAN);
 
 		//Draw characters
-		mainWindow->context.SetShader(RenderContext::PALETTE);
-		glBindTexture(GL_TEXTURE_2D, activeTextures[T_CHAR].id);
-		/* VaoChar.Bind();
-		mainWindow->context.SetPaletteSlot(1);
+  		gfx.Begin();
+		gfx.SetPaletteSlot(1);
 		mainWindow->context.SetModelView(viewMatrix*player2.GetSpriteTransform());
-		VaoChar.Draw(player2.GetSpriteIndex());
+		gfx.Draw(player2.GetSpriteIndex());
 
-		mainWindow->context.SetPaletteSlot(0);
+		gfx.SetPaletteSlot(0);
 		mainWindow->context.SetModelView(viewMatrix*player.GetSpriteTransform());
-		VaoChar.Draw(player.GetSpriteIndex()); */
+		gfx.Draw(player.GetSpriteIndex());
+		gfx.End();
 
 		//Draw HUD
 		VaoTexOnly.Bind();
 		mainWindow->context.SetShader(RenderContext::DEFAULT);
 		mainWindow->context.SetModelView();
 		glBindTexture(GL_TEXTURE_2D, activeTextures[T_HUD].id);
-		VaoTexOnly.Draw(hudId);
+		VaoTexOnly.Draw(hudId); 
 
 		timerString.seekp(0);
 		timerString << "SFP: " << mainWindow->GetSpf() << " FPS: " << 1/mainWindow->GetSpf();

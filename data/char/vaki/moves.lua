@@ -1,4 +1,4 @@
-ActTable = {
+actTable = {
 	{"UP",				7,		-1},
 	{"UP_RIGHT",		5,		5},
 	{"RIGHT",			1,		-1},
@@ -39,7 +39,7 @@ ActTable = {
 	{"_U3",				-1,		-1},
 	{"_U4,",			-1,		-1}
 }
-ActTable[0] = {"NEUTRAL", 0, -1}
+actTable[0] = {"NEUTRAL", 0, -1}
 
 inputs = {
 	default = {

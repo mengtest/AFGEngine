@@ -17,10 +17,7 @@ private:
 	bool initialized;
 
 	Shader defaultS;
-	Shader indexedS;
 	Ubo uniforms;
-
-	int paletteSlotL;
 
 public:
 	RenderContext();
@@ -32,14 +29,11 @@ public:
 	void UpdateViewport(float width, float height);
 
 	//Bad idea maybe
-	void SetShader(int type);
 	enum{
-		DEFAULT,
-		PALETTE
+		DEFAULT
 	};
-
-	//TODO: move it elsewhere
-	void SetPaletteSlot(int slot);
+	void SetShader(int type = DEFAULT);
+	void PushShaderUboBind(Shader *shader);
 };
 
 #endif /* RENDER_CONTEXT_H_GUARD */

@@ -7,7 +7,6 @@ layout (std140) uniform Common
 	mat4 transform;
 };
 out vec2 texCoord;
-out int channel;
 
 void main()
 {

@@ -49,22 +49,11 @@ void RenderContext::SetupGl(SDL_Window *window)
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
 	defaultS.LoadShader("data/def.vert", "data/def.frag");
-	indexedS.LoadShader("data/palette.vert", "data/palette.frag");
-	
-	indexedS.Use();
-	//Set texture unit indexes
-	glUniform1i(indexedS.GetLoc("tex0"), 0 ); 
-	glUniform1i(indexedS.GetLoc("palette"), 1 );
-	paletteSlotL = indexedS.GetLoc("paletteSlot");
 	defaultS.Use();	
-
-	
 
 	//Bind transform matrix uniforms.
 	uniforms.Init(sizeof(float)*16);
 	uniforms.Bind(defaultS.program);
-	uniforms.Bind(indexedS.program);
-
 	initialized = true;
 }
 
@@ -87,6 +76,11 @@ void RenderContext::SetModelView(glm::mat4 view)
 	uniforms.SetData(glm::value_ptr(view));
 }
 
+void RenderContext::PushShaderUboBind(Shader *shader)
+{
+	uniforms.Bind(shader->program);
+}
+
 void RenderContext::SetShader(int type)
 {
 	switch(type)
@@ -94,15 +88,7 @@ void RenderContext::SetShader(int type)
 	case DEFAULT:
 		defaultS.Use();
 		break;
-	case PALETTE:
-		indexedS.Use();
-		break;
 	default:
 		std::cerr << __FUNCTION__ << ": No such shader type.\n";
 	}
-}
-
-void RenderContext::SetPaletteSlot(int slot)
-{
-	glUniform1i(paletteSlotL, slot);
 }

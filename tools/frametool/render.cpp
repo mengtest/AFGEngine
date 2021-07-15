@@ -20,7 +20,7 @@ struct VertexData8
 };
 
 Render::Render():
-vSprite(Vao::F2F2I1, GL_STATIC_DRAW),
+vSprite(Vao::F2F2_short, GL_STATIC_DRAW),
 vGeometry(Vao::F3F3, GL_STREAM_DRAW, maxBoxes*5*sizeof(uint16_t)),
 colorRgba{1,1,1,1},
 nSprites(0),

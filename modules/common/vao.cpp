@@ -12,8 +12,8 @@ vaoId(0), vboId(0), eboId(0)
 	case F2F2:
 		stride = 4 * sizeof(float);
 		break;
-	case F2F2I1:
-		stride = 5 * sizeof(short);
+	case F2F2_short:
+		stride = 4 * sizeof(short);
 		break;
 	case F3F3:
 		stride = 6 * sizeof(float);
@@ -100,13 +100,13 @@ void Vao::Load()
 
 	switch(type)
 	{
-	case F2F2I1:
+	case F2F2_short:
 		glVertexAttribPointer(0, 2, GL_UNSIGNED_SHORT, GL_FALSE, stride, nullptr);
 		glEnableVertexAttribArray(0);
-		glVertexAttribPointer(1, 2, GL_UNSIGNED_SHORT, GL_TRUE, stride, (void*)(2*sizeof(short)));
+		glVertexAttribPointer(1, 2, GL_UNSIGNED_SHORT, GL_FALSE, stride, (void*)(2*sizeof(short)));
 		glEnableVertexAttribArray(1);
-		glVertexAttribIPointer(2, 1, GL_UNSIGNED_SHORT, stride, (void*)(4*sizeof(short)));
-		glEnableVertexAttribArray(2);
+		/* glVertexAttribIPointer(2, 1, GL_UNSIGNED_SHORT, stride, (void*)(4*sizeof(short)));
+		glEnableVertexAttribArray(2); */
 		break;
 	case F3F3:
 		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, stride, nullptr);

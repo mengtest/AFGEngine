@@ -167,14 +167,14 @@ Character::Character(FixedPoint xPos, float _side, std::string charFile) :
 	file.close();
 
 	sol::state lua;
-	auto result = lua.script_file("data/char/moves.lua");
+	auto result = lua.script_file("data/char/vaki/moves.lua");
 	if(!result.valid()){
 		sol::error err = result;
 		std::cerr << "The code has failed to run!\n"
 		          << err.what() << "\nPanicking and exiting..."
 		          << std::endl;
 	}
-	sol::table actTable = lua["ActTable"];
+	sol::table actTable = lua["actTable"];
 	for(const auto &val : actTable)
 	{
 		int index = val.first.as<int>();

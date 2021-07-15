@@ -14,7 +14,7 @@ public: //public only for ease of reading access, do not write anything.
 	bool isLoaded;
 	bool isApplied;
 	std::string filename;
-	
+	bool rectangle = false;
 
 public:
 	Texture();
@@ -23,7 +23,7 @@ public:
 
 	//Set doNotFixAlphaGamma to true to NOT modify the image when loading it.
 	void Load(std::string imageFile, bool doNotFixAlphaGamma = false, std::string paletteFile = std::string());
-	void Apply(bool repeat = false, bool linearFilter = false);
+	void Apply(bool repeat = false, bool linearFilter = false, bool rectangle = false);
 	void Unapply();
 	void Unload();
 
