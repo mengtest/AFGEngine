@@ -6,6 +6,8 @@ target_sources(Common PRIVATE
 	texture.cpp
 	vao.cpp
 	ubo.cpp
+	gfx_handler.cpp
 )
 
 target_link_libraries(Common PUBLIC Image glad::glad)
+target_link_libraries(Common PRIVATE sol2::sol2)

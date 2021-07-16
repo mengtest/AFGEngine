@@ -32,14 +32,16 @@ private:
 	std::vector<Texture> textures;
 	int boundTexture = -1;
 	int boundProgram = -1;
-	int paletteSlot;
+	int paletteSlot = 0;
 	int paletteSlotL;
 	
+	bool loaded = false;
 
 	void LoadToVao(std::filesystem::path file, int mapId, int textureIndex);
 
 public:
 	Shader indexedS, rectS;
+	
 
 	GfxHandler();
 
@@ -51,6 +53,10 @@ public:
 	void Draw(int id, int defId = 0);
 	void Begin();
 	void End();
+
+	bool isLoaded(){return loaded;}
+
+	int GetVirtualId(int id, int defId = 0); //Avoid using this
 };
 
 #endif /* GFX_HANDLER_H_GUARD */

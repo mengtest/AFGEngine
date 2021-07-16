@@ -1,4 +1,5 @@
 #include "framedata.h"
+#include "render.h"
 
 #include <fstream>
 #include <iostream>

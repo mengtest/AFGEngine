@@ -23,7 +23,7 @@
 #include "util.h"
 #include "window.h"
 #include <vao.h>
-#include "gfx_handler.h"
+#include <gfx_handler.h>
 
 int inputDelay = 0;
 

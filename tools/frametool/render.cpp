@@ -1,15 +1,17 @@
 #include "render.h"
+#include "hitbox.h"
+
+#include <iostream>
+#include <fstream>
 
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/gtc/constants.hpp>
 
 #include <glad/glad.h>
-#include <iostream>
-#include <fstream>
 #include <imgui.h>
 
-#include "hitbox.h"
+namespace fs = std::filesystem;
 
 constexpr int maxBoxes = 33;
 
@@ -20,10 +22,8 @@ struct VertexData8
 };
 
 Render::Render():
-vSprite(Vao::F2F2_short, GL_STATIC_DRAW),
 vGeometry(Vao::F3F3, GL_STREAM_DRAW, maxBoxes*5*sizeof(uint16_t)),
 colorRgba{1,1,1,1},
-nSprites(0),
 spriteId(-1),
 quadsToDraw(0),
 x(0), offsetX(0),
@@ -32,23 +32,14 @@ rotX(0), rotY(0), rotZ(0),
 uniforms("Common", 1)
 {
 	sSimple.LoadShader("data/simple.vert", "data/simple.frag");
-	
-
-	sTextured.LoadShader("data/palette.vert", "data/palette.frag");
-	sTextured.Use();
-	glUniform1i(sTextured.GetLoc("tex0"), 0 ); 
-	glUniform1i(sTextured.GetLoc("palette"), 1 );
-	glUniform1i(sTextured.GetLoc("paletteSlot"), 0);
-
-	int i = sTextured.GetLoc("palette");
-	
 	sSimple.Use();
 	lAlphaS = sSimple.GetLoc("Alpha");
 
 	//Bind transform matrix uniforms.
 	uniforms.Init(sizeof(float)*16);
 	uniforms.Bind(sSimple.program);
-	uniforms.Bind(sTextured.program);
+	uniforms.Bind(gfx.indexedS.program);
+	uniforms.Bind(gfx.rectS.program);
 
 	float lines[]
 	{
@@ -58,7 +49,6 @@ uniforms("Common", 1)
 		0, -10000, -1,	1,1,1,
 	};
 	
-
 	geoParts[LINES] = vGeometry.Prepare(sizeof(lines), lines);
 	geoParts[BOXES] = vGeometry.Prepare(sizeof(float)*6*4*maxBoxes, nullptr);
 	vGeometry.Load();
@@ -70,7 +60,7 @@ uniforms("Common", 1)
 	glPrimitiveRestartIndex(0xFFFF);
 }
 
-void Render::LoadPalette(const char *file)
+void Render::LoadPalette(fs::path file)
 {
 	std::ifstream pltefile(file, std::ifstream::in | std::ifstream::binary);
 	uint8_t palette[256*3];
@@ -90,49 +80,10 @@ void Render::LoadPalette(const char *file)
 	glActiveTexture(GL_TEXTURE0);
 }
 
-void Render::LoadGraphics(const char *pngFile, const char *vtxFile)
+void Render::LoadGraphics(fs::path path)
 {
-	texture.Load(pngFile, true);
-	texture.Apply(true);
-	//texture.Unload();
-
-	std::unordered_map<std::string, uint16_t> nameMap;
-
-	
-	int nChunks;
-	std::ifstream vertexFile(vtxFile, std::ios_base::binary);
-
-	vertexFile.read((char *)&nSprites, sizeof(int));
-	auto chunksPerSprite = new uint16_t[nSprites];
-	vertexFile.read((char *)chunksPerSprite, sizeof(uint16_t)*nSprites);
-
-	vertexFile.read((char *)&nChunks, sizeof(int));
-	auto vertexData = new VertexData8[nChunks*6]; 
-	vertexFile.read((char *)vertexData, nChunks*6*sizeof(VertexData8));
-
-	nameMap.reserve(nSprites);
-	unsigned int chunkCount = 0;
-	for(int i = 0; i < nSprites; i++)
-	{
-		uint8_t strLen;
-		vertexFile.read((char*)&strLen, 1);
-		std::string name(strLen,1);
-		uint16_t index;
-		vertexFile.read((char*)name.data(), strLen);
-		vertexFile.read((char*)&index, sizeof(uint16_t));
-		nameMap.insert({name,index});
-
-		vSprite.Prepare(sizeof(VertexData8)*6*chunksPerSprite[i], &vertexData[6*chunkCount]);
-		chunkCount += chunksPerSprite[i];
-	}
-	std::cout << "Chunks read: "<<chunkCount<<"/"<<nChunks<<"\n";
-	vertexFile.close();
-
-	vSprite.Load();
-	delete[] vertexData;
-	delete[] chunksPerSprite;
-
-	gfxNames = nameMap;
+	gfx.LoadGfxFromDef(path);
+	gfx.LoadingDone();
 }
 
 void Render::Draw()
@@ -152,7 +103,7 @@ void Render::Draw()
 	vGeometry.Draw(geoParts[LINES], 0, GL_LINES);
 
 	//Sprite
-	sTextured.Use();
+	gfx.Begin();
 	constexpr float tau = glm::pi<float>()*2.f;
 	view = glm::mat4(1.f);
 	view = glm::scale(view, glm::vec3(scale, scale, 1.f));
@@ -163,13 +114,8 @@ void Render::Draw()
 	view = glm::rotate(view, rotX*tau, glm::vec3(1.0, 0.f, 0.f));*/
 	view = glm::translate(view, glm::vec3(-128+offsetX,-32-8+offsetY,0.f)); 
 	SetModelView(std::move(view));
-	
-	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, texture.id);
-	vSprite.Bind();
-
-	if(spriteId > 0 && spriteId < nSprites)
-		vSprite.Draw(spriteId);
+	gfx.Draw(spriteId);
+	gfx.End();
 
 	//Boxes
 	sSimple.Use();
@@ -263,8 +209,6 @@ void Render::LoadHitboxVertices()
 	acumElements = 0;
 	acumSize = 0;
 	zOrder = 0;
-
-	ImGui::Text("%i", quadsToDraw);
 }
 
 void Render::DontDraw()

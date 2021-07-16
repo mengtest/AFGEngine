@@ -92,6 +92,7 @@ void GfxHandler::LoadingDone()
 {
 	vertices.Load();
 	tempVDContainer.clear();
+	loaded = true;
 }
 
 void GfxHandler::Begin()
@@ -107,30 +108,44 @@ void GfxHandler::End()
 
 void GfxHandler::Draw(int id, int defId)
 {
-	auto meta = idMapList[defId].at(id);
-	if(boundTexture != meta.textureIndex)
+	auto search = idMapList[defId].find(id);
+    if (search != idMapList[defId].end())
 	{
-		boundTexture = meta.textureIndex;
-		glBindTexture(GL_TEXTURE_RECTANGLE, textures[boundTexture].id);
-	}
-	int nextProgram = textures[boundTexture].image->bytesPerPixel;
-	if(boundProgram != nextProgram)
-	{
-		boundProgram = nextProgram;
-		if(nextProgram == 1)
+        auto meta = search->second;
+		if(boundTexture != meta.textureIndex)
 		{
-			indexedS.Use();
+			boundTexture = meta.textureIndex;
+			glBindTexture(GL_TEXTURE_RECTANGLE, textures[boundTexture].id);
 		}
-		else
-			rectS.Use();
-	}
-	
-	if(boundProgram == 1)
-		glUniform1i(paletteSlotL, paletteSlot);
-	vertices.Draw(meta.trueId);
+		int nextProgram = textures[boundTexture].image->bytesPerPixel;
+		if(boundProgram != nextProgram)
+		{
+			boundProgram = nextProgram;
+			if(nextProgram == 1)
+			{
+				indexedS.Use();
+			}
+			else
+				rectS.Use();
+		}
+		
+		if(boundProgram == 1)
+			glUniform1i(paletteSlotL, paletteSlot);
+		vertices.Draw(meta.trueId);
+    }
 }
 
 void GfxHandler::SetPaletteSlot(int palette)
 {
 	paletteSlot = palette;
+}
+
+int GfxHandler::GetVirtualId(int id, int defId)
+{
+	for(auto search: idMapList[defId])
+	{
+		if(search.second.trueId == id)
+			return search.first;
+	}
+	return -1;
 }

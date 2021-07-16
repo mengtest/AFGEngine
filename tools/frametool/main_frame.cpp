@@ -22,10 +22,10 @@ x(0),y(-150)
 {
 	LoadSettings();
 
-	render.LoadGraphics("data/images/vaki.png", "data/images/vaki.vt8");
+	render.LoadGraphics("data/char/vaki/def.lua");
 	render.LoadPalette("data/palettes/play2.act");
 	
-	fd.Load("data/char/vaki.char");
+	fd.Load("data/char/vaki/vaki.char");
 }
 
 MainFrame::~MainFrame()
