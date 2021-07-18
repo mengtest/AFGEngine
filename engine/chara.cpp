@@ -40,7 +40,7 @@ Character::Character(FixedPoint xPos, float _side, std::string charFile) :
 	touchedWall(0)
 {
 	constexpr const char *charSignature = "AFGECharacterFile";
-	constexpr uint32_t currentVersion = 99'2;
+	constexpr uint32_t currentVersion = 99'3;
 
 	root.x = xPos;
 	root.y = floorPos;
@@ -87,7 +87,6 @@ Character::Character(FixedPoint xPos, float _side, std::string charFile) :
 			std::vector<int> collision(bs.collision);
 
 			file.read(rv(currFrame.frameProp), sizeof(Frame_property));
-			file.read(rv(currFrame.attackProp), sizeof(Attack_property));
 
 			file.read(rptr(greens.data()), sizeof(int) * bs.greens);
 			file.read(rptr(reds.data()), sizeof(int) * bs.reds);
@@ -361,7 +360,7 @@ void Character::ResolveHit(int keypress) //key processing really shouldn't be he
 {
 	if (gotHit)
 	{
-		target->hitstop = hitstop = hitTargetFrame->attackProp.stop[0];
+		target->hitstop = hitstop = 8;//hitTargetFrame->attackProp.stop[0];
 
 		int left;
 		int right;

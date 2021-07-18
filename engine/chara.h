@@ -123,17 +123,18 @@ struct Frame_property
 	int state = 0;
 	
 	float spriteOffset[2]; //x,y
-	float rotation;
+	float _unused;
 	float scale[2];
 	float color[4];
 	int blendType = 0;
+	float rotation[3];
 };
 
 struct Frame
 {
 	
 	Frame_property frameProp;
-	Attack_property attackProp;
+	//Attack_property attackProp;
 	//Boxes are defined by BL, BR, TR, TL points, in that order.
 	typedef std::vector<Rect2d<FixedPoint>> boxes_t;
 	boxes_t greenboxes;

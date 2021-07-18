@@ -11,7 +11,7 @@
 #define rptr(X) ((char*)X)
 
 constexpr const char *charSignature = "AFGECharacterFile";
-constexpr uint32_t currentVersion = 99'2;
+constexpr uint32_t currentVersion = 99'3;
 
 struct BoxSizes
 {
@@ -22,35 +22,25 @@ struct BoxSizes
 
 struct Frame_property_old
 {
+	int spriteIndex = 0;
 	int duration = 0;
+	int jumpTo = 0;
+	int jumpType = 0;
+	bool relativeJump = false;
+
 	uint32_t flags = 0;
-	float vel[2] = {0}; // x,y
-	float accel[2] = {0};
+	int vel[2] = {0}; // x,y
+	int accel[2] = {0};
+	int movementType[2] = {0}; //Add or set X,Y
 
-	int damage[4] = {0}; // P-damage on hit and block plus R-damage on hit and block. 0 and 1 are unused
-	float proration = 0;
-	int mgain[2] = {0}; //Meter gain on hit and block respectively.
-	int hitstun = 0;
-	int blockstun = 0;
-	int ch_stop = 0;
-	int hitstop = 0;
-	float push[2] = {0}; //(x,y) speed to be added to foe when he gets hit.
-	float pushback[2] = {0}; //X pushback on hit and block respectively.
-
+	int cancelType = 0;
 	int state = 0;
-
-	int painType = 0;
+	
 	float spriteOffset[2]; //x,y
-};
-
-struct seqProp_old
-{
-	int level = 0;
-	int metercost = 0;
-	bool loops = false;
-	int beginLoop = 0;
-	int gotoSeq = 0;
-	int machineState = 0;
+	float rotation;
+	float scale[2];
+	float color[4];
+	int blendType = 0;
 };
 
 bool Framedata::LoadOld(std::string charFile)
@@ -70,28 +60,10 @@ bool Framedata::LoadOld(std::string charFile)
 		std::cerr << "Signature mismatch.\n";
 		return false;
 	}
-	if(header.version != 99'1)
+	if(header.version != 99'2)
 	{
 		std::cerr << "Format version mismatch.\n";
 		return false;
-	}
-
-	{ //Ignore old table data
-		int motionLenG, motionLenA;
-		file.read(rv(motionLenG), sizeof(int));
-		file.read(rv(motionLenA), sizeof(int));
-
-		for (int i = 0; i < motionLenG+motionLenA; ++i)
-		{
-			file.ignore(sizeof(int));
-			file.ignore(sizeof(int));
-
-			int strSize;
-			file.read(rv(strSize), sizeof(int));
-			file.ignore(strSize);
-
-			file.ignore(sizeof(char));
-		}
 	}
 
 	sequences.resize(header.sequences_n);
@@ -103,9 +75,7 @@ bool Framedata::LoadOld(std::string charFile)
 		currSeq.name.resize(namelength);
 		file.read(rptr(currSeq.name.data()), namelength);
 
-		seqProp_old oldSeq;
-		file.read(rv(oldSeq), sizeof(seqProp_old));
-		currSeq.props.level = oldSeq.level;
+		file.read(rv(currSeq.props), sizeof(seqProp));
 
 		uint8_t seqlength;
 		file.read(rv(seqlength), sizeof(seqlength));
@@ -121,28 +91,12 @@ bool Framedata::LoadOld(std::string charFile)
 			currFrame.redboxes.resize(bs.reds);
 			currFrame.colbox.resize(bs.collision);
 
-			Frame_property_old of;
-			auto &nf = currFrame.frameProp;
-			auto &nfa = currFrame.attackProp;
-			file.read(rv(of), sizeof(Frame_property_old));
-			nf.duration = of.duration;
-			nf.state = of.state;
-			nf.vel[0] = of.vel[0]*1000;
-			nf.vel[1] = of.vel[1]*1000;
-			nf.accel[0] = of.accel[0]*1000;
-			nf.accel[1] = of.accel[1]*1000;
-			nfa.damage[0] = of.damage[2];
-			nfa.correction = of.proration*1000;
-			nfa.meterGain = of.mgain[1];
-			nf.flags = of.flags;
+			file.read(rv(currFrame.frameProp), sizeof(Frame_property_old));
+			file.ignore(sizeof(Attack_property));
 
 			file.read(rptr(currFrame.greenboxes.data()), sizeof(int) * bs.greens);
 			file.read(rptr(currFrame.redboxes.data()), sizeof(int) * bs.reds);
 			file.read(rptr(currFrame.colbox.data()), sizeof(int) * bs.collision);
-
-			int spriteIndex;
-			file.read(rv(spriteIndex), sizeof(int));
-			currFrame.frameProp.spriteIndex = spriteIndex;
 		}
 	}
 
@@ -201,7 +155,6 @@ bool Framedata::Load(std::string charFile)
 			currFrame.colbox.resize(bs.collision);
 
 			file.read(rv(currFrame.frameProp), sizeof(Frame_property));
-			file.read(rv(currFrame.attackProp), sizeof(Attack_property));
 
 			file.read(rptr(currFrame.greenboxes.data()), sizeof(int) * bs.greens);
 			file.read(rptr(currFrame.redboxes.data()), sizeof(int) * bs.reds);
@@ -253,7 +206,6 @@ void Framedata::Save(std::string charFile)
 			file.write(rv(bs), sizeof(BoxSizes));
 
 			file.write(rv(currFrame.frameProp), sizeof(Frame_property));
-			file.write(rv(currFrame.attackProp), sizeof(Attack_property));
 
 			file.write(rptr(currFrame.greenboxes.data()), sizeof(int) * bs.greens);
 			file.write(rptr(currFrame.redboxes.data()), sizeof(int) * bs.reds);
