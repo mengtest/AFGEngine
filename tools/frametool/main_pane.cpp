@@ -106,19 +106,9 @@ void MainPane::Draw()
 			}
 
 			ImGui::InputInt("Level", &seq.props.level);
-			ImGui::InputInt("Meter", &seq.props.metercost);
-			ImGui::Checkbox("Loops", &seq.props.loops);
-			ImGui::InputInt("Begin loop", &seq.props.beginLoop);
-			ImGui::InputInt("Go to seq", &seq.props.gotoSeq);
-			const char* const states[] = {
-				"GROUNDED",
-				"AIRBORNE",
-				"BUSY_GRND",
-				"BUSY_AIR",
-				"PAIN_GRND",
-				"PAIN_AIR"
-			};
-			im::Combo("Machine state", &seq.props.machineState, states, IM_ARRAYSIZE(states));
+			ImGui::InputInt("Land frame", &seq.props.landFrame);
+			ImGui::InputInt("Z order", &seq.props.zOrder);
+
 			im::TreePop();
 			im::Separator();
 		}
@@ -165,19 +155,7 @@ void MainPane::Draw()
 			} */
 		}
 		
-		if (im::TreeNode("ACT"))
-		{
-			for( int i = 0; i < 32; i++)
-			{
-				im::PushID(i); 
-				im::Text("A %s", frameData->motionListDataA[i].motionStr.c_str());
-				im::SameLine();
-				im::Text("G %s", frameData->motionListDataG[i].motionStr.c_str());
-				im::PopID();
-			};
-			im::TreePop();
-			im::Separator();
-		}
+		
 		im::EndChild();
 	}
 
@@ -186,21 +164,13 @@ void MainPane::Draw()
 
 void MainPane::DrawFrame(Frame &frame)
 {
-	ImGui::InputInt("Sprite id", &frame.spriteIndex);
+	ImGui::InputInt("Sprite id", &frame.frameProp.spriteIndex);
 	ImGui::InputInt("Duration", &frame.frameProp.duration);
-	ImGui::InputFloat2("Vel", frame.frameProp.vel);
-	ImGui::InputFloat2("Acc", frame.frameProp.accel);
-	ImGui::InputInt4("Dmg", frame.frameProp.damage);
-	ImGui::InputFloat("Proration", &frame.frameProp.proration);
-	ImGui::InputInt("Hitstun", &frame.frameProp.hitstun);
-	ImGui::InputInt("Blockstun", &frame.frameProp.blockstun);
-	ImGui::InputInt("Hitstun", &frame.frameProp.hitstun);
-	ImGui::InputInt("CH stop", &frame.frameProp.ch_stop);
-	ImGui::InputInt("Hitstop", &frame.frameProp.hitstop);
-	ImGui::InputFloat2("Push", frame.frameProp.push);
-	ImGui::InputFloat2("Pushback", frame.frameProp.pushback);
-	ImGui::InputInt("Pain", &frame.frameProp.painType);
+	ImGui::InputInt2("Vel", frame.frameProp.vel);
+	ImGui::InputInt2("Acc", frame.frameProp.accel);
 	ImGui::InputFloat2("Offset", frame.frameProp.spriteOffset);
+
+	ImGui::InputInt3("Dmg", frame.attackProp.damage);
 
 	const char* const states[] = {
 		"STANDING",

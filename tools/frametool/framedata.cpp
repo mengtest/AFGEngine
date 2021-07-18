@@ -11,13 +11,46 @@
 #define rptr(X) ((char*)X)
 
 constexpr const char *charSignature = "AFGECharacterFile";
-constexpr uint32_t currentVersion = 99'1;
+constexpr uint32_t currentVersion = 99'2;
 
 struct BoxSizes
 {
 	int8_t greens;
 	int8_t reds;
 	int8_t collision;
+};
+
+struct Frame_property_old
+{
+	int duration = 0;
+	uint32_t flags = 0;
+	float vel[2] = {0}; // x,y
+	float accel[2] = {0};
+
+	int damage[4] = {0}; // P-damage on hit and block plus R-damage on hit and block. 0 and 1 are unused
+	float proration = 0;
+	int mgain[2] = {0}; //Meter gain on hit and block respectively.
+	int hitstun = 0;
+	int blockstun = 0;
+	int ch_stop = 0;
+	int hitstop = 0;
+	float push[2] = {0}; //(x,y) speed to be added to foe when he gets hit.
+	float pushback[2] = {0}; //X pushback on hit and block respectively.
+
+	int state = 0;
+
+	int painType = 0;
+	float spriteOffset[2]; //x,y
+};
+
+struct seqProp_old
+{
+	int level = 0;
+	int metercost = 0;
+	bool loops = false;
+	int beginLoop = 0;
+	int gotoSeq = 0;
+	int machineState = 0;
 };
 
 bool Framedata::LoadOld(std::string charFile)
@@ -37,51 +70,27 @@ bool Framedata::LoadOld(std::string charFile)
 		std::cerr << "Signature mismatch.\n";
 		return false;
 	}
-	if(header.version != 99'0)
+	if(header.version != 99'1)
 	{
 		std::cerr << "Format version mismatch.\n";
 		return false;
 	}
 
-	{ //To be removed
-		int table_size;
-		file.read(rv(table_size), sizeof(int));
-		file.ignore( sizeof(int) * table_size);
-		file.ignore( sizeof(int) * table_size);
-
+	{ //Ignore old table data
+		int motionLenG, motionLenA;
 		file.read(rv(motionLenG), sizeof(int));
 		file.read(rv(motionLenA), sizeof(int));
 
-		for (int i = 0; i < motionLenG; ++i)
+		for (int i = 0; i < motionLenG+motionLenA; ++i)
 		{
-			file.read(rv(motionListDataG[i].bufLen), sizeof(int));
-			file.read(rv(motionListDataG[i].seqRef), sizeof(int));
+			file.ignore(sizeof(int));
+			file.ignore(sizeof(int));
 
 			int strSize;
 			file.read(rv(strSize), sizeof(int));
+			file.ignore(strSize);
 
-			std::string fullMotionStr(strSize, '\0');
-			file.read(rptr(fullMotionStr.data()), strSize);
-
-			file.read(rv(motionListDataG[i].button), sizeof(char));
-
-			motionListDataG[i].motionStr = fullMotionStr;
-		}
-
-		for (int i = 0; i < motionLenA; ++i)
-		{
-			file.read((char *)&motionListDataA[i].bufLen, sizeof(int));
-			file.read((char *)&motionListDataA[i].seqRef, sizeof(int));
-
-			int strSize;
-			file.read((char *)&strSize, sizeof(int));
-
-			std::string fullMotionStr(strSize, '\0');
-
-			file.read((char *)fullMotionStr.data(), strSize);
-			file.read(&motionListDataA[i].button, sizeof(char));
-
-			motionListDataA[i].motionStr = fullMotionStr;
+			file.ignore(sizeof(char));
 		}
 	}
 
@@ -94,7 +103,9 @@ bool Framedata::LoadOld(std::string charFile)
 		currSeq.name.resize(namelength);
 		file.read(rptr(currSeq.name.data()), namelength);
 
-		file.read(rv(currSeq.props), sizeof(seqProp));
+		seqProp_old oldSeq;
+		file.read(rv(oldSeq), sizeof(seqProp_old));
+		currSeq.props.level = oldSeq.level;
 
 		uint8_t seqlength;
 		file.read(rv(seqlength), sizeof(seqlength));
@@ -110,13 +121,28 @@ bool Framedata::LoadOld(std::string charFile)
 			currFrame.redboxes.resize(bs.reds);
 			currFrame.colbox.resize(bs.collision);
 
-			file.read(rv(currFrame.frameProp), sizeof(Frame_property));
+			Frame_property_old of;
+			auto &nf = currFrame.frameProp;
+			auto &nfa = currFrame.attackProp;
+			file.read(rv(of), sizeof(Frame_property_old));
+			nf.duration = of.duration;
+			nf.state = of.state;
+			nf.vel[0] = of.vel[0]*1000;
+			nf.vel[1] = of.vel[1]*1000;
+			nf.accel[0] = of.accel[0]*1000;
+			nf.accel[1] = of.accel[1]*1000;
+			nfa.damage[0] = of.damage[2];
+			nfa.correction = of.proration*1000;
+			nfa.meterGain = of.mgain[1];
+			nf.flags = of.flags;
 
 			file.read(rptr(currFrame.greenboxes.data()), sizeof(int) * bs.greens);
 			file.read(rptr(currFrame.redboxes.data()), sizeof(int) * bs.reds);
 			file.read(rptr(currFrame.colbox.data()), sizeof(int) * bs.collision);
 
-			file.read(rv(currFrame.spriteIndex), sizeof(int));
+			int spriteIndex;
+			file.read(rv(spriteIndex), sizeof(int));
+			currFrame.frameProp.spriteIndex = spriteIndex;
 		}
 	}
 
@@ -149,43 +175,6 @@ bool Framedata::Load(std::string charFile)
 		return false;
 	}
 
-	{ //To be removed
-		file.read(rv(motionLenG), sizeof(int));
-		file.read(rv(motionLenA), sizeof(int));
-
-		for (int i = 0; i < motionLenG; ++i)
-		{
-			file.read(rv(motionListDataG[i].bufLen), sizeof(int));
-			file.read(rv(motionListDataG[i].seqRef), sizeof(int));
-
-			int strSize;
-			file.read(rv(strSize), sizeof(int));
-
-			std::string fullMotionStr(strSize, '\0');
-			file.read(rptr(fullMotionStr.data()), strSize);
-
-			file.read(rv(motionListDataG[i].button), sizeof(char));
-
-			motionListDataG[i].motionStr = fullMotionStr;
-		}
-
-		for (int i = 0; i < motionLenA; ++i)
-		{
-			file.read((char *)&motionListDataA[i].bufLen, sizeof(int));
-			file.read((char *)&motionListDataA[i].seqRef, sizeof(int));
-
-			int strSize;
-			file.read((char *)&strSize, sizeof(int));
-
-			std::string fullMotionStr(strSize, '\0');
-
-			file.read((char *)fullMotionStr.data(), strSize);
-			file.read(&motionListDataA[i].button, sizeof(char));
-
-			motionListDataA[i].motionStr = fullMotionStr;
-		}
-	}
-
 	sequences.resize(header.sequences_n);
 	for (uint16_t i = 0; i < header.sequences_n; ++i)
 	{
@@ -212,12 +201,11 @@ bool Framedata::Load(std::string charFile)
 			currFrame.colbox.resize(bs.collision);
 
 			file.read(rv(currFrame.frameProp), sizeof(Frame_property));
+			file.read(rv(currFrame.attackProp), sizeof(Attack_property));
 
 			file.read(rptr(currFrame.greenboxes.data()), sizeof(int) * bs.greens);
 			file.read(rptr(currFrame.redboxes.data()), sizeof(int) * bs.reds);
 			file.read(rptr(currFrame.colbox.data()), sizeof(int) * bs.collision);
-
-			file.read(rv(currFrame.spriteIndex), sizeof(int));
 		}
 	}
 
@@ -242,31 +230,6 @@ void Framedata::Save(std::string charFile)
 	strncpy_s(header.signature, charSignature, 32);
 	file.write(rv(header), sizeof(CharFileHeader));
 
-	file.write(rv(motionLenG), sizeof(int));
-	file.write(rv(motionLenA), sizeof(int));
-
-	for (int i = 0; i < motionLenG; ++i)
-	{
-		file.write(rv(motionListDataG[i].bufLen), sizeof(int));
-		file.write(rv(motionListDataG[i].seqRef), sizeof(int));
-
-		int strSize = motionListDataG[i].motionStr.size();
-		file.write(rv(strSize), sizeof(int));
-		file.write(rptr(motionListDataG[i].motionStr.data()), strSize);
-		file.write(rv(motionListDataG[i].button), sizeof(char));
-	}
-
-	for (int i = 0; i < motionLenA; ++i)
-	{
-		file.write(rv(motionListDataA[i].bufLen), sizeof(int));
-		file.write(rv(motionListDataA[i].seqRef), sizeof(int));
-
-		int strSize = motionListDataA[i].motionStr.size();
-		file.write(rv(strSize), sizeof(int));
-		file.write(rptr(motionListDataA[i].motionStr.data()), strSize);
-		file.write(rv(motionListDataA[i].button), sizeof(char));
-	}
-
 	for (uint16_t i = 0; i < header.sequences_n; ++i)
 	{
 		auto &currSeq = sequences[i];
@@ -290,12 +253,11 @@ void Framedata::Save(std::string charFile)
 			file.write(rv(bs), sizeof(BoxSizes));
 
 			file.write(rv(currFrame.frameProp), sizeof(Frame_property));
+			file.write(rv(currFrame.attackProp), sizeof(Attack_property));
 
 			file.write(rptr(currFrame.greenboxes.data()), sizeof(int) * bs.greens);
 			file.write(rptr(currFrame.redboxes.data()), sizeof(int) * bs.reds);
 			file.write(rptr(currFrame.colbox.data()), sizeof(int) * bs.collision);
-
-			file.write(rv(currFrame.spriteIndex), sizeof(int));
 		}
 	}
 

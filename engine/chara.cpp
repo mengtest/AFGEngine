@@ -32,18 +32,15 @@ Character::Character(FixedPoint xPos, float _side, std::string charFile) :
 	currSeq(0),
 	currFrame(0),
 	hitstop(0),
-	spriteSide(_side),
 	side(_side),
 	painType(0),
 	alreadyHit(false),
 	isKickingAss(false),
 	gotHit(0),
-	gravity(0.5),
-	friction(0.05),
 	touchedWall(0)
 {
 	constexpr const char *charSignature = "AFGECharacterFile";
-	constexpr uint32_t currentVersion = 99'1;
+	constexpr uint32_t currentVersion = 99'2;
 
 	root.x = xPos;
 	root.y = floorPos;
@@ -64,46 +61,6 @@ Character::Character(FixedPoint xPos, float _side, std::string charFile) :
 	if(header.version != currentVersion)
 	{
 		std::cerr << "Format version mismatch.\n";
-	}
-
-	{//Remove
-		int motionLenG;
-		int motionLenA;
-
-		file.read((char *)&motionLenG, sizeof(int));
-		file.read((char *)&motionLenA, sizeof(int));
-
-		for (int i = 0; i < motionLenG; ++i)
-		{
-			file.read((char *)&motionListDataG[i].bufLen, sizeof(int));
-			file.read((char *)&motionListDataG[i].seqRef, sizeof(int));
-
-			int strSize;
-			file.read((char *)&strSize, sizeof(int));
-
-			std::string fullMotionStr(strSize, '\0');
-
-			file.read((char *)fullMotionStr.data(), strSize);
-			file.read(&motionListDataG[i].button, sizeof(char));
-
-			motionListDataG[i].motionStr = fullMotionStr;
-		}
-
-		for (int i = 0; i < motionLenA; ++i)
-		{
-			file.read((char *)&motionListDataA[i].bufLen, sizeof(int));
-			file.read((char *)&motionListDataA[i].seqRef, sizeof(int));
-
-			int strSize;
-			file.read((char *)&strSize, sizeof(int));
-
-			std::string fullMotionStr(strSize, '\0');
-
-			file.read((char *)fullMotionStr.data(), strSize);
-			file.read(&motionListDataA[i].button, sizeof(char));
-
-			motionListDataA[i].motionStr = fullMotionStr;
-		}
 	}
 
 	sequences.resize(header.sequences_n);
@@ -130,6 +87,7 @@ Character::Character(FixedPoint xPos, float _side, std::string charFile) :
 			std::vector<int> collision(bs.collision);
 
 			file.read(rv(currFrame.frameProp), sizeof(Frame_property));
+			file.read(rv(currFrame.attackProp), sizeof(Attack_property));
 
 			file.read(rptr(greens.data()), sizeof(int) * bs.greens);
 			file.read(rptr(reds.data()), sizeof(int) * bs.reds);
@@ -159,8 +117,6 @@ Character::Character(FixedPoint xPos, float _side, std::string charFile) :
 				sequences[i].frames[i2].colbox.topRight.x = collision[2];
 				sequences[i].frames[i2].colbox.topRight.y = collision[3];
 			}
-
-			file.read(rv(currFrame.spriteIndex), sizeof(int));
 		}
 	}
 
@@ -183,9 +139,10 @@ Character::Character(FixedPoint xPos, float _side, std::string charFile) :
 		actTableA[index] = arr[3];
 	}
 
+	selectedMotionList = motionListDataG;
+	selectedTable = actTableG;
 	GotoSequence(actTableG[0]);
 	GotoFrame(0);
-
 	//TransitionInto(state::GROUNDED);
 	return;
 }
@@ -212,15 +169,15 @@ void Character::setTarget(Character *t)
 
 int Character::GetSpriteIndex()
 {
-	return framePointer->spriteIndex;
+	return framePointer->frameProp.spriteIndex;
 }
 
 glm::mat4 Character::GetSpriteTransform()
 {
 	glm::mat4 tranform(1);
 	
-	tranform = glm::scale(tranform, glm::vec3(spriteSide, 1.f, 1.f));
-	tranform = glm::translate(tranform, glm::vec3((root.x)*spriteSide-128.f, root.y-40.f, 0));
+	tranform = glm::scale(tranform, glm::vec3(side, 1.f, 1.f));
+	tranform = glm::translate(tranform, glm::vec3((root.x)*side-128.f, root.y-40.f, 0));
 	
 	
 	return tranform;
@@ -233,9 +190,9 @@ void Character::Collision(Character *blue, Character *red)
 	Rect2d<FixedPoint> colBlue = blue->framePointer->colbox;
 	Rect2d<FixedPoint> colRed = red->framePointer->colbox;
 
-	if (blue->spriteSide == -1)
+	if (blue->side == -1)
 		colBlue = colBlue.FlipHorizontal();
-	if (red->spriteSide == -1)
+	if (red->side == -1)
 		colRed = colRed.FlipHorizontal();
 
 	colBlue = colBlue.Translate(blue->root);
@@ -280,12 +237,12 @@ void Character::HitCollision()
 	bool isHit = false;
 	for(auto hurtbox : framePointer->greenboxes)
 	{
-		if(spriteSide == -1)
+		if(side == -1)
 			hurtbox = hurtbox.FlipHorizontal();
 		hurtbox = hurtbox.Translate(root);
 		for(auto hitbox : target->framePointer->redboxes)
 		{
-			if(target->spriteSide == -1)
+			if(target->side == -1)
 				hitbox = hitbox.FlipHorizontal();
 			hitbox = hitbox.Translate(target->root);
 			if(hitbox.Intersects(hurtbox))
@@ -343,43 +300,15 @@ bool Character::SuggestSequence(int seq)
 	if(seq == -1)
 		return false;
 
-	if (sequences[currSeq].props.machineState == state::BUSY_GRND) //Checks if it should ignore the next command
-	{
-		if (!isKickingAss && !(framePointer->frameProp.flags & flag::CANCEL_WHIFF))
-			return false;
-		if (!(framePointer->frameProp.flags & flag::CANCELLABLE)) //if not cancellable
-			return false;
-		if (!(sequences[seq].props.machineState == state::BUSY_GRND || sequences[seq].props.machineState == state::BUSY_AIR)) //if next is not attack
-			return false;
-		GotoSequence(seq);
-		return true;
-	}
-	else if (sequences[currSeq].props.machineState == state::BUSY_AIR)
-	{
-		if (!isKickingAss && !(framePointer->frameProp.flags & flag::CANCEL_WHIFF))
-			return false;
-		if (!(framePointer->frameProp.flags & flag::CANCELLABLE)) //if not cancellable
-			return false;
-		if (sequences[seq].props.machineState != state::BUSY_AIR) //if next is not attack
-			return false;
-		GotoSequence(seq);
-		return true;
-	}
-
-	if (currSeq == seq && spriteSide == side) //The sequence can't go to itself unless the sprite facing side hasn't been updated.
+	//Checks if it should ignore the next command
+	//if not cancellable. Do nothing
+	//if next seq is not attack do nothing <- Define in movelist
+	
+	if (currSeq == seq) //The sequence can't go to itself (unless the sprite facing side hasn't been updated???)
 	{
 		return false;
 	}
-
-	//int actual = sequences[currSeq].trigger;s
-	/*if(next == trig::A_5SIDESWITCH && actual != trig::CMD_5)
-		return false;*/
-
-	if (sequences[currSeq].props.gotoSeq == seq) //Don't interrupt it by the next sequence, which will be shown anyway.
-		return false;
-
-	if (currentState == state::PAIN_GRND || currentState == state::PAIN_AIR) //You're in pain, what can you do?
-		return false;
+	//If you're in pain. Do nothing?
 
 	//Attack cancel rules and all that stuff go here.
 	GotoSequence(seq);
@@ -392,12 +321,9 @@ void Character::GotoSequence(int seq)
 		return;
 
 	isKickingAss = false;
-	spriteSide = side;
 	currSeq = seq;
 	currFrame = 0;
 	GotoFrame(0);
-
-	TransitionInto(sequences[currSeq].props.machineState);
 }
 
 void Character::GotoFrame(int frame)
@@ -409,7 +335,7 @@ void Character::GotoFrame(int frame)
 
 	if (framePointer->frameProp.flags & flag::RESET_INFLICTED_VEL)
 	{
-		for (int i = HITPUSHx; i <= PUSHBACKx; ++i)
+		for (int i = 0; i <= 1; ++i)
 		{
 			impulses[i] = 0;
 		}
@@ -417,63 +343,25 @@ void Character::GotoFrame(int frame)
 
 	if (!(framePointer->frameProp.flags & flag::KEEP_VEL))
 	{
-		vel.x = (framePointer->frameProp.vel[0] * spriteSide);
-		vel.y = (framePointer->frameProp.vel[1]);
+		vel.x.value = (framePointer->frameProp.vel[0] * side)*100;
+		vel.y.value = (framePointer->frameProp.vel[1])*100;
 	}
 	if (!(framePointer->frameProp.flags & flag::KEEP_ACC))
 	{
-		accel.x = framePointer->frameProp.accel[0] * spriteSide;
-		accel.y = framePointer->frameProp.accel[1];
+		accel.x.value = (framePointer->frameProp.accel[0] * side)*100;
+		accel.y.value = framePointer->frameProp.accel[1]*100;
 	}
 	//std::cout << sequences[currSeq].trigger << ": " << framePointer->frameProp.vel.x << "\t" << frame  << "\n";
 
 	frameDuration = sequences[currSeq].frames[currFrame].frameProp.duration;
 }
 
-void Character::TransitionInto(int state)
-{
-	currentState = state;
-	switch (state)
-	{
-	case state::GROUNDED:
-	case state::BUSY_GRND:
-	case state::PAIN_GRND:
-		selectedTable = actTableG;
-		selectedMotionList = motionListDataG;
-		break;
-	case state::BUSY_AIR:
-	case state::PAIN_AIR:
-	case state::AIRBORNE:
-		selectedTable = actTableA;
-		selectedMotionList = motionListDataA;
-		break;
-	default:
-		std::cout << "default transition(!)";
-	}
-}
-
-void Character::Update()
-{
-	switch (currentState)
-	{
-	case state::GROUNDED:
-	case state::BUSY_GRND:
-	case state::PAIN_GRND:
-		UpdateGround();
-		break;
-	case state::BUSY_AIR:
-	case state::PAIN_AIR:
-	case state::AIRBORNE:
-		UpdateAirborne();
-		break;
-	}
-}
 
 void Character::ResolveHit(int keypress) //key processing really shouldn't be here.
 {
 	if (gotHit)
 	{
-		target->hitstop = hitstop = hitTargetFrame->frameProp.hitstop;
+		target->hitstop = hitstop = hitTargetFrame->attackProp.stop[0];
 
 		int left;
 		int right;
@@ -489,7 +377,7 @@ void Character::ResolveHit(int keypress) //key processing really shouldn't be he
 		}
 
 		bool blocked = false;
-		if (currentState == state::GROUNDED && (keypress & left) && !(keypress & right))
+		/* if (currentState == state::GROUNDED && (keypress & left) && !(keypress & right))
 		{
 			if ((keypress & key::buf::DOWN) && (hitTargetFrame->frameProp.flags & flag::CROUCH_BLOCK))
 			{
@@ -549,10 +437,10 @@ void Character::ResolveHit(int keypress) //key processing really shouldn't be he
 		else
 		{
 			impulses[HITPUSHx] = hitTargetFrame->frameProp.push[0] * target->side;
-		}
+		} */
 
 		//TODO: Remove this nasty hack
-		vel.y = hitTargetFrame->frameProp.push[1];
+		//vel.y = hitTargetFrame->frameProp.push[1];
 
 		gotHit = false;
 	}
@@ -571,7 +459,7 @@ void Character::Translate(FixedPoint x, FixedPoint y)
 	BoundaryCollision();
 }
 
-void Character::UpdateGround()
+void Character::Update()
 {
 	if (hitstop > 0)
 	{
@@ -579,6 +467,7 @@ void Character::UpdateGround()
 		return;
 	}
 
+	//Only if frame is standing, walking or crouching
 	if (root.x < target->root.x) //Side switching.
 	{
 		if (side == -1)
@@ -602,48 +491,20 @@ void Character::UpdateGround()
 		side = -1;
 	}
 
-	for (int i = HITPUSHx; i <= PUSHBACKx; ++i)
-	{
-		if (impulses[i] > friction + FixedPoint(0.1))
-		{
-			impulses[i] -= friction;
-		}
-		else if (impulses[i] < -friction - FixedPoint(0.1))
-		{
-			impulses[i] += friction;
-		}
-		else
-		{
-			impulses[i] = 0;
-		}
-
-		Translate(impulses[i], 0);
-	}
-
 	if (touchedWall != 0)
 	{
-		target->root.x += -impulses[HITPUSHx];
+		target->root.x += -impulses[0];
 	}
 
-	if (framePointer->frameProp.flags & flag::FRICTION)
+	vel += accel;
+	Translate(vel);
+
+	if (root.y < floorPos) //Check collision with floor
 	{
-		if (vel.x > friction + 0.1)
-		{
-			vel.x -= friction;
-		}
-		else if (vel.x < -friction - 0.1)
-		{
-			vel.x += friction;
-		}
-		else
-		{
-			vel.x = 0;
-		}
+		vel.y = 0;
+		root.y = floorPos;
+		//Jump to landing frame.
 	}
-
-	vel.x += accel.x;
-
-	Translate(vel.x, 0);
 
 	--frameDuration;
 	if (frameDuration == 0)
@@ -653,10 +514,8 @@ void Character::UpdateGround()
 			currFrame += 1;
 			GotoFrame(currFrame);
 		}
-		else if (sequences[currSeq].props.loops)
-			GotoFrame(sequences[currSeq].props.beginLoop);
-		else //If it doesn't loop go to the next specified sequence.
-			GotoSequence(sequences[currSeq].props.gotoSeq);
+		else //Go to default sequence if nothing happens.
+			GotoSequence(0);
 	}
 }
 
@@ -688,83 +547,4 @@ void Character::Input(input_deque *keyPresses)
 	}
 
 	SuggestSequence(nextSeq);
-}
-
-void Character::UpdateAirborne()
-{
-	if (hitstop > 0)
-	{
-		--hitstop;
-		return;
-	}
-
-	if (framePointer->frameProp.flags & flag::GRAVITY) //gravity.
-		vel.y -= gravity;
-
-	if (framePointer->frameProp.flags & flag::FRICTION)
-	{
-		if (vel.x > friction + 0.1)
-		{
-			vel.x -= friction;
-		}
-		else if (vel.x < -friction - 0.1)
-		{
-			vel.x += friction;
-		}
-		else
-		{
-			vel.x = 0;
-		}
-	}
-
-	for (int i = HITPUSHx; i <= PUSHBACKx; ++i)
-	{
-		if (impulses[i] > friction + 0.1)
-		{
-			impulses[i] -= friction;
-		}
-		else if (impulses[i] < -friction - 0.1)
-		{
-			impulses[i] += friction;
-		}
-		else
-		{
-			impulses[i] = 0;
-		}
-
-		root.x += impulses[i];
-	}
-
-	if (touchedWall != 0)
-	{
-		target->root.x += -impulses[HITPUSHx];
-	}
-
-	vel += accel;
-	Translate(vel);
-
-	if (root.y < floorPos) //Check collision with floor
-	{
-		vel.y = 0;
-		root.y = floorPos;
-		if (currentState == state::BUSY_AIR)
-			GotoSequence(sequences[sequences[currSeq].props.gotoSeq].props.gotoSeq);
-		else
-			GotoSequence(sequences[currSeq].props.gotoSeq);
-		//TransitionInto(sequences[currSeq].machineState);
-	}
-
-	--frameDuration;
-	if (frameDuration == 0)
-	{
-		if (currFrame < sequences[currSeq].frames.size() - 1)
-		{
-			currFrame += 1;
-			GotoFrame(currFrame);
-		}
-		else if (sequences[currSeq].props.loops)
-			GotoFrame(sequences[currSeq].props.beginLoop);
-		else //If it doesn't loop go the next specified sequence..
-			GotoSequence(sequences[currSeq].props.gotoSeq);
-	}
 }

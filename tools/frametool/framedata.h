@@ -96,48 +96,60 @@ struct Motion_Data
 	char button = 0;
 };
 
+struct Attack_property
+{
+	uint32_t attackFlags = 0;
+	int damage[3] = {0}; // Perma damage, Red damage, Guard damage
+	int correction = 0;
+	int correctionType = 0;
+	int meterGain = 0;
+	int stopType = 0;
+	int stop[2] = {0}; //Hit block
+	int stun[2] = {0}; //Untech and block
+	int vectorId[6]; //SCA hit block
+	int priority = 0;
+	int soundFx = 0;
+	int hitFx = 0;
+};
+
 struct Frame_property
 {
+	int spriteIndex = 0;
 	int duration = 0;
+	int jumpTo = 0;
+	int jumpType = 0;
+	bool relativeJump = false;
+
 	uint32_t flags = 0;
-	float vel[2] = {0}; // x,y
-	float accel[2] = {0};
+	int vel[2] = {0}; // x,y
+	int accel[2] = {0};
+	int movementType[2] = {0}; //Add or set X,Y
 
-	int damage[4] = {0}; // P-damage on hit and block plus R-damage on hit and block. 0 and 1 are unused
-	float proration = 0;
-	int mgain[2] = {0}; //Meter gain on hit and block respectively.
-	int hitstun = 0;
-	int blockstun = 0;
-	int ch_stop = 0;
-	int hitstop = 0;
-	float push[2] = {0}; //(x,y) speed to be added to foe when he gets hit.
-	float pushback[2] = {0}; //X pushback on hit and block respectively.
-
+	int cancelType = 0;
 	int state = 0;
-
-	int painType = 0;
+	
 	float spriteOffset[2]; //x,y
+	float rotation;
+	float scale[2];
+	float color[4];
+	int blendType = 0;
 };
 
 struct Frame
 {
 	Frame_property frameProp;
+	Attack_property attackProp;
 	//Boxes are defined by BL, BR, TR, TL points, in that order.
 	std::vector<int> greenboxes;
 	std::vector<int> redboxes;
 	std::vector<int> colbox;
-
-	int spriteIndex = 0;
 };
 
 struct seqProp
 {
 	int level = 0;
-	int metercost = 0;
-	bool loops = false;
-	int beginLoop = 0;
-	int gotoSeq = 0;
-	int machineState = 0;
+	int landFrame = 0;
+	int zOrder = 0;
 };
 
 struct Sequence
@@ -151,11 +163,6 @@ class Framedata
 {
 public:
 	std::vector<Sequence> sequences;
-
-	Motion_Data motionListDataG[32]; //List of motion inputs. Not only for special attack usage.
-	Motion_Data motionListDataA[32];
-	int motionLenG;
-	int motionLenA;
 
 public:
 	bool Load(std::string charFile);

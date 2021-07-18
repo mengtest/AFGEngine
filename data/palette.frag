@@ -17,7 +17,7 @@ vec4 indexedSample(vec2 texCoord)
 
 vec4 BilinearSmoothstepSample (vec2 P)
 {
-	const float sharpness = 0.3;
+	const float sharpness = 0.2;
 	vec2 pixel = P + 0.5;
 	
 	vec2 frac = fract(pixel);
@@ -36,4 +36,6 @@ vec4 BilinearSmoothstepSample (vec2 P)
 void main(void)
 {
 	fragColor = BilinearSmoothstepSample(texCoord);
+	fragColor.g *= 0.9;
+	fragColor.b *= 0.7;
 }
