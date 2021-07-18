@@ -170,7 +170,6 @@ void MainPane::DrawFrame(Frame &frame)
 	ImGui::InputInt2("Acc", frame.frameProp.accel);
 	ImGui::InputFloat2("Offset", frame.frameProp.spriteOffset);
 
-	ImGui::InputInt3("Dmg", frame.attackProp.damage);
 
 	const char* const states[] = {
 		"STANDING",

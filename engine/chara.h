@@ -186,17 +186,12 @@ private:
 
 	int hitstop; //hitstop counter
 
-
-
-	float colpos[32]; //No idea??? (lol?)
-
 	int side; //used to invert the x of all sort of things
 
 	Point2d<FixedPoint> vel;
 	Point2d<FixedPoint> accel;
 	FixedPoint impulses[2];//X speed set by outside forces.
-	//float inflictedAccel[2];
-
+	
 	Character* target;
 	int painType;
 	//These are set by/on the target.
