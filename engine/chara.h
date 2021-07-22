@@ -14,14 +14,14 @@
 typedef std::unordered_map<std::string, uint16_t> NameMap;
 
 #include "camera.h"
-#include "chara_input.h"
+#include "command_inputs.h"
 #include "fixed_point.h"
 
 namespace flag
 {
 	enum //frame-dependent bit-mask flags
 	{
-		FRICTION = 0x1,
+		canMove = 0x1,
 		GRAVITY = 0x2,
 		KEEP_VEL = 0x4,
 		KEEP_ACC = 0x8,
@@ -37,8 +37,9 @@ namespace flag
 		_UNUSED14 = 0x2000,
 		_UNUSED15 = 0x4000,
 		IGNORE_INPUT = 0x8000,
-		RESET_INFLICTED_VEL = 0x10000,
-		_UNUSED18 = 0x20000, //No sprite mirroring (used only by frame 0)
+		RESET_INFLICTED_VEL = 0x1'0000,
+		_UNUSED18 = 0x2'0000, //No sprite mirroring (used only by frame 0)
+		startHit = 0x8000'0000
 	};
 }
 
@@ -48,6 +49,17 @@ namespace pain
 	{
 		HIGH,
 		LOW,
+	};
+}
+
+namespace jump
+{
+	enum
+	{
+		none = 0,
+		frame,
+		loop,
+		seq
 	};
 }
 
@@ -82,14 +94,6 @@ struct CharFileHeader //header for .char files.
 	uint16_t sequences_n;
 };
 
-struct Motion_Data
-{
-	int bufLen = 0;
-	int seqRef = 0;
-	std::string motionStr; //Without the button press.
-	char button = 0;
-};
-
 struct Attack_property
 {
 	uint32_t attackFlags = 0;
@@ -108,26 +112,27 @@ struct Attack_property
 
 struct Frame_property
 {
-	int spriteIndex = 0;
-	int duration = 0;
-	int jumpTo = 0;
-	int jumpType = 0;
-	bool relativeJump = false;
+	int32_t spriteIndex = 0;
+	int32_t duration = 0;
+	int32_t jumpTo = 0;
+	int32_t jumpType = 0;
+	int32_t relativeJump = false;
 
 	uint32_t flags = 0;
-	int vel[2] = {0}; // x,y
-	int accel[2] = {0};
-	int movementType[2] = {0}; //Add or set X,Y
+	int32_t vel[2] = {0}; // x,y
+	int32_t accel[2] = {0};
+	int32_t movementType[2] = {0}; //0 None. 1 Set-set. 2 Add-set. 3 Add-add
 
-	int cancelType = 0;
-	int state = 0;
+	int16_t cancelType[2] = {};
+	int32_t state = 0;
 	
 	float spriteOffset[2]; //x,y
-	float _unused;
+	int16_t loopN;
+	int16_t chType;
 	float scale[2];
 	float color[4];
-	int blendType = 0;
-	float rotation[3];
+	int32_t blendType = 0;
+	float rotation[3]; //XYZ
 };
 
 struct Frame
@@ -173,13 +178,7 @@ private:
 	Frame *framePointer;
 	Frame *hitTargetFrame;
 
-	int actTableG[64]; //Array to translate act:: constants to their assigned sequence.
-	int actTableA[64]; //Aerial counterpart
-	Motion_Data motionListDataG[32]; //List of motion inputs. Not only for special attack usage.
-	Motion_Data motionListDataA[32];
-
-	int *selectedTable;
-	Motion_Data *selectedMotionList;
+	CommandInputs cmd;
 
 	int currSeq; //The active sequence.
 	int currFrame;
@@ -224,7 +223,7 @@ public:
 	int GetSpriteIndex();
 	glm::mat4 GetSpriteTransform();
 
-	void Input(input_deque *keyPresses);
+	void Input(const input_deque &keyPresses);
 
 	void Update();
 

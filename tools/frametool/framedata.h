@@ -114,25 +114,26 @@ struct Attack_property
 
 struct Frame_property
 {
-	int spriteIndex = 0;
-	int duration = 0;
-	int jumpTo = 0;
-	int jumpType = 0;
+	int32_t spriteIndex = 0;
+	int32_t duration = 0;
+	int32_t jumpTo = 0;
+	int32_t jumpType = 0;
 	bool relativeJump = false;
 
 	uint32_t flags = 0;
-	int vel[2] = {0}; // x,y
-	int accel[2] = {0};
-	int movementType[2] = {0}; //Add or set X,Y
+	int32_t vel[2] = {0}; // x,y
+	int32_t accel[2] = {0};
+	int32_t movementType[2] = {0}; //Add or set X,Y
 
-	int cancelType = 0;
-	int state = 0;
+	int16_t cancelType[2] = {};
+	int32_t state = 0;
 	
 	float spriteOffset[2]; //x,y
-	float _unused;
+	int16_t loopN;
+	int16_t chType;
 	float scale[2];
 	float color[4];
-	int blendType = 0;
+	int32_t blendType = 0;
 	float rotation[3]; //XYZ
 };
 

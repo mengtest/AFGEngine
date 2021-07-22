@@ -7,10 +7,7 @@
 #include <glad/glad.h>	//These shouldn't be here but w/e for now
 
 #include "chara.h"
-#include "chara_input.h"
 #include "raw_input.h" //Used only by Character::ResolveHit
-
-#include <sol/sol.hpp>
 
 bool Character::isColliding;
 const FixedPoint floorPos(32);
@@ -27,8 +24,6 @@ struct BoxSizes
 
 Character::Character(FixedPoint xPos, float _side, std::string charFile) :
 	health(10000),
-	actTableG{0},
-	actTableA{0},
 	currSeq(0),
 	currFrame(0),
 	hitstop(0),
@@ -121,28 +116,10 @@ Character::Character(FixedPoint xPos, float _side, std::string charFile) :
 
 	file.close();
 
-	sol::state lua;
-	auto result = lua.script_file("data/char/vaki/moves.lua");
-	if(!result.valid()){
-		sol::error err = result;
-		std::cerr << "The code has failed to run!\n"
-		          << err.what() << "\nPanicking and exiting..."
-		          << std::endl;
-	}
-	sol::table actTable = lua["actTable"];
-	for(const auto &val : actTable)
-	{
-		int index = val.first.as<int>();
-		sol::table arr = val.second;
-		actTableG[index] = arr[2];
-		actTableA[index] = arr[3];
-	}
-
-	selectedMotionList = motionListDataG;
-	selectedTable = actTableG;
-	GotoSequence(actTableG[0]);
+	cmd.LoadFromLua("data/char/vaki/moves.lua");
+	
+	GotoSequence(0);
 	GotoFrame(0);
-	//TransitionInto(state::GROUNDED);
 	return;
 }
 
@@ -327,30 +304,49 @@ void Character::GotoSequence(int seq)
 
 void Character::GotoFrame(int frame)
 {
+	if(frame >= sequences[currSeq].frames.size())
+	{
+		GotoSequence(0);
+		return;
+	}
 
 	alreadyHit = false;
 	currFrame = frame;
 	framePointer = &sequences[currSeq].frames[currFrame];
 
-	if (framePointer->frameProp.flags & flag::RESET_INFLICTED_VEL)
+	//Keep?
+	/* if (framePointer->frameProp.flags & flag::RESET_INFLICTED_VEL)
 	{
 		for (int i = 0; i <= 1; ++i)
 		{
 			impulses[i] = 0;
 		}
-	}
+	} */
 
-	if (!(framePointer->frameProp.flags & flag::KEEP_VEL))
+	int *spd[2] = {&vel.x.value, &vel.y.value};
+	int *acc[2] = {&accel.x.value, &accel.y.value};
+	constexpr int mul = 256;
+	for(int i = 0; i < 2; i++)
 	{
-		vel.x.value = (framePointer->frameProp.vel[0] * side)*100;
-		vel.y.value = (framePointer->frameProp.vel[1])*100;
+		int sside = 1;
+		if(i == 0)
+			sside = side;
+		switch(framePointer->frameProp.movementType[i])
+		{
+		case 1:
+			*spd[i] = framePointer->frameProp.vel[i]*mul*sside;
+			*acc[i] = framePointer->frameProp.accel[i]*mul*sside;
+			break;
+		case 2:
+			*spd[i] += framePointer->frameProp.vel[i]*mul*sside;
+			*acc[i] = framePointer->frameProp.accel[i]*mul*sside;
+			break;
+		case 3:
+			*spd[i] += framePointer->frameProp.vel[i]*mul*sside;
+			*acc[i] += framePointer->frameProp.accel[i]*mul*sside;
+			break;
+		}
 	}
-	if (!(framePointer->frameProp.flags & flag::KEEP_ACC))
-	{
-		accel.x.value = (framePointer->frameProp.accel[0] * side)*100;
-		accel.y.value = framePointer->frameProp.accel[1]*100;
-	}
-	//std::cout << sequences[currSeq].trigger << ": " << framePointer->frameProp.vel.x << "\t" << frame  << "\n";
 
 	frameDuration = sequences[currSeq].frames[currFrame].frameProp.duration;
 }
@@ -467,7 +463,7 @@ void Character::Update()
 	}
 
 	//Only if frame is standing, walking or crouching
-	if (root.x < target->root.x) //Side switching.
+/* 	if (root.x < target->root.x) //Side switching.
 	{
 		if (side == -1)
 		{
@@ -488,7 +484,7 @@ void Character::Update()
 				SuggestSequence(actTableG[act::STAND_180]);
 		}
 		side = -1;
-	}
+	} */
 
 	if (touchedWall != 0)
 	{
@@ -500,50 +496,46 @@ void Character::Update()
 
 	if (root.y < floorPos) //Check collision with floor
 	{
-		vel.y = 0;
+		//vel.y = 0;
 		root.y = floorPos;
 		//Jump to landing frame.
+		GotoFrame(sequences[currSeq].props.landFrame);
 	}
 
 	--frameDuration;
 	if (frameDuration == 0)
 	{
-		if (currFrame < sequences[currSeq].frames.size() - 1)
+		int jump = framePointer->frameProp.jumpType;
+		if(jump == jump::frame)
 		{
-			currFrame += 1;
-			GotoFrame(currFrame);
+			if(framePointer->frameProp.relativeJump)
+				currFrame += framePointer->frameProp.jumpTo;
+			else
+				currFrame = framePointer->frameProp.jumpTo;
 		}
-		else //Go to default sequence if nothing happens.
-			GotoSequence(0);
+		else if(jump == jump::seq)
+		{
+			if(framePointer->frameProp.relativeJump)
+				GotoSequence(currSeq+framePointer->frameProp.jumpTo);
+			else
+				GotoSequence(framePointer->frameProp.jumpTo);
+		}
+		else
+			currFrame += 1;
+			
+		GotoFrame(currFrame);
 	}
 }
 
-void Character::Input(input_deque *keyPresses)
+void Character::Input(const input_deque &keyPresses)
 {
-	ResolveHit((*keyPresses)[0]);
-
-	if (framePointer->frameProp.flags & flag::IGNORE_INPUT)
+	cmd.Charge(keyPresses);
+	if (!(framePointer->frameProp.flags & flag::canMove))
 		return;
 
-	int command = InstantInput(keyPresses, side, selectedMotionList);
-	if (command > 0x1000)
-	{
-		SuggestSequence(command - 0x1000);
-		return;
-	}
+	//Block hit
+	ResolveHit((keyPresses)[0]);
 
-	if (command == act::NOTHING)
-		return;
-
-	int nextSeq = selectedTable[command];
-
-	if (framePointer->frameProp.state == state::fr::CROUCHED)
-	{
-		if (nextSeq == actTableG[act::DOWN])
-			return;
-		else if (nextSeq == actTableG[act::NEUTRAL])
-			nextSeq = actTableG[act::STAND_UP];
-	}
-
-	SuggestSequence(nextSeq);
+	int command = cmd.GetSequenceFromInput(keyPresses, side);
+	SuggestSequence(command);
 }

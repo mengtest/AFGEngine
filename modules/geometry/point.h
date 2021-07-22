@@ -8,10 +8,7 @@ template <class T>
 class Point2d
 {
 public:
-	T& x, y;
-
-private:
-	std::pair<T,T> point;
+	T x, y;
 	
 public:
 	Point2d();
@@ -26,9 +23,7 @@ public:
 };
 
 template <class T>
-Point2d<T>::Point2d() :
-x(point.first),
-y(point.second)
+Point2d<T>::Point2d()
 {
 
 }

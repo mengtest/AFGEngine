@@ -6,7 +6,7 @@ target_sources(AFGEngine PRIVATE
 	#audio.cpp
 	camera.cpp
 	chara.cpp
-	chara_input.cpp
+	command_inputs.cpp
 	hud.cpp
 	main.cpp
 	#netplay.cpp

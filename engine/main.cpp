@@ -193,8 +193,8 @@ void PlayLoop()
 		player.HitCollision();
 		player2.HitCollision();
 
-		player.Input(&keyBufDelayed[0]);
-		player2.Input(&keyBufDelayed[1]);
+		player.Input(keyBufDelayed[0]);
+		//player2.Input(keyBufDelayed[1]);
 
 		player.Update();
 		player2.Update();
