@@ -39,7 +39,7 @@ glm::mat4 Camera::Calculate(Point2d<FixedPoint> p1, Point2d<FixedPoint> p2)
 		scale = dif.abs()/(widthBoundary*limitRatio);
 		if(scale > maxScale)
 			scale = maxScale;
-		std::cout <<(float)(scale*internalWidth)<<"\n";
+		//std::cout <<(float)(scale*internalWidth)<<"\n";
 	}
 	else
 	{

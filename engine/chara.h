@@ -1,54 +1,29 @@
 #ifndef CHARACTER_H_INCLUDED
 #define CHARACTER_H_INCLUDED
-#include <geometry.h>
 
-#include <glm/mat4x4.hpp>
-#include <glm/ext/matrix_transform.hpp>
+#include "camera.h"
+#include "command_inputs.h"
+#include "fixed_point.h"
+#include <geometry.h>
 
 #include <deque>
 #include <string>
 #include <vector>
 #include <utility>
-#include <unordered_map>
 
-typedef std::unordered_map<std::string, uint16_t> NameMap;
+#include <glm/mat4x4.hpp>
+#include <glm/ext/matrix_transform.hpp>
 
-#include "camera.h"
-#include "command_inputs.h"
-#include "fixed_point.h"
+#include <sol/sol.hpp>
 
 namespace flag
 {
 	enum //frame-dependent bit-mask flags
 	{
 		canMove = 0x1,
-		GRAVITY = 0x2,
-		KEEP_VEL = 0x4,
-		KEEP_ACC = 0x8,
-		CROUCH_BLOCK = 0x10,
-		STAND_BLOCK = 0x20,
-		AIR_BLOCK = 0x40,
-		SINGLE_HIT = 0x80,
-		CANCELLABLE = 0x100,
-		CANCEL_WHIFF = 0x200,
-		JUMP_C_HIT = 0x400,
-		JUMP_C_BLOCK = 0x800,
-		_UNUSED13 = 0x1000,
-		_UNUSED14 = 0x2000,
-		_UNUSED15 = 0x4000,
-		IGNORE_INPUT = 0x8000,
-		RESET_INFLICTED_VEL = 0x1'0000,
-		_UNUSED18 = 0x2'0000, //No sprite mirroring (used only by frame 0)
+		dontWalk = 0x2,
+		
 		startHit = 0x8000'0000
-	};
-}
-
-namespace pain
-{
-	enum
-	{
-		HIGH,
-		LOW,
 	};
 }
 
@@ -63,51 +38,11 @@ namespace jump
 	};
 }
 
-namespace state
-{
-	enum //Seq-wise. Probably getting scrapped.
-	{
-		GROUNDED,
-		AIRBORNE,
-		BUSY_GRND,
-		BUSY_AIR,
-		PAIN_GRND,
-		PAIN_AIR,
-	};
-
-	namespace fr //frame
-	{
-		enum
-		{
-			STANDING,
-			CROUCHED,
-			AIRBORNE,
-			OTG,
-		};
-	}
-}
-
 struct CharFileHeader //header for .char files.
 {
 	char signature[32];
 	uint32_t version;
 	uint16_t sequences_n;
-};
-
-struct Attack_property
-{
-	uint32_t attackFlags = 0;
-	int damage[3] = {0}; // Perma damage, Red damage, Guard damage
-	int correction = 0;
-	int correctionType = 0;
-	int meterGain = 0;
-	int stopType = 0;
-	int stop[2] = {0}; //Hit block
-	int stun[2] = {0}; //Untech and block
-	int vectorId[6]; //SCA hit block
-	int priority = 0;
-	int soundFx = 0;
-	int hitFx = 0;
 };
 
 struct Frame_property
@@ -159,6 +94,7 @@ struct Sequence
 	seqProp props;
 	std::vector<Frame> frames;
 	std::string name;
+	std::string function;
 };
 
 class Character
@@ -167,9 +103,14 @@ public: //access only, do not change outside the class.
 	std::vector<Sequence> sequences;
 
 private:
+	sol::state lua;
+	sol::function seqFunction;
+	sol::function updateFunction;
+	bool hasFunction = false, hasUpdate = false;
+
 	Camera *currView;
 
-	int health;
+	int health = 10000;
 	//int hitsTaken;
 	//inr damageTaken;
 
@@ -180,11 +121,15 @@ private:
 
 	CommandInputs cmd;
 
-	int currSeq; //The active sequence.
-	int currFrame;
+	int currSeq = 0; //The active sequence.
+	int currFrame = 0;
 	int frameDuration; //counter for changing frames
+	int loopCounter = 0;
+	int hitstop = 0; //hitstop counter
+	unsigned int lastKey = 0;
 
-	int hitstop; //hitstop counter
+	int totalSubframeCount = 0;
+	int	subframeCount = 0;
 
 	int side; //used to invert the x of all sort of things
 
@@ -193,12 +138,14 @@ private:
 	FixedPoint impulses[2];//X speed set by outside forces.
 	
 	Character* target;
-	int painType;
+
 	//These are set by/on the target.
-	bool alreadyHit; //Check for avoiding the same c-frame hitting more than once. Resets when c-frame advances.
-	bool isKickingAss; //Sets when hit is sucessful. Resets when sequence changes. Used for cancelling purposes.
+	bool alreadyHit = false; //Check for avoiding the same c-frame hitting more than once. Resets when c-frame advances.
+	bool comboFlag = false; //Sets when hit is sucessful. Resets when sequence changes. Used for cancelling purposes.
 	//This is set only by self.
-	bool gotHit; //Sets when getting hit (doesn't matter if you block). Resets when the hit is processed in Update().
+	bool gotHit = false; //Sets when getting hit (doesn't matter if you block). Resets when the hit is processed in Update().
+	bool interrumpible = false;
+	bool mustTurnAround = false;
 
 	static bool isColliding;
 	FixedPoint getAway; //Amount to move after collision
@@ -223,11 +170,12 @@ public:
 	int GetSpriteIndex();
 	glm::mat4 GetSpriteTransform();
 
-	void Input(const input_deque &keyPresses);
+	void Input(input_deque &keyPresses);
 
 	void Update();
 
 private:
+	void ScriptSetup();
 	void Translate(Point2d<FixedPoint> amount);
 	void Translate(FixedPoint x, FixedPoint y);
 
@@ -237,6 +185,15 @@ private:
 	void GotoFrame(int frame);
 
 	void ResolveHit(int keypress);
+	bool TurnAround(int sequence = -1);
+
+	enum state
+	{
+		stand,
+		crouch,
+		air,
+		otg,
+	};
 };
 
 #endif // CHARACTER_H_INCLUDED

@@ -33,8 +33,7 @@ namespace key //Key press as an int after being processed.
 			D = 0x80,
 			//E = 0x100,
 			NEUTRAL = ~( UP | DOWN | LEFT | RIGHT ), //this one is for checking neutral input
-			TRUE_NEUTRAL = 0x80000000 //this one is for setting neutral input manually, without absolutely any keypresses.
-			//most significant bit is always set to 1 because you can't compare against 'NEUTRAL' properly without it.
+			CUT = 0x8000'0000 //Game uses it to stop processing inputs when it sees it.
 		};
 	}
 }

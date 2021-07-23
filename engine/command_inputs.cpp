@@ -5,8 +5,6 @@
 #include "chara.h"
 #include <deque>
 
-#include <sol/sol.hpp>
-
 constexpr int chargeBufSize = 32;
 
 CommandInputs::CommandInputs()
@@ -17,9 +15,8 @@ CommandInputs::CommandInputs()
 	}
 }
 
-void CommandInputs::LoadFromLua(std::filesystem::path defFile)
+void CommandInputs::LoadFromLua(std::filesystem::path defFile, sol::state &lua)
 {
-	sol::state lua;
 	auto result = lua.script_file(defFile.string());
 	if(!result.valid()){
 		sol::error err = result;
@@ -28,21 +25,33 @@ void CommandInputs::LoadFromLua(std::filesystem::path defFile)
 		          << std::endl;
 		return;
 	}
-	sol::table inputTbl = lua["inputs"]["ground"];
-	for(const auto &val : inputTbl)
+	//std::unordered_map<std::string, int> test = lua.get<std::unordered_map<std::string, int>>("actTable");
+	sol::table tableList = lua["inputs"];
+	for(const auto &tableI : tableList)
 	{
-		sol::table arr = val.second;
-		MotionData md;
-		md.motionStr = arr["input"];
-		md.bufLen = arr["buf"];
-		md.seqRef = arr["ref"];
-		motions.push_back(std::move(md));
+		std::string tableName = tableI.first.as<std::string>();
+		sol::table table = tableI.second;
+		for(const auto &val : table)
+		{
+			sol::table arr = val.second;
+			MotionData md;
+			md.motionStr = arr["input"];
+			md.bufLen = arr["buf"];
+			md.seqRef = arr["ref"];
+			md.flags = arr["flag"].get_or(0);
+			md.condition = arr["cond"];
+			md.hasCondition = md.condition.get_type() == sol::type::function;
+			//md.condition = arr["cond"].get_or(std::string());
+			motions[tableName].push_back(std::move(md));
+		}
 	}
+	
+
 }
 
 void CommandInputs::Charge(const input_deque &keyPresses)
 {
-	auto key = keyPresses[0] & ~key::buf::TRUE_NEUTRAL;
+	auto key = keyPresses[0];
 	for(int i = key::UP, b = 0; i <= key::RIGHT; ++i, ++b)
 	{
 		int dirBit = 1 << i;
@@ -68,14 +77,14 @@ int CommandInputs::GetCharge(dir which, int frame, int side)
 		return chargeBuffer[which][frame];
 }
 
-int CommandInputs::GetSequenceFromInput(const input_deque &keyPresses, int side)
+MotionData CommandInputs::ProcessInput(const input_deque &keyPresses, const char* motionType, int side)
 {
-	for(const auto &md : motions)
+	for(const auto &md : motions[motionType])
 	{
 		if(MotionInput(md, keyPresses, side))
-			return md.seqRef;
+			return md;
 	}
-	return -1; //No matches
+	return {}; //No matches
 }
 
 bool CommandInputs::MotionInput(const MotionData& md, const input_deque &keyPresses, int side)
@@ -106,6 +115,9 @@ bool CommandInputs::MotionInput(const MotionData& md, const input_deque &keyPres
 	{
 		auto key = keyPresses[i];
 		auto lever = key & ~(key::buf::NEUTRAL); 
+
+		if(key & key::buf::CUT) //Stop reading inputs at the cut.
+			return false;
 
 		if(lever & right && lever & left)
 		{
@@ -290,7 +302,7 @@ motionBufferProcessing:
 		if(lastC != c)
 		{
 			lastKey = key;
-			frameCounter = md.bufLen;
+			frameCounter = md.bufLen+1;
 			correct = true;
 			goto motionBufferProcessing;
 		}
@@ -298,7 +310,7 @@ motionBufferProcessing:
 		if(correct && lastKey != key) //Give extra buffer frames if they stopped holding the input
 		{
 			correct = false;
-			frameCounter = md.bufLen;
+			frameCounter = md.bufLen+1;
 		}
 		
 		--frameCounter;

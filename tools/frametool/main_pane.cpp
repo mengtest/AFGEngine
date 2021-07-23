@@ -105,6 +105,7 @@ void MainPane::Draw()
 				decoratedNames[cs.seq] = frameData->GetDecoratedName(cs.seq);
 			}
 
+			im::InputText("Function name", &seq.function);
 			ImGui::InputInt("Level", &seq.props.level);
 			ImGui::InputInt("Land frame", &seq.props.landFrame);
 			ImGui::InputInt("Z order", &seq.props.zOrder);
@@ -191,7 +192,7 @@ void MainPane::DrawFrame(Frame &frame)
 	ImGui::Combo("Jump type", &frame.frameProp.jumpType, jList, IM_ARRAYSIZE(jList));
 	ImGui::Checkbox("Relative jump", &frame.frameProp.relativeJump);
 	ImGui::InputScalar("Loop N times", ImGuiDataType_S16, &frame.frameProp.loopN,
-		NULL, NULL, "%hi", 0);
+		NULL, NULL, NULL, 0);
 
 	ImGui::InputInt2("Vel", frame.frameProp.vel);
 	ImGui::InputInt2("Acc", frame.frameProp.accel);
@@ -206,7 +207,7 @@ void MainPane::DrawFrame(Frame &frame)
 	switch (flagIndex)
 	{
 		case 0: Tooltip("Can move"); break;
-		case 1: Tooltip("GRAVITY"); break;
+		case 1: Tooltip("Don't transition to walking."); break;
 		case 2: Tooltip("KEEP_VEL"); break;
 		case 3: Tooltip("KEEP_ACC"); break;
 		case 4: Tooltip("CROUCH_BLOCK"); break;

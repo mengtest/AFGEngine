@@ -25,7 +25,8 @@ x(0),y(-150)
 	render.LoadGraphics("data/char/vaki/def.lua");
 	render.LoadPalette("data/palettes/play2.act");
 	
-	fd.Load("data/char/vaki/vaki.char");
+	currentFilePath = "data/char/vaki/vaki.char";
+	fd.Load(currentFilePath);
 }
 
 MainFrame::~MainFrame()
@@ -321,12 +322,21 @@ void MainFrame::Menu(unsigned int errorPopupId)
 			if (ImGui::MenuItem("Save")) 
 			{
 				
-				/* if(currentFilePath.empty())
-					currentFilePath = FileDialog(fileType::HA6, true);
+				if(currentFilePath.empty())
+				{
+					nfdchar_t* savePath = nullptr;
+					nfdfilteritem_t filterItem[2] = {{"Character file", "char"}};
+					nfdresult_t result = NFD_SaveDialog(&savePath, filterItem, 1, "data/char", currentFilePath.c_str());
+					if (result == NFD_OKAY && savePath) {
+						fd.Save(savePath);
+						currentFilePath = savePath;
+						NFD_FreePath(savePath);
+					}
+				}
 				if(!currentFilePath.empty())
 				{
-					framedata.save(currentFilePath.c_str());
-				} */
+					fd.Save(currentFilePath);
+				}
 			}
 
 			if (ImGui::MenuItem("Save as...")) 

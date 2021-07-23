@@ -39,7 +39,7 @@ void RenderContext::SetupGl(SDL_Window *window)
 
 	std::cout << "OpenGL " << GLVersion.major <<"."<< GLVersion.minor <<"\n";
 
-	projection = glm::ortho<float>(0, internalWidth, 0, internalHeight, -1, 1);
+	projection = glm::ortho<float>(0, internalWidth, 0, internalHeight, -32768, 32767);
 
 	int width, height;
 	SDL_GetWindowSize(window, &width, &height);

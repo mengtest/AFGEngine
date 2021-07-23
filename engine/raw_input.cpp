@@ -7,7 +7,7 @@
 //As usual, all of this should be wrapped in a class?
 //And as always, there are temporary(?) globals for convenience.
 
-unsigned int keySend[2] = {key::buf::TRUE_NEUTRAL, key::buf::TRUE_NEUTRAL};
+unsigned int keySend[2] {};
 SDL_Scancode modifiableSCKeys[buttonsN*2];
 int modifiableJoyKeys[4] = {0};
 

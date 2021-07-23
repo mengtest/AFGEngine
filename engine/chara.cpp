@@ -11,6 +11,7 @@
 
 bool Character::isColliding;
 const FixedPoint floorPos(32);
+constexpr int speedMultiplier = 240;
 
 #define rv(X) ((char*)&X)
 #define rptr(X) ((char*)X)
@@ -23,19 +24,11 @@ struct BoxSizes
 };
 
 Character::Character(FixedPoint xPos, float _side, std::string charFile) :
-	health(10000),
-	currSeq(0),
-	currFrame(0),
-	hitstop(0),
 	side(_side),
-	painType(0),
-	alreadyHit(false),
-	isKickingAss(false),
-	gotHit(0),
 	touchedWall(0)
 {
 	constexpr const char *charSignature = "AFGECharacterFile";
-	constexpr uint32_t currentVersion = 99'3;
+	constexpr uint32_t currentVersion = 99'4;
 
 	root.x = xPos;
 	root.y = floorPos;
@@ -62,9 +55,14 @@ Character::Character(FixedPoint xPos, float _side, std::string charFile) :
 	for (uint16_t i = 0; i < header.sequences_n; ++i)
 	{
 		auto &currSeq = sequences[i];
-		uint8_t namelength;
-		file.read(rv(namelength), sizeof(namelength));
-		file.ignore(namelength);
+		uint8_t strSize;
+		file.read(rv(strSize), sizeof(strSize));
+		currSeq.name.resize(strSize);
+		file.read(rptr(currSeq.name.data()), strSize);
+
+		file.read(rv(strSize), sizeof(strSize));
+		currSeq.function.resize(strSize);
+		file.read(rptr(currSeq.function.data()), strSize);
 
 		file.read(rv(currSeq.props), sizeof(seqProp));
 
@@ -116,7 +114,8 @@ Character::Character(FixedPoint xPos, float _side, std::string charFile) :
 
 	file.close();
 
-	cmd.LoadFromLua("data/char/vaki/moves.lua");
+	ScriptSetup();
+	cmd.LoadFromLua("data/char/vaki/moves.lua", lua);
 	
 	GotoSequence(0);
 	GotoFrame(0);
@@ -150,13 +149,29 @@ int Character::GetSpriteIndex()
 
 glm::mat4 Character::GetSpriteTransform()
 {
-	glm::mat4 tranform(1);
+	glm::mat4 transform(1.f);
+	float rotY = framePointer->frameProp.rotation[1];
 	
-	tranform = glm::scale(tranform, glm::vec3(side, 1.f, 1.f));
-	tranform = glm::translate(tranform, glm::vec3((root.x)*side-128.f, root.y-40.f, 0));
+	constexpr float tau = glm::pi<float>()*2.f;
+	//transform = glm::scale(transform, glm::vec3(scale, scale, 1.f));
+	//transform = glm::translate(transform, glm::vec3(x,y,0.f));
+	//transform = glm::scale(transform, glm::vec3(scaleX,scaleY,0));
+	//transform = glm::rotate(transform, rotZ*tau, glm::vec3(0.0, 0.f, 1.f));
+	
+	//transform = glm::rotate(transform, rotX*tau, glm::vec3(1.0, 0.f, 0.f));
+
 	
 	
-	return tranform;
+	//-128.f, -40.f
+	
+	
+	transform = glm::translate(transform, glm::vec3((root.x), root.y, 0));
+	transform = glm::rotate(transform, rotY*tau, glm::vec3(0.0, 1.f, 0.f));
+	transform = glm::scale(transform, glm::vec3(side, 1.f, 1.f));
+	transform = glm::translate(transform, glm::vec3(-128, -40.f, 0));
+	
+	
+	return transform;
 }
 
 void Character::Collision(Character *blue, Character *red)
@@ -235,7 +250,7 @@ break_from_all:
 		if (target->alreadyHit) //Avoids the same frame hitting multiple times.
 			return;
 
-		target->isKickingAss = true;
+		target->comboFlag = true;
 		target->alreadyHit = true;
 		gotHit = true;
 		hitTargetFrame = target->framePointer;
@@ -280,10 +295,7 @@ bool Character::SuggestSequence(int seq)
 	//if not cancellable. Do nothing
 	//if next seq is not attack do nothing <- Define in movelist
 	
-	if (currSeq == seq) //The sequence can't go to itself (unless the sprite facing side hasn't been updated???)
-	{
-		return false;
-	}
+	
 	//If you're in pain. Do nothing?
 
 	//Attack cancel rules and all that stuff go here.
@@ -296,23 +308,44 @@ void Character::GotoSequence(int seq)
 	if (seq < 0)
 		return;
 
-	isKickingAss = false;
+	if(mustTurnAround)
+	{
+		mustTurnAround = false;
+		side = -side;
+	}
+	interrumpible = false;
+	comboFlag = false;
 	currSeq = seq;
 	currFrame = 0;
 	GotoFrame(0);
+	totalSubframeCount = 0;
+
+	if(!sequences[currSeq].function.empty())
+	{
+		seqFunction = lua[sequences[currSeq].function];
+		if(seqFunction.get_type() == sol::type::function)
+			hasFunction = true;
+	}
+	else
+		hasFunction = false;
 }
 
 void Character::GotoFrame(int frame)
 {
 	if(frame >= sequences[currSeq].frames.size())
 	{
+		mustTurnAround = false;
 		GotoSequence(0);
 		return;
 	}
 
+	subframeCount = 0;
 	alreadyHit = false;
 	currFrame = frame;
 	framePointer = &sequences[currSeq].frames[currFrame];
+
+	if(framePointer->frameProp.loopN > 0)
+		loopCounter = framePointer->frameProp.loopN;
 
 	//Keep?
 	/* if (framePointer->frameProp.flags & flag::RESET_INFLICTED_VEL)
@@ -325,7 +358,7 @@ void Character::GotoFrame(int frame)
 
 	int *spd[2] = {&vel.x.value, &vel.y.value};
 	int *acc[2] = {&accel.x.value, &accel.y.value};
-	constexpr int mul = 256;
+	
 	for(int i = 0; i < 2; i++)
 	{
 		int sside = 1;
@@ -334,16 +367,16 @@ void Character::GotoFrame(int frame)
 		switch(framePointer->frameProp.movementType[i])
 		{
 		case 1:
-			*spd[i] = framePointer->frameProp.vel[i]*mul*sside;
-			*acc[i] = framePointer->frameProp.accel[i]*mul*sside;
+			*spd[i] = framePointer->frameProp.vel[i]*speedMultiplier*sside;
+			*acc[i] = framePointer->frameProp.accel[i]*speedMultiplier*sside;
 			break;
 		case 2:
-			*spd[i] += framePointer->frameProp.vel[i]*mul*sside;
-			*acc[i] = framePointer->frameProp.accel[i]*mul*sside;
+			*spd[i] += framePointer->frameProp.vel[i]*speedMultiplier*sside;
+			*acc[i] = framePointer->frameProp.accel[i]*speedMultiplier*sside;
 			break;
 		case 3:
-			*spd[i] += framePointer->frameProp.vel[i]*mul*sside;
-			*acc[i] += framePointer->frameProp.accel[i]*mul*sside;
+			*spd[i] += framePointer->frameProp.vel[i]*speedMultiplier*sside;
+			*acc[i] += framePointer->frameProp.accel[i]*speedMultiplier*sside;
 			break;
 		}
 	}
@@ -354,6 +387,7 @@ void Character::GotoFrame(int frame)
 
 void Character::ResolveHit(int keypress) //key processing really shouldn't be here.
 {
+	return;
 	if (gotHit)
 	{
 		target->hitstop = hitstop = 8;//hitTargetFrame->attackProp.stop[0];
@@ -382,7 +416,7 @@ void Character::ResolveHit(int keypress) //key processing really shouldn't be he
 			}
 			else if (!(keypress & key::buf::DOWN) && (hitTargetFrame->frameProp.flags & flag::STAND_BLOCK))
 			{
-				if (framePointer->frameProp.state == state::fr::CROUCHED)
+				if (framePointer->frameProp.state == state::CROUCHED)
 					GotoSequence(selectedTable[act::GUARD1]);
 				else
 					GotoSequence(selectedTable[act::GUARD4]);
@@ -393,16 +427,16 @@ void Character::ResolveHit(int keypress) //key processing really shouldn't be he
 
 		if (!blocked)
 		{
-			if (framePointer->frameProp.state == state::fr::AIRBORNE)
+			if (framePointer->frameProp.state == state::AIRBORNE)
 			{
 				if (hitTargetFrame->frameProp.painType == pain::HIGH)
 					GotoSequence(actTableA[act::HIGH_PAIN]);
 				else
 					GotoSequence(actTableA[act::MID_PAIN]);
 			}
-			else if (framePointer->frameProp.state != state::fr::OTG)
+			else if (framePointer->frameProp.state != state::OTG)
 			{
-				if (framePointer->frameProp.state == state::fr::CROUCHED)
+				if (framePointer->frameProp.state == state::CROUCHED)
 					GotoSequence(actTableG[act::LOW_PAIN]);
 				else if (hitTargetFrame->frameProp.painType == pain::HIGH)
 					GotoSequence(actTableG[act::HIGH_PAIN]);
@@ -456,35 +490,22 @@ void Character::Translate(FixedPoint x, FixedPoint y)
 
 void Character::Update()
 {
+	if(hasUpdate)
+	{
+		auto result = updateFunction();
+		if(!result.valid())
+		{
+			sol::error err = result;
+			std::cerr << err.what() << "\n";
+		}
+	}
 	if (hitstop > 0)
 	{
 		--hitstop;
+		if(hasFunction)
+			seqFunction();
 		return;
 	}
-
-	//Only if frame is standing, walking or crouching
-/* 	if (root.x < target->root.x) //Side switching.
-	{
-		if (side == -1)
-		{
-			if (framePointer->frameProp.state == state::fr::CROUCHED)
-				SuggestSequence(actTableG[act::CROUCH_180]);
-			else if (actTableG[act::NEUTRAL] == currSeq)
-				SuggestSequence(actTableG[act::STAND_180]);
-		}
-		side = 1;
-	}
-	else if (root.x > target->root.x)
-	{
-		if (side == 1)
-		{
-			if (framePointer->frameProp.state == state::fr::CROUCHED)
-				SuggestSequence(actTableG[act::CROUCH_180]);
-			else if (actTableG[act::NEUTRAL] == currSeq)
-				SuggestSequence(actTableG[act::STAND_180]);
-		}
-		side = -1;
-	} */
 
 	if (touchedWall != 0)
 	{
@@ -496,13 +517,17 @@ void Character::Update()
 
 	if (root.y < floorPos) //Check collision with floor
 	{
-		//vel.y = 0;
 		root.y = floorPos;
 		//Jump to landing frame.
 		GotoFrame(sequences[currSeq].props.landFrame);
 	}
+	if((framePointer->frameProp.state == state::stand || framePointer->frameProp.state == state::crouch) &&
+		(root.x < target->root.x && side == -1 || root.x > target->root.x && side == 1))
+		mustTurnAround = true;
 
 	--frameDuration;
+	++totalSubframeCount;
+	++subframeCount;
 	if (frameDuration == 0)
 	{
 		int jump = framePointer->frameProp.jumpType;
@@ -513,8 +538,21 @@ void Character::Update()
 			else
 				currFrame = framePointer->frameProp.jumpTo;
 		}
+		else if(jump == jump::loop)
+		{
+			if(loopCounter > 1)
+			{
+				if(framePointer->frameProp.relativeJump)
+					currFrame += framePointer->frameProp.jumpTo;
+				else
+					currFrame = framePointer->frameProp.jumpTo;
+				loopCounter--;
+			}
+			currFrame++;
+		}
 		else if(jump == jump::seq)
 		{
+			mustTurnAround = false;
 			if(framePointer->frameProp.relativeJump)
 				GotoSequence(currSeq+framePointer->frameProp.jumpTo);
 			else
@@ -524,18 +562,117 @@ void Character::Update()
 			currFrame += 1;
 			
 		GotoFrame(currFrame);
+		if(hasFunction)
+			seqFunction();
 	}
+	else if(hasFunction)
+		seqFunction();
 }
 
-void Character::Input(const input_deque &keyPresses)
+bool Character::TurnAround(int sequence)
 {
-	cmd.Charge(keyPresses);
-	if (!(framePointer->frameProp.flags & flag::canMove))
-		return;
+	if (root.x < target->root.x && side == -1) //Side switching.
+	{
+		GotoSequence(sequence);
+		side = 1;
+		return true;
+	}
+	else if (root.x > target->root.x && side == 1)
+	{
+		GotoSequence(sequence);
+		side = -1;
+		return true;
+	}
+	return false;
+}
 
+void Character::Input(input_deque &keyPresses)
+{
+	lastKey = keyPresses.front();
+	cmd.Charge(keyPresses);
+	
 	//Block hit
 	ResolveHit((keyPresses)[0]);
 
-	int command = cmd.GetSequenceFromInput(keyPresses, side);
-	SuggestSequence(command);
+	int inputSide = side;
+	if(mustTurnAround)
+		inputSide = -side;
+	
+	MotionData command;
+	if(framePointer->frameProp.state == state::air)
+		command = cmd.ProcessInput(keyPresses, "air", inputSide);
+	else
+		command = cmd.ProcessInput(keyPresses, "ground", inputSide);
+	
+	if(!(framePointer->frameProp.flags & flag::canMove) &&
+		(!interrumpible || !(command.flags & CommandInputs::interrupts) || totalSubframeCount > command.bufLen))
+		return;
+
+	//Don't transition to the seq if the command is marked as a neutral move (walking).
+	if(command.flags & CommandInputs::neutralMove && framePointer->frameProp.flags & flag::dontWalk)
+		return;
+
+	//The sequence can't go to itself unless it's flagged as such
+	if(!(command.flags & CommandInputs::repeatable) && currSeq == command.seqRef) 
+		return;
+	
+	if(command.hasCondition)
+	{
+		auto result = command.condition();
+		if(!result.valid())
+		{
+			sol::error err = result;
+			std::cerr << err.what() << "\n";
+		}
+		else if(!result.get<bool>())
+			return;
+	}
+
+	if(SuggestSequence(command.seqRef))
+	{
+		if(command.flags & CommandInputs::wipeBuffer) 
+			keyPresses.front() |= key::buf::CUT;
+
+		if(command.flags & CommandInputs::interrumpible) 
+			interrumpible = true;
+	}	
+}
+
+void Character::ScriptSetup()
+{
+	lua.open_libraries(sol::lib::base);
+
+	auto actor = lua["actor"].get_or_create<sol::table>();
+	actor.set("multiplier", speedMultiplier);
+	actor.set_function("getSide", [this](){return this->side;});
+	actor.set_function("getPos", [this](){return std::make_tuple(this->root.x.value, this->root.y.value);});
+	actor.set_function("setPos", [this](int x, int y){this->root.x.value = x; this->root.y.value = y;});
+	actor.set_function("getVel", [this](){return std::make_tuple(this->vel.x.value, this->vel.y.value);});
+	actor.set_function("setVel", [this](int x, int y){this->vel.x.value = x; this->vel.y.value = y;});
+	actor.set_function("currentFrame", [this](){return this->currFrame;});
+	actor.set_function("currentSequence", [this](){return this->currSeq;});
+	actor.set_function("gotoFrame", &Character::GotoFrame, this);
+	actor.set_function("gotoSequence", &Character::GotoSequence, this);
+	actor.set_function("turnAround", &Character::TurnAround, this);
+	actor.set_function("getInput", [this]() -> unsigned int{return this->lastKey;});
+	actor.set_function("getInputRelative", [this]() -> unsigned int{
+		if(side == 1)
+			return this->lastKey;
+		else{
+			int right = lastKey & key::buf::RIGHT;
+			int left = lastKey & key::buf::LEFT;
+			return (lastKey & ~0xC) | ((!!right) << key::LEFT) | ((!!left) << key::RIGHT);
+		}
+	});
+	auto result = lua.script_file("data/char/vaki/script.lua");
+	if(!result.valid()){
+		sol::error err = result;
+		std::cerr << "The code has failed to run!\n"
+		          << err.what() << "\nPanicking and exiting..."
+		          << std::endl;
+		return;
+	}
+
+	updateFunction = lua["_update"];
+	hasUpdate = updateFunction.get_type() == sol::type::function;
 }

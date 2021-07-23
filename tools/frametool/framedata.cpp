@@ -11,36 +11,13 @@
 #define rptr(X) ((char*)X)
 
 constexpr const char *charSignature = "AFGECharacterFile";
-constexpr uint32_t currentVersion = 99'3;
+constexpr uint32_t currentVersion = 99'4;
 
 struct BoxSizes
 {
 	int8_t greens;
 	int8_t reds;
 	int8_t collision;
-};
-
-struct Frame_property_old
-{
-	int spriteIndex = 0;
-	int duration = 0;
-	int jumpTo = 0;
-	int jumpType = 0;
-	bool relativeJump = false;
-
-	uint32_t flags = 0;
-	int vel[2] = {0}; // x,y
-	int accel[2] = {0};
-	int movementType[2] = {0}; //Add or set X,Y
-
-	int cancelType = 0;
-	int state = 0;
-	
-	float spriteOffset[2]; //x,y
-	float rotation;
-	float scale[2];
-	float color[4];
-	int blendType = 0;
 };
 
 bool Framedata::LoadOld(std::string charFile)
@@ -60,7 +37,7 @@ bool Framedata::LoadOld(std::string charFile)
 		std::cerr << "Signature mismatch.\n";
 		return false;
 	}
-	if(header.version != 99'2)
+	if(header.version != 99'3)
 	{
 		std::cerr << "Format version mismatch.\n";
 		return false;
@@ -91,8 +68,7 @@ bool Framedata::LoadOld(std::string charFile)
 			currFrame.redboxes.resize(bs.reds);
 			currFrame.colbox.resize(bs.collision);
 
-			file.read(rv(currFrame.frameProp), sizeof(Frame_property_old));
-			file.ignore(sizeof(Attack_property));
+			file.read(rv(currFrame.frameProp), sizeof(Frame_property));
 
 			file.read(rptr(currFrame.greenboxes.data()), sizeof(int) * bs.greens);
 			file.read(rptr(currFrame.redboxes.data()), sizeof(int) * bs.reds);
@@ -133,10 +109,14 @@ bool Framedata::Load(std::string charFile)
 	for (uint16_t i = 0; i < header.sequences_n; ++i)
 	{
 		auto &currSeq = sequences[i];
-		uint8_t namelength;
-		file.read(rv(namelength), sizeof(namelength));
-		currSeq.name.resize(namelength);
-		file.read(rptr(currSeq.name.data()), namelength);
+		uint8_t size;
+		file.read(rv(size), sizeof(size));
+		currSeq.name.resize(size);
+		file.read(rptr(currSeq.name.data()), size);
+
+		file.read(rv(size), sizeof(size));
+		currSeq.function.resize(size);
+		file.read(rptr(currSeq.function.data()), size);
 
 		file.read(rv(currSeq.props), sizeof(seqProp));
 
@@ -186,9 +166,13 @@ void Framedata::Save(std::string charFile)
 	for (uint16_t i = 0; i < header.sequences_n; ++i)
 	{
 		auto &currSeq = sequences[i];
-		uint8_t namelength = currSeq.name.size();
-		file.write(rv(namelength), sizeof(namelength));
-		file.write(rptr(currSeq.name.data()), namelength);
+		uint8_t strSize = currSeq.name.size();
+		file.write(rv(strSize), sizeof(strSize));
+		file.write(rptr(currSeq.name.data()), strSize);
+
+		strSize = currSeq.function.size();
+		file.write(rv(strSize), sizeof(strSize));
+		file.write(rptr(currSeq.function.data()), strSize);
 
 		file.write(rv(currSeq.props), sizeof(seqProp));
 

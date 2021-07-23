@@ -1,79 +1,10 @@
 #ifndef CHARACTER_H_INCLUDED
 #define CHARACTER_H_INCLUDED
-/* 
-#include <deque>
-
-
-#include <utility>
-
- */
-
-//#include <fixed_point.h>
 
 #include "types.h"
 #include <cstdint>
 #include <string>
 #include <vector>
-
-namespace flag
-{
-	enum //frame-dependent bit-mask flags
-	{
-		FRICTION = 0x1,
-		GRAVITY = 0x2,
-		KEEP_VEL = 0x4,
-		KEEP_ACC = 0x8,
-		CROUCH_BLOCK = 0x10,
-		STAND_BLOCK = 0x20,
-		AIR_BLOCK = 0x40,
-		SINGLE_HIT = 0x80, //unused 
-
-		CANCELLABLE = 0x100,
-		CANCEL_WHIFF = 0x200,
-		JUMP_C_HIT = 0x400, //u
-		JUMP_C_BLOCK = 0x800, //u
-		_UNUSED13 = 0x1000,
-		_UNUSED14 = 0x2000,
-		_UNUSED15 = 0x4000,
-		IGNORE_INPUT = 0x8000,
-
-		RESET_INFLICTED_VEL = 0x10000,
-		_UNUSED18 = 0x20000, //No sprite mirroring (used only by frame 0)
-	};
-}
-
-namespace pain
-{
-	enum
-	{
-		HIGH,
-		LOW,
-	};
-}
-
-namespace state
-{
-	enum //Seq-wise. Probably getting scrapped.
-	{
-		GROUNDED,
-		AIRBORNE,
-		BUSY_GRND,
-		BUSY_AIR,
-		PAIN_GRND,
-		PAIN_AIR,
-	};
-
-	namespace fr //frame
-	{
-		enum
-		{
-			STANDING,
-			CROUCHED,
-			AIRBORNE,
-			OTG,
-		};
-	}
-}
 
 struct CharFileHeader_old //old header
 {
@@ -159,6 +90,7 @@ struct Sequence
 	seqProp props;
 	std::vector<Frame> frames;
 	std::string name;
+	std::string function;
 };
 
 class Framedata

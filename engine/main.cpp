@@ -160,8 +160,8 @@ void PlayLoop()
 	player.setTarget(&player2);
 	player2.setTarget(&player);
 
-	input_deque keyBufDelayed[2] = {input_deque(32, key::buf::TRUE_NEUTRAL), input_deque(32, key::buf::TRUE_NEUTRAL)};
-	input_deque keyBuf[2]= {input_deque(32, key::buf::TRUE_NEUTRAL), input_deque(32, key::buf::TRUE_NEUTRAL)};
+	input_deque keyBufDelayed[2] = {input_deque(32, 0), input_deque(32, 0)};
+	input_deque keyBuf[2]= {input_deque(32, 0), input_deque(32, 0)};
 
 
 	VaoTexOnly.Bind();
@@ -194,7 +194,7 @@ void PlayLoop()
 		player2.HitCollision();
 
 		player.Input(keyBufDelayed[0]);
-		//player2.Input(keyBufDelayed[1]);
+		player2.Input(keyBufDelayed[1]);
 
 		player.Update();
 		player2.Update();
