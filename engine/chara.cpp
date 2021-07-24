@@ -13,106 +13,15 @@ bool Character::isColliding;
 const FixedPoint floorPos(32);
 constexpr int speedMultiplier = 240;
 
-#define rv(X) ((char*)&X)
-#define rptr(X) ((char*)X)
-
-struct BoxSizes
-{
-	int8_t greens;
-	int8_t reds;
-	int8_t collision;
-};
-
 Character::Character(FixedPoint xPos, float _side, std::string charFile) :
 	side(_side),
 	touchedWall(0)
 {
-	constexpr const char *charSignature = "AFGECharacterFile";
-	constexpr uint32_t currentVersion = 99'4;
-
 	root.x = xPos;
 	root.y = floorPos;
 
 	//loads character from a file and fills sequences/frames and all that yadda.
-	std::ifstream file(charFile, std::ios_base::in | std::ios_base::binary);
-	if (!file.is_open())
-	{
-		std::cerr << "Couldn't open character file.\n";
-	}
-
-	CharFileHeader header;
-	file.read(rv(header), sizeof(CharFileHeader));
-	if(strcmp(charSignature, header.signature))
-	{
-		std::cerr << "Signature mismatch.\n";
-	}
-	if(header.version != currentVersion)
-	{
-		std::cerr << "Format version mismatch.\n";
-	}
-
-	sequences.resize(header.sequences_n);
-	for (uint16_t i = 0; i < header.sequences_n; ++i)
-	{
-		auto &currSeq = sequences[i];
-		uint8_t strSize;
-		file.read(rv(strSize), sizeof(strSize));
-		currSeq.name.resize(strSize);
-		file.read(rptr(currSeq.name.data()), strSize);
-
-		file.read(rv(strSize), sizeof(strSize));
-		currSeq.function.resize(strSize);
-		file.read(rptr(currSeq.function.data()), strSize);
-
-		file.read(rv(currSeq.props), sizeof(seqProp));
-
-		uint8_t seqlength;
-		file.read(rv(seqlength), sizeof(seqlength));
-		currSeq.frames.resize(seqlength);
-		for (uint8_t i2 = 0; i2 < seqlength; ++i2)
-		{
-			auto &currFrame = currSeq.frames[i2];
-
-			BoxSizes bs;
-			file.read(rv(bs), sizeof(BoxSizes));
-			std::vector<int> greens(bs.greens);
-			std::vector<int> reds(bs.reds);
-			std::vector<int> collision(bs.collision);
-
-			file.read(rv(currFrame.frameProp), sizeof(Frame_property));
-
-			file.read(rptr(greens.data()), sizeof(int) * bs.greens);
-			file.read(rptr(reds.data()), sizeof(int) * bs.reds);
-			file.read(rptr(collision.data()), sizeof(int) * bs.collision);
-
-			for(int bi = 0; bi < bs.greens; bi+=4)
-			{
-				currFrame.greenboxes.push_back(
-					Rect2d<FixedPoint>(
-						Point2d<FixedPoint>(greens[bi+0],greens[bi+1]),
-						Point2d<FixedPoint>(greens[bi+2],greens[bi+3]))
-				);
-			}
-			for(int bi = 0; bi < bs.reds; bi+=4)
-			{
-				currFrame.redboxes.push_back(
-					Rect2d<FixedPoint>(
-						Point2d<FixedPoint>(reds[bi+0],reds[bi+1]),
-						Point2d<FixedPoint>(reds[bi+2],reds[bi+3]))
-				);
-			}
-
-			if(bs.collision>0)
-			{
-				sequences[i].frames[i2].colbox.bottomLeft.x = collision[0];
-				sequences[i].frames[i2].colbox.bottomLeft.y = collision[1];
-				sequences[i].frames[i2].colbox.topRight.x = collision[2];
-				sequences[i].frames[i2].colbox.topRight.y = collision[3];
-			}
-		}
-	}
-
-	file.close();
+	LoadSequences(sequences, charFile);
 
 	ScriptSetup();
 	cmd.LoadFromLua("data/char/vaki/moves.lua", lua);
@@ -193,7 +102,7 @@ void Character::Collision(Character *blue, Character *red)
 
 	if (isColliding)
 	{
-		const FixedPoint magic(480);
+		const FixedPoint magic(4800);
 
 		FixedPoint getAway(0,5);
 
@@ -294,8 +203,7 @@ bool Character::SuggestSequence(int seq)
 	//Checks if it should ignore the next command
 	//if not cancellable. Do nothing
 	//if next seq is not attack do nothing <- Define in movelist
-	
-	
+		
 	//If you're in pain. Do nothing?
 
 	//Attack cancel rules and all that stuff go here.
