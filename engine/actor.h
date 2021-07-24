@@ -16,6 +16,11 @@ class Actor{
 	Point2d<FixedPoint> accel;
 
 	Frame *framePointer;
+	int currSeq = 0; //The active sequence.
+	int currFrame = 0;
+	int frameDuration; //counter for changing frames
+	int loopCounter = 0;
+	int hitstop = 0; //hitstop counter
 };
 
 #endif /* ACTOR_H_GUARD */

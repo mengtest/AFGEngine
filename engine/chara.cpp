@@ -4,7 +4,7 @@
 #include <string>
 #include <iostream>
 
-#include <glad/glad.h>	//These shouldn't be here but w/e for now
+#include <glad/glad.h>	//Transform
 
 #include "chara.h"
 #include "raw_input.h" //Used only by Character::ResolveHit
@@ -29,11 +29,6 @@ Character::Character(FixedPoint xPos, float _side, std::string charFile) :
 	GotoSequence(0);
 	GotoFrame(0);
 	return;
-}
-
-void Character::Print()
-{
-	std::cout << "side: " << side << "  X: " << (float)root.x << "\n";
 }
 
 Point2d<FixedPoint> Character::getXYCoords()
