@@ -5,14 +5,12 @@
 #include "camera.h"
 #include "command_inputs.h"
 #include "fixed_point.h"
+#include "actor.h"
 #include <geometry.h>
 
 #include <deque>
 #include <string>
 #include <vector>
-
-#include <glm/mat4x4.hpp>
-#include <glm/ext/matrix_transform.hpp>
 
 #include <sol/sol.hpp>
 
@@ -24,31 +22,16 @@ private:
 	bool hasUpdateFunction = false;
 
 	std::vector<Sequence> sequences;
+	Actor player;
 
 	int health = 10000;
 	//int hitsTaken;
 	//inr damageTaken;
 
-	Point2d<FixedPoint> root; //Character (x,y) position in game. Every box position is relative to this.
-	Point2d<FixedPoint> vel;
-	Point2d<FixedPoint> accel;
 	FixedPoint impulses[2];//X speed set by outside forces. Pushback?
-
-	Sequence *seqPointer;
-	Frame *framePointer;
-	Frame *hitTargetFrame; //Data from the one who punched me. Keep?
-
-	int currSeq = 0; //The active sequence.
-	int currFrame = 0;
-	int frameDuration; //counter for changing frames
-	int loopCounter = 0;
-	int hitstop = 0; //hitstop counter
-	int totalSubframeCount = 0;
-	int	subframeCount = 0;
 
 	CommandInputs cmd;
 	unsigned int lastKey = 0;
-	int side; //used to invert the x of all sort of things
 
 	Camera *currView;
 	Character* target;
@@ -61,7 +44,7 @@ private:
 	bool mustTurnAround = false;
 
 	static bool isColliding;
-	FixedPoint getAway; //Amount to move after collision
+	//FixedPoint getAway; //Amount to move after collision
 	FixedPoint touchedWall; //left wall: -1, right wall = 1, no wall = 0;
 
 public:
@@ -85,7 +68,6 @@ public:
 	void Input(input_deque &keyPresses);
 
 private:
-	void SeqFun();
 	void ScriptSetup();
 	void Translate(Point2d<FixedPoint> amount);
 	void Translate(FixedPoint x, FixedPoint y);
@@ -97,14 +79,6 @@ private:
 
 	void ResolveHit(int keypress);
 	bool TurnAround(int sequence = -1);
-
-	enum state
-	{
-		stand,
-		crouch,
-		air,
-		otg,
-	};
 };
 
 #endif // CHARACTER_H_INCLUDED

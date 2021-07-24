@@ -15,6 +15,7 @@ target_sources(AFGEngine PRIVATE
 	window.cpp
 	render_context.cpp
 	framedata.cpp
+	actor.cpp
 )
 
 target_link_libraries(AFGEngine PRIVATE

@@ -8,6 +8,8 @@
 #include <filesystem>
 #include <sol/sol.hpp>
 
+constexpr int speedMultiplier = 240;
+
 struct Frame_property
 {
 	int32_t spriteIndex = 0;
@@ -84,6 +86,14 @@ namespace jump
 		seq
 	};
 }
+
+enum state
+{
+	stand,
+	crouch,
+	air,
+	otg,
+};
 
 #endif /* FRAMEDATA_H_GUARD */
 
