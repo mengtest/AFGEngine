@@ -19,7 +19,7 @@ struct BoxSizes
 	int8_t collision;
 };
 
-bool LoadSequences(std::vector<Sequence> &sequences, std::filesystem::path charFile)
+bool LoadSequences(std::vector<Sequence> &sequences, std::filesystem::path charFile, sol::state &lua)
 {
 	constexpr const char *charSignature = "AFGECharacterFile";
 	constexpr uint32_t currentVersion = 99'4;
@@ -55,8 +55,17 @@ bool LoadSequences(std::vector<Sequence> &sequences, std::filesystem::path charF
 		file.read(rptr(currSeq.name.data()), strSize);
 
 		file.read(rv(strSize), sizeof(strSize));
-		currSeq.function.resize(strSize);
-		file.read(rptr(currSeq.function.data()), strSize);
+		std::string funcName((int)strSize, '\0');
+		file.read(rptr(funcName.data()), strSize);
+
+		////Game only////
+		if(!funcName.empty())
+		{
+			currSeq.function = lua[funcName];
+			if(currSeq.function.get_type() == sol::type::function)
+				currSeq.hasFunction = true;
+		}
+		////Game only////
 
 		file.read(rv(currSeq.props), sizeof(seqProp));
 

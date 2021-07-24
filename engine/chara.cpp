@@ -21,11 +21,10 @@ Character::Character(FixedPoint xPos, float _side, std::string charFile) :
 	root.y = floorPos;
 
 	//loads character from a file and fills sequences/frames and all that yadda.
-	LoadSequences(sequences, charFile);
-
 	ScriptSetup();
 	cmd.LoadFromLua("data/char/vaki/moves.lua", lua);
-	
+	LoadSequences(sequences, charFile, lua); //Sequences refer to script.
+
 	GotoSequence(0);
 	GotoFrame(0);
 	return;
@@ -216,26 +215,20 @@ void Character::GotoSequence(int seq)
 		mustTurnAround = false;
 		side = -side;
 	}
+
 	interrumpible = false;
 	comboFlag = false;
 	currSeq = seq;
 	currFrame = 0;
-	GotoFrame(0);
 	totalSubframeCount = 0;
 
-	if(!sequences[currSeq].function.empty())
-	{
-		seqFunction = lua[sequences[currSeq].function];
-		if(seqFunction.get_type() == sol::type::function)
-			hasFunction = true;
-	}
-	else
-		hasFunction = false;
+	seqPointer = &sequences[currSeq];
+	GotoFrame(0);
 }
 
 void Character::GotoFrame(int frame)
 {
-	if(frame >= sequences[currSeq].frames.size())
+	if(frame >= seqPointer->frames.size())
 	{
 		mustTurnAround = false;
 		GotoSequence(0);
@@ -245,7 +238,7 @@ void Character::GotoFrame(int frame)
 	subframeCount = 0;
 	alreadyHit = false;
 	currFrame = frame;
-	framePointer = &sequences[currSeq].frames[currFrame];
+	framePointer = &seqPointer->frames[currFrame];
 
 	if(framePointer->frameProp.loopN > 0)
 		loopCounter = framePointer->frameProp.loopN;
@@ -284,7 +277,7 @@ void Character::GotoFrame(int frame)
 		}
 	}
 
-	frameDuration = sequences[currSeq].frames[currFrame].frameProp.duration;
+	frameDuration = framePointer->frameProp.duration;
 }
 
 
@@ -391,9 +384,22 @@ void Character::Translate(FixedPoint x, FixedPoint y)
 	BoundaryCollision();
 }
 
+void Character::SeqFun()
+{
+	if(seqPointer->hasFunction)
+	{
+		auto result = seqPointer->function();
+		if(!result.valid())
+		{
+			sol::error err = result;
+			std::cerr << err.what() << "\n";
+		}
+	}
+}
+
 void Character::Update()
 {
-	if(hasUpdate)
+	if(hasUpdateFunction)
 	{
 		auto result = updateFunction();
 		if(!result.valid())
@@ -405,8 +411,7 @@ void Character::Update()
 	if (hitstop > 0)
 	{
 		--hitstop;
-		if(hasFunction)
-			seqFunction();
+		SeqFun();
 		return;
 	}
 
@@ -422,7 +427,7 @@ void Character::Update()
 	{
 		root.y = floorPos;
 		//Jump to landing frame.
-		GotoFrame(sequences[currSeq].props.landFrame);
+		GotoFrame(seqPointer->props.landFrame);
 	}
 	if((framePointer->frameProp.state == state::stand || framePointer->frameProp.state == state::crouch) &&
 		(root.x < target->root.x && side == -1 || root.x > target->root.x && side == 1))
@@ -465,11 +470,9 @@ void Character::Update()
 			currFrame += 1;
 			
 		GotoFrame(currFrame);
-		if(hasFunction)
-			seqFunction();
 	}
-	else if(hasFunction)
-		seqFunction();
+	
+	SeqFun();
 }
 
 bool Character::TurnAround(int sequence)
@@ -577,5 +580,5 @@ void Character::ScriptSetup()
 	}
 
 	updateFunction = lua["_update"];
-	hasUpdate = updateFunction.get_type() == sol::type::function;
+	hasUpdateFunction = updateFunction.get_type() == sol::type::function;
 }

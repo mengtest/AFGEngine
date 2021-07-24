@@ -6,6 +6,7 @@
 #include <string>
 #include <vector>
 #include <filesystem>
+#include <sol/sol.hpp>
 
 struct Frame_property
 {
@@ -56,10 +57,11 @@ struct Sequence
 	seqProp props;
 	std::vector<Frame> frames;
 	std::string name;
-	std::string function;
+	sol::protected_function function;
+	bool hasFunction = false;
 };
 
-bool LoadSequences(std::vector<Sequence> &sequences, std::filesystem::path charfile);
+bool LoadSequences(std::vector<Sequence> &sequences, std::filesystem::path charfile, sol::state &lua);
 
 namespace flag
 {

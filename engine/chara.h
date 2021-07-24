@@ -10,7 +10,6 @@
 #include <deque>
 #include <string>
 #include <vector>
-#include <utility>
 
 #include <glm/mat4x4.hpp>
 #include <glm/ext/matrix_transform.hpp>
@@ -20,11 +19,11 @@
 class Character
 {
 private:
-	std::vector<Sequence> sequences;
 	sol::state lua;
-	sol::function seqFunction;
 	sol::protected_function updateFunction;
-	bool hasFunction = false, hasUpdate = false;
+	bool hasUpdateFunction = false;
+
+	std::vector<Sequence> sequences;
 
 	int health = 10000;
 	//int hitsTaken;
@@ -35,6 +34,7 @@ private:
 	Point2d<FixedPoint> accel;
 	FixedPoint impulses[2];//X speed set by outside forces. Pushback?
 
+	Sequence *seqPointer;
 	Frame *framePointer;
 	Frame *hitTargetFrame; //Data from the one who punched me. Keep?
 
@@ -85,6 +85,7 @@ public:
 	void Input(input_deque &keyPresses);
 
 private:
+	void SeqFun();
 	void ScriptSetup();
 	void Translate(Point2d<FixedPoint> amount);
 	void Translate(FixedPoint x, FixedPoint y);

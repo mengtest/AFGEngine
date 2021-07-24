@@ -7,8 +7,10 @@
 #include <sol/sol.hpp>
 
 class Actor{
-	sol::state lua;
-	sol::protected_function seqFunction;
+private:
+	std::vector<Sequence> &sequences;
+	/* sol::state lua;
+	sol::protected_function seqFunction; */
 	bool hasFunction = false;
 
 	Point2d<FixedPoint> root; //Character (x,y) position in game. Every box position is relative to this.
@@ -21,6 +23,15 @@ class Actor{
 	int frameDuration; //counter for changing frames
 	int loopCounter = 0;
 	int hitstop = 0; //hitstop counter
+	int totalSubframeCount = 0;
+	int	subframeCount = 0;
+
+public:
+	Actor(std::vector<Sequence> &sequences);
+
+	void GotoSequence(int seq);
+	void GotoFrame(int frame);
+
 };
 
 #endif /* ACTOR_H_GUARD */
