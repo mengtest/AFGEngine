@@ -101,7 +101,7 @@ void Vao::Load()
 	switch(type)
 	{
 	case F2F2_short:
-		glVertexAttribPointer(0, 2, GL_UNSIGNED_SHORT, GL_FALSE, stride, nullptr);
+		glVertexAttribPointer(0, 2, GL_SHORT, GL_FALSE, stride, nullptr);
 		glEnableVertexAttribArray(0);
 		glVertexAttribPointer(1, 2, GL_UNSIGNED_SHORT, GL_FALSE, stride, (void*)(2*sizeof(short)));
 		glEnableVertexAttribArray(1);

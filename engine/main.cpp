@@ -220,6 +220,7 @@ void PlayLoop()
 		//Draw characters
   		gfx.Begin();
 		gfx.SetPaletteSlot(1);
+		
 		mainWindow->context.SetModelView(viewMatrix*player2.GetSpriteTransform());
 		gfx.Draw(player2.GetSpriteIndex());
 

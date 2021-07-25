@@ -12,26 +12,26 @@
 bool Character::isColliding;
 
 Character::Character(FixedPoint xPos, float side, std::string charFile) :
-	player(sequences),
-	touchedWall(0)
+Actor(sequences),
+touchedWall(0)
 {
-	player.root.x = xPos;
-	player.root.y = floorPos;
-	player.SetSide(side);
+	root.x = xPos;
+	root.y = floorPos;
+	SetSide(side);
 
 	//loads character from a file and fills sequences/frames and all that yadda.
 	ScriptSetup();
 	cmd.LoadFromLua("data/char/vaki/moves.lua", lua);
 	LoadSequences(sequences, charFile, lua); //Sequences refer to script.
 
-	player.GotoSequence(0);
-	player.GotoFrame(0);
+	GotoSequence(0);
+	GotoFrame(0);
 	return;
 }
 
 Point2d<FixedPoint> Character::getXYCoords()
 {
-	return player.root;
+	return root;
 }
 
 void Character::SetCameraRef(Camera *ref)
@@ -44,34 +44,20 @@ void Character::setTarget(Character *t)
 	target = t;
 }
 
-
-//TODO: Remove these dudes
-int Character::GetSpriteIndex()
-{
-	return player.GetSpriteIndex();
-}
-glm::mat4 Character::GetSpriteTransform()
-{
-	return player.GetSpriteTransform();
-}
-
-
 void Character::Collision(Character *playerOne, Character *playerTwo)
 {
 	isColliding = false;
-	Actor *actor1 = &playerOne->player;
-	Actor *actor2 = &playerTwo->player;
 
-	Rect2d<FixedPoint> colBlue = actor1->framePointer->colbox;
-	Rect2d<FixedPoint> colRed = actor2->framePointer->colbox;
+	Rect2d<FixedPoint> colBlue = playerOne->framePointer->colbox;
+	Rect2d<FixedPoint> colRed = playerTwo->framePointer->colbox;
 
-	if (actor1->side == -1)
+	if (playerOne->GetSide() < 0)
 		colBlue = colBlue.FlipHorizontal();
-	if (actor2->side == -1)
+	if (playerTwo->GetSide() < 0)
 		colRed = colRed.FlipHorizontal();
 
-	colBlue = colBlue.Translate(actor1->root);
-	colRed = colRed.Translate(actor2->root);
+	colBlue = colBlue.Translate(playerOne->root);
+	colRed = colRed.Translate(playerTwo->root);
 
 	isColliding = colBlue.Intersects(colRed);
 
@@ -85,7 +71,7 @@ void Character::Collision(Character *playerOne, Character *playerTwo)
 		if (playerOne->touchedWall != 0 || playerTwo->touchedWall != 0)
 			getAway = 1;
 
-		if (actor1->root.x + playerOne->touchedWall * magic < actor2->root.x + playerTwo->touchedWall * magic)
+		if (playerOne->root.x + playerOne->touchedWall * magic < playerTwo->root.x + playerTwo->touchedWall * magic)
 		{
 			getAway = getAway * (colBlue.topRight.x - colRed.bottomLeft.x);
 
@@ -109,7 +95,7 @@ void Character::Collision(Character *playerOne, Character *playerTwo)
 
 void Character::HitCollision()
 {
-	if (Actor::HitCollision(player, target->player))
+	if (Actor::HitCollision(*this, *target))
 	{
 		if (target->alreadyHit) //Avoids the same frame hitting multiple times.
 			return;
@@ -127,16 +113,16 @@ void Character::BoundaryCollision()
 	const FixedPoint wallOffset(10);
 	touchedWall = 0;
 
-	if (player.root.x <= currView->GetWallPos(camera::leftWall) + wallOffset)
+	if (root.x <= currView->GetWallPos(camera::leftWall) + wallOffset)
 	{
 		touchedWall = -1;
-		player.root.x = currView->GetWallPos(camera::leftWall) + wallOffset;
+		root.x = currView->GetWallPos(camera::leftWall) + wallOffset;
 	}
 
-	else if (player.root.x >= currView->GetWallPos(camera::rightWall) - wallOffset)
+	else if (root.x >= currView->GetWallPos(camera::rightWall) - wallOffset)
 	{
 		touchedWall = 1;
-		player.root.x = currView->GetWallPos(camera::rightWall) - wallOffset;
+		root.x = currView->GetWallPos(camera::rightWall) - wallOffset;
 	}
 
 	if (touchedWall == target->touchedWall) //Someone already has the wall.
@@ -145,13 +131,14 @@ void Character::BoundaryCollision()
 
 void Character::Translate(Point2d<FixedPoint> amount)
 {
-	player.Translate(amount);
+	root += amount;
 	BoundaryCollision();
 }
 
 void Character::Translate(FixedPoint x, FixedPoint y)
 {
-	player.Translate(x,y);
+	root.x += x;
+	root.y += y;
 	BoundaryCollision();
 }
 
@@ -184,24 +171,19 @@ void Character::GotoSequence(int seq)
 	if(mustTurnAround)
 	{
 		mustTurnAround = false;
-		player.SetSide(-player.GetSide());
+		side = -side;
 	}
 
 	interrumpible = false;
 	comboFlag = false;
 	
-	player.GotoSequence(seq);
+	Actor::GotoSequence(seq);
 }
 
 void Character::GotoFrame(int frame)
 {
-	if(!player.GotoFrame(frame))
-	{
-		//Destroy?
-		mustTurnAround = false;
-		GotoSequence(0);
+	if(!Actor::GotoFrame(frame))
 		return;
-	}
 
 	alreadyHit = false; //combo stuff
 }
@@ -216,7 +198,7 @@ void Character::ResolveHit(int keypress) //key processing really shouldn't be he
 
 		int left;
 		int right;
-		if (player.GetSide() < 0) //Inverts absolute input depending on side. Apparent input is corrected.
+		if (GetSide() < 0) //Inverts absolute input depending on side. Apparent input is corrected.
 		{
 			left = key::buf::RIGHT;
 			right = key::buf::LEFT;
@@ -308,85 +290,85 @@ void Character::Update()
 			std::cerr << err.what() << "\n";
 		}
 	}
-	if (player.hitstop > 0)
+	if (hitstop > 0)
 	{
-		--player.hitstop;
-		player.SeqFun();
+		--hitstop;
+		SeqFun();
 		return;
 	}
 
 	if (touchedWall != 0)
 	{
-		target->player.root.x += -impulses[0];
+		target->root.x += -impulses[0];
 	}
 
-	player.vel += player.accel;
-	Translate(player.vel);
+	vel += accel;
+	Translate(vel);
 
-	if (player.root.y < floorPos) //Check collision with floor
+	if (root.y < floorPos) //Check collision with floor
 	{
-		player.root.y = floorPos;
+		root.y = floorPos;
 		//Jump to landing frame.
-		GotoFrame(player.seqPointer->props.landFrame);
+		GotoFrame(seqPointer->props.landFrame);
 	}
-	if((player.framePointer->frameProp.state == state::stand || player.framePointer->frameProp.state == state::crouch) &&
-		(player.root.x < target->player.root.x && player.side == -1 || player.root.x > target->player.root.x && player.side == 1))
+	if((framePointer->frameProp.state == state::stand || framePointer->frameProp.state == state::crouch) &&
+		(root.x < target->root.x && side == -1 || root.x > target->root.x && side == 1))
 		mustTurnAround = true;
 
-	--player.frameDuration;
-	++player.totalSubframeCount;
-	++player.subframeCount;
-	if (player.frameDuration == 0)
+	--frameDuration;
+	++totalSubframeCount;
+	++subframeCount;
+	if (frameDuration == 0)
 	{
-		int jump = player.framePointer->frameProp.jumpType;
+		int jump = framePointer->frameProp.jumpType;
 		if(jump == jump::frame)
 		{
-			if(player.framePointer->frameProp.relativeJump)
-				player.currFrame += player.framePointer->frameProp.jumpTo;
+			if(framePointer->frameProp.relativeJump)
+				currFrame += framePointer->frameProp.jumpTo;
 			else
-				player.currFrame = player.framePointer->frameProp.jumpTo;
+				currFrame = framePointer->frameProp.jumpTo;
 		}
 		else if(jump == jump::loop)
 		{
-			if(player.loopCounter > 1)
+			if(loopCounter > 1)
 			{
-				if(player.framePointer->frameProp.relativeJump)
-					player.currFrame += player.framePointer->frameProp.jumpTo;
+				if(framePointer->frameProp.relativeJump)
+					currFrame += framePointer->frameProp.jumpTo;
 				else
-					player.currFrame = player.framePointer->frameProp.jumpTo;
-				player.loopCounter--;
+					currFrame = framePointer->frameProp.jumpTo;
+				loopCounter--;
 			}
-			player.currFrame++;
+			currFrame++;
 		}
 		else if(jump == jump::seq)
 		{
 			mustTurnAround = false;
-			if(player.framePointer->frameProp.relativeJump)
-				GotoSequence(player.currSeq+player.framePointer->frameProp.jumpTo);
+			if(framePointer->frameProp.relativeJump)
+				GotoSequence(currSeq+framePointer->frameProp.jumpTo);
 			else
-				GotoSequence(player.framePointer->frameProp.jumpTo);
+				GotoSequence(framePointer->frameProp.jumpTo);
 		}
 		else
-			player.currFrame += 1;
+			currFrame += 1;
 			
-		GotoFrame(player.currFrame);
+		GotoFrame(currFrame);
 	}
 	
-	player.SeqFun();
+	SeqFun();
 }
 
 bool Character::TurnAround(int sequence)
 {
-	if (player.root.x < target->player.root.x && player.GetSide() == -1) //Side switching.
+	if (root.x < target->root.x && GetSide() < 0) //Side switching.
 	{
 		GotoSequence(sequence);
-		player.SetSide(1);
+		SetSide(1);
 		return true;
 	}
-	else if (player.root.x > target->player.root.x && player.GetSide() == 1)
+	else if (root.x > target->root.x && GetSide() > 0)
 	{
 		GotoSequence(sequence);
-		player.SetSide(-1);
+		SetSide(-1);
 		return true;
 	}
 	return false;
@@ -400,26 +382,26 @@ void Character::Input(input_deque &keyPresses)
 	//Block hit
 	ResolveHit((keyPresses)[0]);
 
-	int inputSide = player.GetSide();
+	int inputSide = GetSide();
 	if(mustTurnAround)
 		inputSide = -inputSide;
 	
 	MotionData command;
-	if(player.GetCurrentFrame()->frameProp.state == state::air)
+	if(GetCurrentFrame()->frameProp.state == state::air)
 		command = cmd.ProcessInput(keyPresses, "air", inputSide);
 	else
 		command = cmd.ProcessInput(keyPresses, "ground", inputSide);
 	
-	if(!(player.GetCurrentFrame()->frameProp.flags & flag::canMove) &&
-		(!interrumpible || !(command.flags & CommandInputs::interrupts) || player.totalSubframeCount > command.bufLen))
+	if(!(GetCurrentFrame()->frameProp.flags & flag::canMove) &&
+		(!interrumpible || !(command.flags & CommandInputs::interrupts) || totalSubframeCount > command.bufLen))
 		return;
 
 	//Don't transition to the seq if the command is marked as a neutral move (walking).
-	if(command.flags & CommandInputs::neutralMove && player.GetCurrentFrame()->frameProp.flags & flag::dontWalk)
+	if(command.flags & CommandInputs::neutralMove && GetCurrentFrame()->frameProp.flags & flag::dontWalk)
 		return;
 
 	//The sequence can't go to itself unless it's flagged as such
-	if(!(command.flags & CommandInputs::repeatable) && player.currSeq == command.seqRef) 
+	if(!(command.flags & CommandInputs::repeatable) && currSeq == command.seqRef) 
 		return;
 	
 	if(command.hasCondition)
@@ -448,21 +430,23 @@ void Character::ScriptSetup()
 {
 	lua.open_libraries(sol::lib::base);
 
-	auto actor = lua["actor"].get_or_create<sol::table>();
-	actor.set("multiplier", speedMultiplier);
-	actor.set_function("getSide", [this](){return player.side;});
-	actor.set_function("getPos", [this](){return std::make_tuple(player.root.x.value, player.root.y.value);});
-	actor.set_function("setPos", [this](int x, int y){player.root.x.value = x; player.root.y.value = y;});
-	actor.set_function("getVel", [this](){return std::make_tuple(player.vel.x.value, player.vel.y.value);});
-	actor.set_function("setVel", [this](int x, int y){player.vel.x.value = x; player.vel.y.value = y;});
-	actor.set_function("currentFrame", [this](){return player.currFrame;});
-	actor.set_function("currentSequence", [this](){return player.currSeq;});
-	actor.set_function("gotoFrame", &Character::GotoFrame, this);
-	actor.set_function("gotoSequence", &Character::GotoSequence, this);
-	actor.set_function("turnAround", &Character::TurnAround, this);
-	actor.set_function("getInput", [this]() -> unsigned int{return this->lastKey;});
-	actor.set_function("getInputRelative", [this]() -> unsigned int{
-		if(player.GetSide() > 0)
+	Actor::DeclareActorLua(lua);
+	lua["player"] = (Actor*)this;
+
+	auto constant = lua["constant"].get_or_create<sol::table>();
+	constant["multiplier"] = speedMultiplier;
+	auto key = constant["key"].get_or_create<sol::table>();
+	key["up"] = key::buf::UP;
+	key["down"] = key::buf::DOWN;
+	key["left"] = key::buf::LEFT;
+	key["right"] = key::buf::RIGHT;
+	key["any"] = key::buf::UP | key::buf::DOWN | key::buf::LEFT | key::buf::RIGHT;
+
+	auto global = lua["global"].get_or_create<sol::table>();
+	global.set_function("TurnAround", &Character::TurnAround, this);
+	global.set_function("GetInput", [this]() -> unsigned int{return this->lastKey;});
+	global.set_function("GetInputRelative", [this]() -> unsigned int{
+		if(GetSide() > 0)
 			return this->lastKey;
 		else{
 			int right = lastKey & key::buf::RIGHT;

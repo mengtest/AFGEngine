@@ -17,6 +17,7 @@
 #include <args.hxx>
 
 //Pairs filename with the desired ID.
+int xOffset, yOffset;
 std::unordered_map<std::string, int> nameMap;
 
 bool ignoreCaseCompare(std::string &&str1, std::string &&str2)
@@ -31,6 +32,14 @@ bool ignoreCaseCompare(std::string &&str1, std::string &&str2)
 	);
 }
 
+std::istream& operator>>(std::istream& is, std::tuple<int, int>& ints)
+{
+    is >> std::get<0>(ints);
+    is.get();
+    is >> std::get<1>(ints);
+    return is;
+}
+
 int main(int argc, char **argv)
 {
 	namespace fs = std::filesystem;
@@ -39,15 +48,17 @@ int main(int argc, char **argv)
 		"The images must be PNG. If 8bpp and 32bpp images are in the same folder, they "
 		"will be packed separately into two files respectively.");
 	args::Positional<std::string> srcFolder(parser, "FOLDER", "Folder containing the images.");
+	args::Positional<std::tuple<int,int>> pivot(parser, "X,Y", "Pivot: X and Y amount to offset the ouput vertex coordinates");
 	args::HelpFlag help(parser, "help", "Display this help menu.", {'h', "help"});
     args::ValueFlag<std::string> outName(parser, "name", "Output filename. Defaults to [FOLDER].", {'o'});
 	args::Flag pow2flag(parser, "pow2", "Make output dimensions a power of two.", {'p',"pow2"});
 	args::Flag borderFlag(parser, "border", "Add a 1px border around each tile to avoid texture bleeding.", {'b',"border"});
 	args::ValueFlag<int> tileSize(parser, "size",
 		"The size in pixel of a square tile. Defaults to 16.", {'s', "size"}, 16);
-	args::Group group(parser, "Optionally pick only one type:", args::Group::Validators::AtMostOne);
-    args::Flag only8(group, "only8", "Only process 8bpp images", {"8bpp"});
-    args::Flag only32(group, "only32", "Only process 32bpp images", {"32bpp"});
+	args::Group pickGroup(parser, "Optionally pick only one type:", args::Group::Validators::AtMostOne);
+    args::Flag only8(pickGroup, "only8", "Only process 8bpp images", {"8bpp"});
+    args::Flag only32(pickGroup, "only32", "Only process 32bpp images", {"32bpp"});
+
     try
     {
         parser.ParseCLI(argc, argv);
@@ -75,6 +86,8 @@ int main(int argc, char **argv)
         return 1;
     }
 	bool border = borderFlag;
+	xOffset = std::get<0>(args::get(pivot));
+	yOffset = std::get<1>(args::get(pivot));
 
 	fs::path folderIn = srcFolder.Get();
 	std::string filenameOut = folderIn.filename().string();
@@ -388,8 +401,8 @@ void WriteVertexData(std::string filename, int nChunks, std::list<ImageMeta> &me
 		{
 			for(int i = 0; i < 6; i++)
 			{
-				data[dataI+i].x = chunk.pos.x + chunkSize*tX[i];
-				data[dataI+i].y = chunk.pos.y + chunkSize*tY[i];
+				data[dataI+i].x = -xOffset + chunk.pos.x + chunkSize*tX[i];
+				data[dataI+i].y = -yOffset + chunk.pos.y + chunkSize*tY[i];
 				data[dataI+i].s = chunk.tex.x + chunkSize*tX[i];
 				data[dataI+i].t = chunk.tex.y + chunkSize*tY[i];
 
@@ -457,7 +470,7 @@ void CalcSizeInChunks(int chunks, int chunkSize, int &width, int &height, bool p
 
 	if(pow2)
 	{
-		width = 1 << (LogMsb(width)+1);
-		height = 1 << (LogMsb(height)+1);
+		width = 1 << (LogMsb(width-1)+1);
+		height = 1 << (LogMsb(height-1)+1);
 	}
 }

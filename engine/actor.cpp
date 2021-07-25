@@ -22,7 +22,10 @@ bool Actor::GotoFrame(int frame)
 {
 	//OOB frame
 	if(frame >= seqPointer->frames.size() || frame < 0)
+	{
+		KillSelf();
 		return false;
+	}
 
 	subframeCount = 0;
 	currFrame = frame;
@@ -99,6 +102,8 @@ glm::mat4 Actor::GetSpriteTransform()
 {
 	glm::mat4 transform(1.f);
 	float rotY = framePointer->frameProp.rotation[1];
+	float offsetX = framePointer->frameProp.spriteOffset[0];
+	float offsetY = framePointer->frameProp.spriteOffset[1];
 	
 	constexpr float tau = glm::pi<float>()*2.f;
 	//transform = glm::scale(transform, glm::vec3(scale, scale, 1.f));
@@ -108,17 +113,10 @@ glm::mat4 Actor::GetSpriteTransform()
 	
 	//transform = glm::rotate(transform, rotX*tau, glm::vec3(1.0, 0.f, 0.f));
 
-	
-	
-	//-128.f, -40.f
-	
-	
-	transform = glm::translate(transform, glm::vec3((root.x), root.y, 0));
+	transform = glm::translate(transform, glm::vec3(root.x+offsetX, root.y-offsetY, 0));
 	transform = glm::rotate(transform, rotY*tau, glm::vec3(0.0, 1.f, 0.f));
 	transform = glm::scale(transform, glm::vec3(side, 1.f, 1.f));
-	transform = glm::translate(transform, glm::vec3(-128, -40.f, 0));
-	
-	
+	//transform = glm::translate(transform, glm::vec3(-128, -40.f, 0));
 	return transform;
 }
 
@@ -126,7 +124,7 @@ void Actor::SeqFun()
 {
 	if(seqPointer->hasFunction)
 	{
-		auto result = seqPointer->function();
+		auto result = seqPointer->function(this);
 		if(!result.valid())
 		{
 			sol::error err = result;
@@ -219,4 +217,40 @@ bool Actor::HitCollision(const Actor& hurt, const Actor& hit)
 		}
 	}
 	return false;
+}
+
+Actor& Actor::SpawnChild()
+{
+	Actor child(sequences);
+	child.parent = this;
+	children.push_back(std::move(child));
+	children.back().myPos = --children.end();
+	return children.back();
+}
+
+void Actor::KillSelf()
+{
+	if(parent)
+	{
+		parent->children.erase(myPos);
+	}
+}
+
+void Actor::DeclareActorLua(sol::state &lua)
+{
+	lua.new_usertype<Actor>("Actor",
+		"GotoFrame", &Actor::GotoFrame,
+		"GotoSequence", &Actor::GotoSequence,
+		"GetSide", &Actor::GetSide,
+		"GetPos", [](Actor &actor){return std::make_tuple(actor.root.x.value, actor.root.y.value);},
+		"SetPos", [](Actor &actor, int x, int y){actor.root.x.value = x; actor.root.y.value = y;},
+		"GetVel", [](Actor &actor){return std::make_tuple(actor.vel.x.value, actor.vel.y.value);},
+		"SetVel", [](Actor &actor, int x, int y){actor.vel.x.value = x; actor.vel.y.value = y;},
+		"GetSide", &Actor::GetSide,
+		"SetSide", &Actor::SetSide,
+		"currentFrame", sol::readonly(&Actor::currFrame),
+		"currentSequence", sol::readonly(&Actor::currSeq),
+		"SpawnChild", &Actor::SpawnChild,
+		"KillSelf", &Actor::KillSelf
+	);
 }

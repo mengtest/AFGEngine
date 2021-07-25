@@ -84,6 +84,7 @@ void Texture::Apply(bool repeat, bool linearFilter, bool rectangle)
 		case 4:
 			extType = GL_RGBA;
 			intType = GL_RGBA8;
+			//intType = GL_COMPRESSED_RGBA;
 			break;
 		default:
 			std::cout << filename.c_str() << " unhandled format. "<< image->bytesPerPixel << " channels.\n";

@@ -7,6 +7,23 @@
 
 constexpr int chargeBufSize = 32;
 
+int SanitizeKey(int lever)
+{
+	if(lever & key::buf::RIGHT && lever & key::buf::LEFT)
+	{
+		lever &= ~key::buf::RIGHT; //Left beats right? TODO: Revise
+
+		if(lever & key::buf::DOWN)
+			lever &= ~key::buf::LEFT; //makes half circles easier by transforming a simultaneous 123 into a 2.
+	}
+	if(lever & key::buf::DOWN && lever & key::buf::UP)//jumps if pressing both.
+	{
+		lever &= ~key::buf::DOWN;
+	}
+
+	return lever;
+}
+
 CommandInputs::CommandInputs()
 {
 	for(int i = 0; i < 4; i++)
@@ -51,7 +68,7 @@ void CommandInputs::LoadFromLua(std::filesystem::path defFile, sol::state &lua)
 
 void CommandInputs::Charge(const input_deque &keyPresses)
 {
-	auto key = keyPresses[0];
+	auto key = SanitizeKey(keyPresses[0]);
 	for(int i = key::UP, b = 0; i <= key::RIGHT; ++i, ++b)
 	{
 		int dirBit = 1 << i;
@@ -114,22 +131,10 @@ bool CommandInputs::MotionInput(const MotionData& md, const input_deque &keyPres
 	for(int i = 0; i < bufSize; i++)
 	{
 		auto key = keyPresses[i];
-		auto lever = key & ~(key::buf::NEUTRAL); 
+		auto lever = SanitizeKey(key & ~(key::buf::NEUTRAL)); 
 
 		if(key & key::buf::CUT) //Stop reading inputs at the cut.
 			return false;
-
-		if(lever & right && lever & left)
-		{
-			lever &= ~key::buf::RIGHT; //Left beats right? TODO: Revise
-
-			if(lever & key::buf::DOWN)
-				lever &= ~key::buf::LEFT; //makes half circles easier by transforming a simultaneous 123 into a 2.
-		}
-		if(lever & key::buf::DOWN && lever & key::buf::UP)//jumps if pressing both.
-		{
-			lever &= ~key::buf::DOWN;
-		}
 
 motionBufferProcessing:
 		int lastC = c;
@@ -263,36 +268,44 @@ motionBufferProcessing:
 			}
 			break;
 		
-		case '0': //5 means any motion but anything containing the next one.
-/* 			switch(motion[c+1]) //checks
+		case '!': //Do not contain the previous motion.
+			if(c < 1)
+				return false; 
+ 			switch(motion[c-1]) //checks
 			{
 			case '2':
 			case 'D':
 				if(!(lever & key::buf::DOWN))
-					--c;
+					c -= 2;
 				break;
 
 			case '4':
 			case 'L':
 				if(!(lever & left)) //
-					--c;
+					c -= 2;
 				break;
 
 			case '6':
 			case 'R':
 				if(!(lever & right)) //
-					--c;
+					c -= 2;
+				break;
+			
+			case '8':
+			case 'U':
+				if(!(lever & key::buf::UP)) //
+					c -= 2;
 				break;
 
 			default:
-				--c;
-				break;
-			} */
+				std::cerr << "\tinvalid input on ! motion character\n";
+				return false;
+			}
 			break;
 
 		default:
 			std::bitset<32> x (lever);
-			std::cout << "\tinvalid input(!):\n motion index: " << c << " case: __" << motion[c] << "__ input: " << x << "\n";
+			std::cerr << "\tinvalid input:\n motion index: " << c << " case: __" << motion[c] << "__ input: " << x << "\n";
 			return false;
 		}
 

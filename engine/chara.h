@@ -11,10 +11,11 @@
 #include <deque>
 #include <string>
 #include <vector>
+#include <list>
 
 #include <sol/sol.hpp>
 
-class Character
+class Character : public Actor
 {
 private:
 	sol::state lua;
@@ -22,7 +23,6 @@ private:
 	bool hasUpdateFunction = false;
 
 	std::vector<Sequence> sequences;
-	Actor player;
 
 	int health = 10000;
 	//int hitsTaken;
@@ -61,9 +61,6 @@ public:
 	static void Collision(Character* blue, Character* red); //Detects and resolves collision between characters and/or the camera.
 	void BoundaryCollision();
 	void HitCollision(); //Checks collision between own green boxes and target's red boxes.
-
-	int GetSpriteIndex();
-	glm::mat4 GetSpriteTransform();
 
 	void Input(input_deque &keyPresses);
 

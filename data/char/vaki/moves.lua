@@ -9,7 +9,7 @@ local f = {
 inputs = {
 	ground = {
 		{input = "4123~6a", buf = 8, ref = 388},
-		{input = "\030L/~6a", buf = 8, ref = 155},
+		{input = "\030R/~4a", buf = 8, ref = 155},
 
 		{input = "7", buf = 1, ref = 37, flag = f.repeatable},
 		{input = "8", buf = 1, ref = 36, flag = f.repeatable},
@@ -35,9 +35,9 @@ inputs = {
 		{input = "D", buf = 1, ref = 12, flag = f.neutral, cond = C_toCrouch},
 	},
 	air = {
-		{input = "57", buf = 2, ref = 40},
-		{input = "58", buf = 2, ref = 39},
-		{input = "59", buf = 2, ref = 38},
+		{input = "U!7", buf = 1, ref = 40},
+		{input = "U!8", buf = 1, ref = 39},
+		{input = "U!9", buf = 1, ref = 38},
 		{input = "5L54", buf = 8, ref = 47, flag = f.repeatable | f.wipeBuffer, cond = C_heightRestriction},
 		{input = "5R56", buf = 8, ref = 46, flag = f.repeatable | f.wipeBuffer, cond = C_heightRestriction},
 		{input = "~4ab", buf = 1, ref = 47, flag = f.repeatable | f.interrupts, cond = C_heightRestriction},

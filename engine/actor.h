@@ -11,15 +11,17 @@
 const FixedPoint floorPos(32);
 
 class Actor{
-public:
 	friend class Character;
+private:
+	std::vector<Sequence> &sequences;
+	std::list<Actor> children;
+	std::list<Actor>::iterator myPos;
+	Actor* parent = nullptr;
+	//sol::state &lua;
+
 	Point2d<FixedPoint> root; //Character (x,y) position in game. Every box position is relative to this.
 	Point2d<FixedPoint> vel;
 	Point2d<FixedPoint> accel;
-
-private:
-	std::vector<Sequence> &sequences;
-	//sol::state &lua;
 	Sequence *seqPointer;
 	Frame *framePointer;
 	
@@ -44,11 +46,15 @@ public:
 	void SetSide(int side);
 	int GetSide();
 
+	Actor& SpawnChild();
+	void KillSelf();
+
 	Frame *GetCurrentFrame();
 	int GetSpriteIndex();
 	glm::mat4 GetSpriteTransform();
 
 	static bool HitCollision(const Actor& hurt, const Actor& hit);
+	static void DeclareActorLua(sol::state &lua);
 
 private:
 	void SeqFun();
