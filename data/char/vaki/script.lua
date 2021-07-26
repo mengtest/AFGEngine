@@ -81,7 +81,6 @@ function speedLim(actor)
 end
 
 function s236c(actor)
-	--print (actor.currentFrame)
 	local fc = actor.totalSubframeCount
 	if(fc > 8 and fc < 20 and actor.subframeCount == 0) then
 		A_spawnPosRel(actor, 508, 60+(fc-8)*20, 120+(fc-8)*5, actor:GetSide())
@@ -89,10 +88,9 @@ function s236c(actor)
 end
 
 function s236a(actor)
-	--print (actor.currentFrame)
 	local fc = actor.totalSubframeCount
-	if(fc > 8 and fc < 20 and actor.subframeCount == 0) then
-		A_spawnPosRel(actor, 8, 60+(fc-8)*20, 120+(fc-8)*5, actor:GetSide())
+	if(fc > 8 and fc < 20) then
+		A_spawnPosRel(actor, 508, 60+(fc-8)*30, 120+(fc-8)*10, actor:GetSide())
 	end
 end
 
@@ -105,17 +103,13 @@ end
 
 --From 214a
 function sChargedTsuki(actor)
-	--print (actor.currentFrame)
 	local f = actor.currentFrame
-	print(actor.currentFrame .. ' ' .. actor.subframeCount)
 	if(f == 1 and actor.subframeCount == 0) then
-		print('how many times')
 		A_spawnPosRel(actor, 185, 0, 0)
 	end
 end
 
 function tsukiSpawner(actor)
-	--print (actor.currentFrame)
 	local f = actor.currentFrame
 	if(f == 1 and actor.subframeCount == 0) then
 		A_spawnPosRel(actor, 185, 0, 0)
