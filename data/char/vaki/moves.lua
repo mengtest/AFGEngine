@@ -10,6 +10,7 @@ inputs = {
 	ground = {
 		{input = "23~6b", buf = 8, ref = 507},
 		{input = "23~6a", buf = 8, ref = 506},
+		{input = "21~4a", buf = 8, ref = 180},
 		--{input = "\030R/~4a", buf = 8, ref = 155},
 
 		{input = "7", buf = 1, ref = 37, flag = f.repeatable},

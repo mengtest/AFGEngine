@@ -15,7 +15,7 @@ function C_heightRestriction()
 end
 
 function A_spawnPosRel(actor, seq, x, y, side)
-	side = side or 1
+	side = side or actor:GetSide()
 	local ball = player:SpawnChild(seq)
 	local xA, yA = actor:GetPos()
 	x = xA + (x << 16) * actor:GetSide()
@@ -93,6 +93,32 @@ function s236a(actor)
 	local fc = actor.totalSubframeCount
 	if(fc > 8 and fc < 20 and actor.subframeCount == 0) then
 		A_spawnPosRel(actor, 8, 60+(fc-8)*20, 120+(fc-8)*5, actor:GetSide())
+	end
+end
+
+function s214a(actor)
+	local f = actor.currentFrame
+	if(f == 4 and actor.subframeCount == 0) then
+		A_spawnPosRel(actor, 177, 40, 0)
+	end
+end
+
+--From 214a
+function sChargedTsuki(actor)
+	--print (actor.currentFrame)
+	local f = actor.currentFrame
+	print(actor.currentFrame .. ' ' .. actor.subframeCount)
+	if(f == 1 and actor.subframeCount == 0) then
+		print('how many times')
+		A_spawnPosRel(actor, 185, 0, 0)
+	end
+end
+
+function tsukiSpawner(actor)
+	--print (actor.currentFrame)
+	local f = actor.currentFrame
+	if(f == 1 and actor.subframeCount == 0) then
+		A_spawnPosRel(actor, 185, 0, 0)
 	end
 end
 

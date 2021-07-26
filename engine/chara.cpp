@@ -349,7 +349,8 @@ void Character::Update()
 					currFrame = framePointer->frameProp.jumpTo;
 				loopCounter--;
 			}
-			currFrame++;
+			else
+				currFrame++;
 			GotoFrame(currFrame);
 		}
 		else if(jump == jump::seq)

@@ -165,6 +165,7 @@ void Actor::Update()
 				currFrame += framePointer->frameProp.jumpTo;
 			else
 				currFrame = framePointer->frameProp.jumpTo;
+			GotoFrame(currFrame);
 		}
 		else if(jump == jump::loop)
 		{
@@ -176,7 +177,9 @@ void Actor::Update()
 					currFrame = framePointer->frameProp.jumpTo;
 				loopCounter--;
 			}
-			currFrame++;
+			else
+				currFrame++;
+			GotoFrame(currFrame);
 		}
 		else if(jump == jump::seq)
 		{
@@ -186,10 +189,11 @@ void Actor::Update()
 				GotoSequence(framePointer->frameProp.jumpTo);
 		}
 		else
-			currFrame += 1;
-			
-		if(!GotoFrame(currFrame)) //If dead don't continue;
-			return;
+		{
+			currFrame += 1;	
+			if(!GotoFrame(currFrame)) //If dead don't continue;
+				return;
+		}
 	}
 	
 	SeqFun();
