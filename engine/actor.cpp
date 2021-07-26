@@ -3,7 +3,8 @@
 
 Actor::Actor(std::vector<Sequence> &sequences) :
 sequences(sequences)
-{}
+{
+}
 
 void Actor::GotoSequence(int seq)
 {
@@ -187,7 +188,8 @@ void Actor::Update()
 		else
 			currFrame += 1;
 			
-		GotoFrame(currFrame);
+		if(!GotoFrame(currFrame)) //If dead don't continue;
+			return;
 	}
 	
 	SeqFun();
@@ -219,10 +221,11 @@ bool Actor::HitCollision(const Actor& hurt, const Actor& hit)
 	return false;
 }
 
-Actor& Actor::SpawnChild()
+Actor& Actor::SpawnChild(int sequence)
 {
 	Actor child(sequences);
 	child.parent = this;
+	child.GotoSequence(sequence);
 	children.push_back(std::move(child));
 	children.back().myPos = --children.end();
 	return children.back();
@@ -234,6 +237,16 @@ void Actor::KillSelf()
 	{
 		parent->children.erase(myPos);
 	}
+}
+
+void Actor::GetAllChildren(std::list<Actor*> &list, bool includeSelf)
+{
+	for(auto &child : children)
+	{
+		child.GetAllChildren(list);
+	}
+	if(includeSelf)
+		list.push_back(this);
 }
 
 void Actor::DeclareActorLua(sol::state &lua)
@@ -250,7 +263,10 @@ void Actor::DeclareActorLua(sol::state &lua)
 		"SetSide", &Actor::SetSide,
 		"currentFrame", sol::readonly(&Actor::currFrame),
 		"currentSequence", sol::readonly(&Actor::currSeq),
+		"subframeCount", sol::readonly(&Actor::subframeCount),
+		"totalSubframeCount", sol::readonly(&Actor::totalSubframeCount),
 		"SpawnChild", &Actor::SpawnChild,
-		"KillSelf", &Actor::KillSelf
+		"KillSelf", &Actor::KillSelf,
+		"ChildCount", [](Actor &actor){return actor.children.size();}
 	);
 }

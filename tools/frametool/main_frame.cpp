@@ -148,6 +148,13 @@ void MainFrame::RenderUpdate()
 		render.GenerateHitboxVertices(frame.greenboxes, Render::green);
 		render.GenerateHitboxVertices(frame.redboxes, Render::red);
 		render.LoadHitboxVertices();
+		render.offsetX = frame.frameProp.spriteOffset[0];
+		render.offsetY = -frame.frameProp.spriteOffset[1];
+		render.rotX = frame.frameProp.rotation[0];
+		render.rotY = frame.frameProp.rotation[1];
+		render.rotZ = frame.frameProp.rotation[2];
+		render.scaleX = frame.frameProp.scale[0];
+		render.scaleY = frame.frameProp.scale[1];
 	}
 	else
 	{

@@ -25,7 +25,7 @@ private:
 	Sequence *seqPointer;
 	Frame *framePointer;
 	
-	int side; //used to invert the x of all sort of things
+	int side = 1; //used to invert the x of all sort of things
 
 	int currSeq = 0; //The active sequence.
 	int currFrame = 0;
@@ -46,7 +46,7 @@ public:
 	void SetSide(int side);
 	int GetSide();
 
-	Actor& SpawnChild();
+	Actor& SpawnChild(int sequence = 0);
 	void KillSelf();
 
 	Frame *GetCurrentFrame();
@@ -55,6 +55,8 @@ public:
 
 	static bool HitCollision(const Actor& hurt, const Actor& hit);
 	static void DeclareActorLua(sol::state &lua);
+
+	void GetAllChildren(std::list<Actor*> &list, bool includeSelf = true);
 
 private:
 	void SeqFun();

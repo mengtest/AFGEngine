@@ -64,6 +64,8 @@ bool LoadSequences(std::vector<Sequence> &sequences, std::filesystem::path charF
 			currSeq.function = lua[funcName];
 			if(currSeq.function.get_type() == sol::type::function)
 				currSeq.hasFunction = true;
+			else
+				std::cerr << "Unknown function "<<funcName<<" in sequence "<<i<<"\n";
 		}
 		////Game only////
 

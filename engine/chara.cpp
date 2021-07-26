@@ -168,16 +168,25 @@ bool Character::SuggestSequence(int seq)
 
 void Character::GotoSequence(int seq)
 {
+	if (seq < 0)
+		seq = 0;
+
+	
 	if(mustTurnAround)
 	{
 		mustTurnAround = false;
 		side = -side;
 	}
+	
 
 	interrumpible = false;
 	comboFlag = false;
-	
-	Actor::GotoSequence(seq);
+	currSeq = seq;
+	currFrame = 0;
+	totalSubframeCount = 0;
+
+	seqPointer = &sequences[currSeq];
+	GotoFrame(0);
 }
 
 void Character::GotoFrame(int frame)
@@ -311,6 +320,7 @@ void Character::Update()
 		//Jump to landing frame.
 		GotoFrame(seqPointer->props.landFrame);
 	}
+
 	if((framePointer->frameProp.state == state::stand || framePointer->frameProp.state == state::crouch) &&
 		(root.x < target->root.x && side == -1 || root.x > target->root.x && side == 1))
 		mustTurnAround = true;
@@ -327,6 +337,7 @@ void Character::Update()
 				currFrame += framePointer->frameProp.jumpTo;
 			else
 				currFrame = framePointer->frameProp.jumpTo;
+			GotoFrame(currFrame);
 		}
 		else if(jump == jump::loop)
 		{
@@ -339,6 +350,7 @@ void Character::Update()
 				loopCounter--;
 			}
 			currFrame++;
+			GotoFrame(currFrame);
 		}
 		else if(jump == jump::seq)
 		{
@@ -349,9 +361,10 @@ void Character::Update()
 				GotoSequence(framePointer->frameProp.jumpTo);
 		}
 		else
-			currFrame += 1;
-			
-		GotoFrame(currFrame);
+		{
+			currFrame += 1;	
+			GotoFrame(currFrame);
+		}
 	}
 	
 	SeqFun();

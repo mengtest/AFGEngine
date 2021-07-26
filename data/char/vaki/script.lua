@@ -14,6 +14,17 @@ function C_heightRestriction()
 	return (y>>16) >= 70
 end
 
+function A_spawnPosRel(actor, seq, x, y, side)
+	side = side or 1
+	local ball = player:SpawnChild(seq)
+	local xA, yA = actor:GetPos()
+	x = xA + (x << 16) * actor:GetSide()
+	y = yA + y << 16
+	ball:SetPos(x,y)
+	ball:SetSide(side)
+	return ball
+end
+
 function turnAround()
 	g.TurnAround(15)
 end
@@ -68,5 +79,27 @@ function speedLim(actor)
 		actor:SetVel(1000*constant.multiplier*actor:GetSide(), y)
 	end
 end
+
+function s236c(actor)
+	--print (actor.currentFrame)
+	local fc = actor.totalSubframeCount
+	if(fc > 8 and fc < 20 and actor.subframeCount == 0) then
+		A_spawnPosRel(actor, 508, 60+(fc-8)*20, 120+(fc-8)*5, actor:GetSide())
+	end
+end
+
+function s236a(actor)
+	--print (actor.currentFrame)
+	local fc = actor.totalSubframeCount
+	if(fc > 8 and fc < 20 and actor.subframeCount == 0) then
+		A_spawnPosRel(actor, 8, 60+(fc-8)*20, 120+(fc-8)*5, actor:GetSide())
+	end
+end
+
+--[[ 
+function _update()
+	print(player:ChildCount())
+end
+--]]
 
 print("V.Akiha script initialized")

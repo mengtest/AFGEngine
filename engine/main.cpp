@@ -156,6 +156,7 @@ void PlayLoop()
 
 	player.SetCameraRef(&view);
 	player2.SetCameraRef(&view);
+	//player.SpawnChild();
 
 	player.setTarget(&player2);
 	player2.setTarget(&player);
@@ -196,6 +197,11 @@ void PlayLoop()
 		player.Input(keyBufDelayed[0]);
 		player2.Input(keyBufDelayed[1]);
 
+		std::list<Actor*> updateList;
+		player.GetAllChildren(updateList, false);
+		player2.GetAllChildren(updateList, false);
+		for(auto actor: updateList)
+			actor->Update();
 		player.Update();
 		player2.Update();
 
@@ -220,13 +226,23 @@ void PlayLoop()
 		//Draw characters
   		gfx.Begin();
 		gfx.SetPaletteSlot(1);
-		
-		mainWindow->context.SetModelView(viewMatrix*player2.GetSpriteTransform());
-		gfx.Draw(player2.GetSpriteIndex());
+
+		std::list<Actor*> drawList;
+		player2.GetAllChildren(drawList);
+		for(auto actor : drawList)
+		{
+			mainWindow->context.SetModelView(viewMatrix*actor->GetSpriteTransform());
+			gfx.Draw(actor->GetSpriteIndex());
+		}
+		drawList.clear();
 
 		gfx.SetPaletteSlot(0);
-		mainWindow->context.SetModelView(viewMatrix*player.GetSpriteTransform());
-		gfx.Draw(player.GetSpriteIndex());
+		player.GetAllChildren(drawList);
+		for(auto actor : drawList)
+		{
+			mainWindow->context.SetModelView(viewMatrix*actor->GetSpriteTransform());
+			gfx.Draw(actor->GetSpriteIndex());
+		}
 		gfx.End();
 
 		//Draw HUD

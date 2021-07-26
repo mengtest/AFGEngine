@@ -11,7 +11,6 @@
 #include <deque>
 #include <string>
 #include <vector>
-#include <list>
 
 #include <sol/sol.hpp>
 
