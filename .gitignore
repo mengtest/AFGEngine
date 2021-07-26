@@ -1,6 +1,6 @@
 
 #vscode
-.vscode/
+#.vscode/
 *.code-workspace
 
 #Original image data
