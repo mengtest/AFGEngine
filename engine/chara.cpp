@@ -377,7 +377,7 @@ void Character::Input(input_deque &keyPresses)
 	int inputSide = GetSide();
 	if(mustTurnAround)
 		inputSide = -inputSide;
-	
+
 	MotionData command;
 	auto &prop = framePointer->frameProp;
 	auto flags = prop.flags;
@@ -385,6 +385,15 @@ void Character::Input(input_deque &keyPresses)
 		command = cmd.ProcessInput(keyPresses, "air", inputSide);
 	else
 		command = cmd.ProcessInput(keyPresses, "ground", inputSide);
+
+	if(hitstop)
+		lastCommand = command;
+	else
+	{
+		if(lastCommand.seqRef > 0)
+			command = lastCommand;
+		lastCommand = {};
+	}
 	
 	if(prop.cancelType[0] > 0 && comboType != none && !(command.flags & CommandInputs::neutralMove))
 		goto canDo;

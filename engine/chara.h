@@ -41,6 +41,7 @@ private:
 	static bool isColliding;
 	//FixedPoint getAway; //Amount to move after collision
 	FixedPoint touchedWall; //left wall: -1, right wall = 1, no wall = 0;
+	MotionData lastCommand;
 
 public:
 	Character(FixedPoint posX, float side, std::string charFile);
