@@ -242,6 +242,7 @@ function s4c (actor)
 end
 
 function sja (actor)
+	speedLim(actor)
 	if(actor.totalSubframeCount == 0) then
 		local hitdef = actor.hitDef
 		hitdef:SetVectors(s.stand, v.hurtHi1, v.block1)
@@ -253,6 +254,7 @@ function sja (actor)
 end
 
 function sjb (actor)
+	speedLim(actor)
 	if(actor.totalSubframeCount == 0) then
 		local hitdef = actor.hitDef
 		hitdef:SetVectors(s.stand, v.hurtHi2, v.block2)
@@ -264,6 +266,7 @@ function sjb (actor)
 end
 
 function sjc (actor)
+	speedLim(actor)
 	if(actor.totalSubframeCount == 0) then
 		local hitdef = actor.hitDef
 		hitdef:SetVectors(s.stand, v.jumpIn, v.jumpIn)

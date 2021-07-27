@@ -387,7 +387,12 @@ void Character::Input(input_deque &keyPresses)
 		command = cmd.ProcessInput(keyPresses, "ground", inputSide);
 
 	if(hitstop)
-		lastCommand = command;
+	{ 
+		//TODO: Bugfix
+		if(lastCommand.seqRef < 0)
+			lastCommand = command;
+		return;
+	}
 	else
 	{
 		if(lastCommand.seqRef > 0)
