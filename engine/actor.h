@@ -4,19 +4,50 @@
 #include "framedata.h"
 #include <geometry.h>
 #include <fixed_point.h>
+#include <unordered_map>
 #include <sol/sol.hpp>
-
 #include <glm/mat4x4.hpp>
 
 const FixedPoint floorPos(32);
 
+struct HitDef
+{
+	struct VectorTable
+	{
+		int xSpeed, ySpeed;
+		int xAccel, yAccel;
+		std::string sequenceName;
+	};
+	//key is type (air, cro, sta), array value is vector subtable (hit and block)
+	std::unordered_map<int, std::array<VectorTable, 2>> vectorTables;
+	int attackFlags = 0;
+	int damage = 0;
+	int guardDamage = 0;
+	int correction = 0;
+	int correctionType = 0;
+	int meterGain = 0;
+	int hitStop = 0;
+	int blockStop = 0;
+	int untech = 0;
+	int blockstun = 0; //Untech and block
+	int priority = 0;
+	int soundFx = 0;
+	int hitFx = 0;
+
+	void Clear();
+	void SetVectors(int state, sol::table onHit, sol::table onBlock);
+};
+
 class Actor{
 	friend class Character;
-private:
+	sol::state &lua;
 	std::vector<Sequence> &sequences;
+
+protected:
 	std::list<Actor> children;
 	std::list<Actor>::iterator myPos;
 	Actor* parent = nullptr;
+	HitDef attack;
 	//sol::state &lua;
 
 	Point2d<FixedPoint> root; //Character (x,y) position in game. Every box position is relative to this.
@@ -35,10 +66,23 @@ private:
 	int	subframeCount = 0;
 	int hitstop = 0; //hitstop counter
 
-public:
-	Actor(std::vector<Sequence> &sequences);
+	int hitCount = 0;
+	bool hittable = false;
+	enum hitType {
+		none,
+		hurt,
+		blocked
+	};
+	//comboType is set to unresolved if it connects, and then to hurt/blocked by the target. Resets when sequence changes. Used for cancelling purposes.
+	int comboType = none; 
+	//Set when getting hit (doesn't matter if you block). Resets when the hit is resolved.
+	bool gotHit = false; 
+	sol::table userData;
 
-	void Update();
+public:
+	Actor(std::vector<Sequence> &sequences, sol::state &lua);
+
+	virtual void Update();
 	void GotoSequence(int seq);
 	bool GotoFrame(int frame);
 	void Translate(Point2d<FixedPoint> amount);
@@ -58,8 +102,10 @@ public:
 
 	void GetAllChildren(std::list<Actor*> &list, bool includeSelf = true);
 
-private:
+protected:
 	void SeqFun();
+	void SetHitDef(sol::table onHit, sol::table onBlock);
+	virtual int ResolveHit(int keypress, Actor *hitter);
 };
 
 #endif /* ACTOR_H_GUARD */

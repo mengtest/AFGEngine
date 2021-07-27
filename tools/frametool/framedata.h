@@ -27,22 +27,6 @@ struct Motion_Data
 	char button = 0;
 };
 
-struct Attack_property
-{
-	uint32_t attackFlags = 0;
-	int damage[3] = {0}; // Perma damage, Red damage, Guard damage
-	int correction = 0;
-	int correctionType = 0;
-	int meterGain = 0;
-	int stopType = 0;
-	int stop[2] = {0}; //Hit block
-	int stun[2] = {0}; //Untech and block
-	int vectorId[6]; //SCA hit block
-	int priority = 0;
-	int soundFx = 0;
-	int hitFx = 0;
-};
-
 struct Frame_property
 {
 	int32_t spriteIndex = 0;

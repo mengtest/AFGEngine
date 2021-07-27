@@ -1,4 +1,4 @@
-
+--Tells the engine what files it should use.
 graphics = {
 	{
 		image = "vaki8.png",

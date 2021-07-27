@@ -1,6 +1,81 @@
 local key = constant.key
 local g = global
 
+_states = {
+	stand = 0,
+	crouch = 1,
+	air = 2
+}
+
+_seqTable = {
+	hurtHi1 = 900,
+	hurtHi2 = 903,
+	hurtHi3 = 906,
+	hurtLo1 = 901,
+	hurtLo2 = 904,
+	hurtLo3 = 907,
+	croHurt1 = 902,
+	croHurt2 = 905,
+	croHurt3 = 908,
+	trip = 29,
+	down = 26,
+	airDown = 30,
+	airGuard = 19,
+	guard = 17,
+	croGuard = 18
+}
+
+_vectors = {
+	hurtHi1 = { xSpeed = 900; xAccel = -70; ani = "hurtHi1"},
+	hurtHi2 = { xSpeed = 1200; xAccel = -75; ani = "hurtHi2"},
+	hurtHi3 = { xSpeed = 1600; xAccel = -80; ani = "hurtHi3"},
+	hurtLo1 = { xSpeed = 900; xAccel = -70; ani = "hurtLo1"},
+	hurtLo2 = { xSpeed = 1200; xAccel = -75; ani = "hurtLo2"},
+	hurtLo3 = { xSpeed = 1600; xAccel = -80; ani = "hurtLo3"},
+	croHurt1 = { xSpeed = 900; xAccel = -70; ani = "croHurt1"},
+	croHurt2 = { xSpeed = 1200; xAccel = -75; ani = "croHurt2"},
+	croHurt3 = { xSpeed = 1600; xAccel = -80; ani = "croHurt3"},
+	block1 = { xSpeed = 900; xAccel = -70; ani = "guard"},
+	block2 = { xSpeed = 1200; xAccel = -75; ani = "guard"},
+	block3 = { xSpeed = 1600; xAccel = -80; ani = "guard"},
+	croBlock1 = { xSpeed = 900; xAccel = -70; ani = "croGuard"},
+	croBlock2 = { xSpeed = 1200; xAccel = -75; ani = "croGuard"},
+	croBlock3 = { xSpeed = 1600; xAccel = -80; ani = "croGuard"},
+	airBlock = { xSpeed = 1000, ySpeed = 300; yAccel = -150; ani = "airGuard"},
+	
+	airHit = {
+		xSpeed = 800, ySpeed = 1700;
+		xAccel = 0, yAccel = -150;
+		ani = "down"
+	},
+	down = {
+		xSpeed = 250, ySpeed = 2200;
+		xAccel = 0, yAccel = -150;
+		ani = "down"
+	},
+	trip = {
+		xSpeed = 100, ySpeed = 1200;
+		xAccel = 0, yAccel = -150;
+		ani = "trip"
+	},
+	jumpIn = {
+		xSpeed = 800, xAccel = -40;
+		ani = "hurtLo3"
+	},
+}
+
+local histopTbl = {
+	weakest = 4,
+	weak = 6,
+	medium = 8,
+	strong = 10,
+	stronger = 15,
+	strongest = 30,
+}
+
+local s = _states
+local v = _vectors
+
 function C_toCrouch()
 	local crouchingSeq = player.currentSequence;
 	if(crouchingSeq == 13 or crouchingSeq == 16) then
@@ -79,7 +154,127 @@ function speedLim(actor)
 		actor:SetVel(1000*constant.multiplier*actor:GetSide(), y)
 	end
 end
+--------------------- Normals -------------------------
+function weakHit(hitdef)
+	hitdef:SetVectors(s.stand, v.hurtHi1, v.block1)
+	hitdef:SetVectors(s.air, v.airHit, v.airBlock)
+	hitdef:SetVectors(s.crouch, v.croHurt1, v.croBlock1)
+end
 
+function mediumHit(hitdef)
+	hitdef:SetVectors(s.stand, v.hurtHi2, v.block2)
+	hitdef:SetVectors(s.air, v.airHit, v.airBlock)
+	hitdef:SetVectors(s.crouch, v.croHurt2, v.croBlock2)
+end
+
+function strongHit(hitdef)
+	hitdef:SetVectors(s.stand, v.hurtHi3, v.block3)
+	hitdef:SetVectors(s.air, v.airHit, v.airBlock)
+	hitdef:SetVectors(s.crouch, v.croHurt3, v.croBlock2)
+end
+
+function s5a (actor)
+	if(actor.totalSubframeCount == 0) then
+		local hitdef = actor.hitDef
+		weakHit(hitdef)
+		hitdef.hitStop = histopTbl.weak
+		hitdef.damage = 300
+	end
+end
+
+function s5b (actor)
+	if(actor.totalSubframeCount == 0) then
+		local hitdef = actor.hitDef
+		mediumHit(hitdef)
+		hitdef.hitStop = histopTbl.medium
+		hitdef.damage = 700
+	end
+end
+
+function s5c (actor)
+	if(actor.totalSubframeCount == 0) then
+		local hitdef = actor.hitDef
+		strongHit(hitdef)
+		hitdef.hitStop = histopTbl.strong
+		hitdef.damage = 1400
+	end
+end
+
+function s2a (actor)
+	if(actor.totalSubframeCount == 0) then
+		local hitdef = actor.hitDef
+		weakHit(hitdef)
+		hitdef.hitStop = histopTbl.weak
+		hitdef.damage = 350
+	end
+end
+
+function s2b (actor)
+	if(actor.totalSubframeCount == 0) then
+		local hitdef = actor.hitDef
+		weakHit(hitdef)
+		hitdef:SetVectors(s.stand, v.hurtLo1, v.block1)
+		hitdef.hitStop = histopTbl.weakest
+		hitdef.damage = 250
+	end
+end
+
+function s2c (actor)
+	if(actor.totalSubframeCount == 0) then
+		local hitdef = actor.hitDef
+		hitdef:SetVectors(s.stand, v.trip, v.block3)
+		hitdef:SetVectors(s.air, v.trip, v.airBlock)
+		hitdef:SetVectors(s.crouch, v.trip, v.croBlock3)
+		hitdef.hitStop = histopTbl.strong
+		hitdef.damage = 1200
+	end
+end
+
+function s4c (actor)
+	if(actor.totalSubframeCount == 0) then
+		local hitdef = actor.hitDef
+		hitdef:SetVectors(s.stand, v.down, v.block3)
+		hitdef:SetVectors(s.air, v.down, v.airBlock)
+		hitdef:SetVectors(s.crouch, v.down, v.croBlock3)
+		hitdef.hitStop = histopTbl.medium
+		hitdef.damage = 500
+	end
+end
+
+function sja (actor)
+	if(actor.totalSubframeCount == 0) then
+		local hitdef = actor.hitDef
+		hitdef:SetVectors(s.stand, v.hurtHi1, v.block1)
+		hitdef:SetVectors(s.air, v.airHit, v.airBlock)
+		hitdef:SetVectors(s.crouch, v.airHit, v.croBlock1)
+		hitdef.hitStop = histopTbl.weak
+		hitdef.damage = 300
+	end
+end
+
+function sjb (actor)
+	if(actor.totalSubframeCount == 0) then
+		local hitdef = actor.hitDef
+		hitdef:SetVectors(s.stand, v.hurtHi2, v.block2)
+		hitdef:SetVectors(s.air, v.airHit, v.airBlock)
+		hitdef:SetVectors(s.crouch, v.airHit, v.croBlock2)
+		hitdef.hitStop = histopTbl.medium
+		hitdef.damage = 700
+	end
+end
+
+function sjc (actor)
+	if(actor.totalSubframeCount == 0) then
+		local hitdef = actor.hitDef
+		hitdef:SetVectors(s.stand, v.jumpIn, v.jumpIn)
+		hitdef:SetVectors(s.air, v.down, v.airBlock)
+		hitdef:SetVectors(s.crouch, v.jumpIn, v.jumpIn)
+		hitdef.hitStop = histopTbl.strong
+		hitdef.damage = 1000
+	end
+end
+
+--------------------- Special moves -----------------------
 function s236c(actor)
 	local fc = actor.totalSubframeCount
 	if(fc > 8 and fc < 20 and actor.subframeCount == 0) then
@@ -105,21 +300,22 @@ end
 function sChargedTsuki(actor)
 	local f = actor.currentFrame
 	if(f == 1 and actor.subframeCount == 0) then
-		A_spawnPosRel(actor, 185, 0, 0)
-	end
-end
-
-function tsukiSpawner(actor)
-	local f = actor.currentFrame
-	if(f == 1 and actor.subframeCount == 0) then
-		A_spawnPosRel(actor, 185, 0, 0)
+		local projectile = A_spawnPosRel(actor, 185, 0, 0)
+		local hd = projectile.hitDef
+		weakHit(hd)
+		hd.hitStop = histopTbl.weak
+		hd.damage = 1
 	end
 end
 
 --[[ 
 function _update()
-	print(player:ChildCount())
+	print(player.totalSubframeCount)
 end
 --]]
-
+--[[ 
+function _init()
+	player:GotoSequence()
+end
+--]]
 print("V.Akiha script initialized")

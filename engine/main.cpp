@@ -190,20 +190,17 @@ void PlayLoop()
 			keyBufDelayed[i].pop_back();
 			keyBufDelayed[i].push_front(keyBuf[i][inputDelay]);
 		}
-		
-		player.HitCollision();
-		player2.HitCollision();
+
+		Character::HitCollision(player, player2, keyBufDelayed[0].front(), keyBufDelayed[1].front());
 
 		player.Input(keyBufDelayed[0]);
 		player2.Input(keyBufDelayed[1]);
 
 		std::list<Actor*> updateList;
-		player.GetAllChildren(updateList, false);
-		player2.GetAllChildren(updateList, false);
+		player.GetAllChildren(updateList);
+		player2.GetAllChildren(updateList);
 		for(auto actor: updateList)
 			actor->Update();
-		player.Update();
-		player2.Update();
 
 		Character::Collision(&player, &player2);
 

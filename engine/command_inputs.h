@@ -59,4 +59,6 @@ public:
 
 };
 
+int SanitizeKey(int lever);
+
 #endif // INPUT_H_INCLUDED

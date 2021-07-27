@@ -34,11 +34,7 @@ private:
 
 	Camera *currView;
 	Character* target;
-	//These are set by/on the target.
-	bool alreadyHit = false; //Check for avoiding the same c-frame hitting more than once. Resets when c-frame advances.
-	bool comboFlag = false; //Sets when hit is sucessful. Resets when sequence changes. Used for cancelling purposes.
-	//This is set only by self.
-	bool gotHit = false; //Sets when getting hit (doesn't matter if you block). Resets when the hit is processed in Update().
+
 	bool interrumpible = false;
 	bool mustTurnAround = false;
 
@@ -57,9 +53,9 @@ public:
 	void SetCameraRef(Camera *ref);
 	void setTarget(Character* target);
 
+	void BoundaryCollision(); //Collision against stage
 	static void Collision(Character* blue, Character* red); //Detects and resolves collision between characters and/or the camera.
-	void BoundaryCollision();
-	void HitCollision(); //Checks collision between own green boxes and target's red boxes.
+	static void HitCollision(Character &blue, Character &red, int blueKey, int redKey); //Checks hit/hurt box collision and sets flags accordingly.
 
 	void Input(input_deque &keyPresses);
 
@@ -71,9 +67,7 @@ private:
 	bool SuggestSequence(int seq); //returns true on success
 
 	void GotoSequence(int seq);
-	void GotoFrame(int frame);
-
-	void ResolveHit(int keypress);
+	int ResolveHit(int keypress, Actor *hitter);
 	bool TurnAround(int sequence = -1);
 };
 

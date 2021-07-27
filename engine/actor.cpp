@@ -1,7 +1,8 @@
 #include "actor.h"
 #include <glm/ext/matrix_transform.hpp>
 
-Actor::Actor(std::vector<Sequence> &sequences) :
+Actor::Actor(std::vector<Sequence> &sequences, sol::state &lua) :
+lua(lua),
 sequences(sequences)
 {
 }
@@ -14,6 +15,9 @@ void Actor::GotoSequence(int seq)
 	currSeq = seq;
 	currFrame = 0;
 	totalSubframeCount = 0;
+	comboType = none;
+	hitCount = 0;
+	attack.Clear();
 
 	seqPointer = &sequences[currSeq];
 	GotoFrame(0);
@@ -28,12 +32,16 @@ bool Actor::GotoFrame(int frame)
 		return false;
 	}
 
+	gotHit = false;
 	subframeCount = 0;
 	currFrame = frame;
 	framePointer = &seqPointer->frames[currFrame];
 
 	if(framePointer->frameProp.loopN > 0)
 		loopCounter = framePointer->frameProp.loopN;
+
+	if(framePointer->frameProp.flags & flag::startHit)
+		hitCount = 1;
 
 	//Keep?
 	/* if (framePointer->frameProp.flags & flag::RESET_INFLICTED_VEL)
@@ -114,7 +122,7 @@ glm::mat4 Actor::GetSpriteTransform()
 	
 	//transform = glm::rotate(transform, rotX*tau, glm::vec3(1.0, 0.f, 0.f));
 
-	transform = glm::translate(transform, glm::vec3(root.x+offsetX, root.y-offsetY, 0));
+	transform = glm::translate(transform, glm::vec3(root.x+offsetX*side, root.y-offsetY, 0));
 	transform = glm::rotate(transform, rotY*tau, glm::vec3(0.0, 1.f, 0.f));
 	transform = glm::scale(transform, glm::vec3(side, 1.f, 1.f));
 	//transform = glm::translate(transform, glm::vec3(-128, -40.f, 0));
@@ -136,10 +144,11 @@ void Actor::SeqFun()
 
 void Actor::Update()
 {
+	SeqFun();
+	gotHit = false;
 	if (hitstop > 0)
 	{
 		--hitstop;
-		SeqFun();
 		return;
 	}
 
@@ -195,8 +204,6 @@ void Actor::Update()
 				return;
 		}
 	}
-	
-	SeqFun();
 }
 
 Frame *Actor::GetCurrentFrame()
@@ -206,19 +213,22 @@ Frame *Actor::GetCurrentFrame()
 
 bool Actor::HitCollision(const Actor& hurt, const Actor& hit)
 {
-	for(auto hurtbox : hurt.framePointer->greenboxes)
+	if(hurt.hittable && hit.hitCount > 0)
 	{
-		if(hurt.side < 0)
-			hurtbox = hurtbox.FlipHorizontal();
-		hurtbox = hurtbox.Translate(hurt.root);
-		for(auto hitbox : hit.framePointer->redboxes)
+		for(auto hurtbox : hurt.framePointer->greenboxes)
 		{
-			if(hit.side < 0)
-				hitbox = hitbox.FlipHorizontal();
-			hitbox = hitbox.Translate(hit.root);
-			if(hitbox.Intersects(hurtbox))
+			if(hurt.side < 0)
+				hurtbox = hurtbox.FlipHorizontal();
+			hurtbox = hurtbox.Translate(hurt.root);
+			for(auto hitbox : hit.framePointer->redboxes)
 			{
-				return true;
+				if(hit.side < 0)
+					hitbox = hitbox.FlipHorizontal();
+				hitbox = hitbox.Translate(hit.root);
+				if(hitbox.Intersects(hurtbox))
+				{
+					return true;
+				}
 			}
 		}
 	}
@@ -227,7 +237,7 @@ bool Actor::HitCollision(const Actor& hurt, const Actor& hit)
 
 Actor& Actor::SpawnChild(int sequence)
 {
-	Actor child(sequences);
+	Actor child(sequences, lua);
 	child.parent = this;
 	child.GotoSequence(sequence);
 	children.push_back(std::move(child));
@@ -253,8 +263,31 @@ void Actor::GetAllChildren(std::list<Actor*> &list, bool includeSelf)
 		list.push_back(this);
 }
 
+int Actor::ResolveHit(int keypress, Actor *hitter)
+{
+	gotHit = true;
+	return hurt;
+}
+
 void Actor::DeclareActorLua(sol::state &lua)
 {
+	lua.new_usertype<HitDef>("HitDef",
+		"attackFlags", &HitDef::attackFlags, 
+		"damage", &HitDef::damage, 
+		"guardDamage", &HitDef::guardDamage, 
+		"correction", &HitDef::correction, 
+		"correctionType", &HitDef::correctionType, 
+		"meterGain", &HitDef::meterGain, 
+		"hitStop", &HitDef::hitStop, 
+		"blockStop", &HitDef::blockStop, 
+		"untech", &HitDef::untech, 
+		"blockStun", &HitDef::blockstun,
+		"priority", &HitDef::priority, 
+		"soundFx", &HitDef::soundFx, 
+		"hitFx", &HitDef::hitFx,
+		"SetVectors", &HitDef::SetVectors
+	);
+
 	lua.new_usertype<Actor>("Actor",
 		"GotoFrame", &Actor::GotoFrame,
 		"GotoSequence", &Actor::GotoSequence,
@@ -271,6 +304,43 @@ void Actor::DeclareActorLua(sol::state &lua)
 		"totalSubframeCount", sol::readonly(&Actor::totalSubframeCount),
 		"SpawnChild", &Actor::SpawnChild,
 		"KillSelf", &Actor::KillSelf,
-		"ChildCount", [](Actor &actor){return actor.children.size();}
+		"ChildCount", [](Actor &actor){return actor.children.size();},
+		"hitDef", &Actor::attack,
+		"hittable", &Actor::hittable,
+		"comboType", sol::readonly(&Actor::comboType),
+		"gotHit", sol::readonly(&Actor::gotHit),
+		"userData", &Actor::userData
 	);
+}
+
+void HitDef::SetVectors(int state, sol::table onHitTbl, sol::table onBlockTbl)
+{
+	sol::table *luaTables[2] = {&onHitTbl, &onBlockTbl};
+	for(int i = 0; i < 2; i++)
+	{
+		VectorTable &vector = vectorTables[state][i];
+		vector.xSpeed = (*luaTables[i])["xSpeed"].get_or(0);
+		vector.ySpeed = (*luaTables[i])["ySpeed"].get_or(0);
+		vector.xAccel = (*luaTables[i])["xAccel"].get_or(0);
+		vector.yAccel = (*luaTables[i])["yAccel"].get_or(0);
+		vector.sequenceName = (*luaTables[i])["ani"].get_or(std::string());
+	}
+}
+
+void HitDef::Clear()
+{
+	attackFlags = 0;
+	damage = 0;
+	guardDamage = 0;
+	correction = 0;
+	correctionType = 0;
+	meterGain = 0;
+	hitStop = 0;
+	blockStop = 0;
+	untech = 0;
+	blockstun = 0; //Untech and block
+	priority = 0;
+	soundFx = 0;
+	hitFx = 0;
+	vectorTables.clear();
 }

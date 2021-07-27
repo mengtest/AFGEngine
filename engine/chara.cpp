@@ -12,12 +12,13 @@
 bool Character::isColliding;
 
 Character::Character(FixedPoint xPos, float side, std::string charFile) :
-Actor(sequences),
+Actor(sequences, lua),
 touchedWall(0)
 {
 	root.x = xPos;
 	root.y = floorPos;
 	SetSide(side);
+	hittable = true;
 
 	//loads character from a file and fills sequences/frames and all that yadda.
 	ScriptSetup();
@@ -26,6 +27,11 @@ touchedWall(0)
 
 	GotoSequence(0);
 	GotoFrame(0);
+
+	sol::protected_function init = lua["_init"];
+	if(init.get_type() == sol::type::function)
+		init();
+
 	return;
 }
 
@@ -93,19 +99,38 @@ void Character::Collision(Character *playerOne, Character *playerTwo)
 	return;
 }
 
-void Character::HitCollision()
+void Character::HitCollision(Character &blue, Character &red, int blueKey, int redKey)
 {
-	if (Actor::HitCollision(*this, *target))
+	std::list<Actor*> blueList, redList;
+	//Idea: getEvil/GoodChildren maybe? lol
+	blue.GetAllChildren(blueList); 
+	red.GetAllChildren(redList); 
+	for(auto blue : blueList)
 	{
-		if (target->alreadyHit) //Avoids the same frame hitting multiple times.
-			return;
-
-		target->comboFlag = true;
-		target->alreadyHit = true;
-		gotHit = true;
-		//hitTargetFrame = target->framePointer;
+		for(auto red : redList)
+		{
+			//blue hits red
+			if (Actor::HitCollision(*red, *blue))
+			{
+				blue->comboType = red->ResolveHit(redKey, blue);
+				if(blue->comboType == blocked)
+					blue->hitstop = blue->attack.blockStop;
+				else if(blue->comboType == hurt)
+					blue->hitstop = blue->attack.hitStop;
+				blue->hitCount--;
+			}
+			//red hits blue
+			if (Actor::HitCollision(*blue, *red))
+			{
+				red->comboType = blue->ResolveHit(blueKey, red);
+				if(red->comboType == blocked)
+					red->hitstop = red->attack.blockStop;
+				else if(red->comboType == hurt)
+					red->hitstop = red->attack.hitStop;
+				red->hitCount--;
+			}
+		}
 	}
-	return;
 }
 
 void Character::BoundaryCollision()
@@ -180,111 +205,68 @@ void Character::GotoSequence(int seq)
 	
 
 	interrumpible = false;
-	comboFlag = false;
+	comboType = none;
 	currSeq = seq;
 	currFrame = 0;
 	totalSubframeCount = 0;
+	attack.Clear();
+	hitCount = 0;
 
 	seqPointer = &sequences[currSeq];
 	GotoFrame(0);
 }
 
-void Character::GotoFrame(int frame)
+int Character::ResolveHit(int keypress, Actor *hitter) //key processing really shouldn't be here.
 {
-	if(!Actor::GotoFrame(frame))
-		return;
+	HitDef *hitData = &hitter->attack;
+	keypress = SanitizeKey(keypress);
+	gotHit = true;
+	hitstop = hitData->hitStop;
 
-	alreadyHit = false; //combo stuff
-}
-
-
-void Character::ResolveHit(int keypress) //key processing really shouldn't be here.
-{
-	return;
-	if (gotHit)
+	int left;
+	int right;
+	if (GetSide() < 0) //Inverts absolute input depending on side. Apparent input is corrected.
 	{
-		//target->hitstop = hitstop = 8;//hitTargetFrame->attackProp.stop[0];
+		left = key::buf::RIGHT;
+		right = key::buf::LEFT;
+	}
+	else
+	{
+		left = key::buf::LEFT;
+		right = key::buf::RIGHT;
+	}
 
-		int left;
-		int right;
-		if (GetSide() < 0) //Inverts absolute input depending on side. Apparent input is corrected.
-		{
-			left = key::buf::RIGHT;
-			right = key::buf::LEFT;
-		}
-		else
-		{
-			left = key::buf::LEFT;
-			right = key::buf::RIGHT;
-		}
+	bool blocked = false;
+	//Can block
+	if (framePointer->frameProp.flags & flag::canMove && keypress & left)
+	{
+		//Always for now.
+		blocked	= true; 
+	}
 
-		bool blocked = false;
-		/* if (currentState == state::GROUNDED && (keypress & left) && !(keypress & right))
+	int state = framePointer->frameProp.state;
+	if(hitData->vectorTables.count(state) == 0)
+		state = 0; //TODO: Fallback state from lua?
+	if(hitData->vectorTables.count(state) > 0)
+	{
+		auto &vt = hitData->vectorTables[state][blocked];
+		int seq = lua["_seqTable"][vt.sequenceName].get_or(-1);
+		if(seq > 0)
 		{
-			if ((keypress & key::buf::DOWN) && (hitTargetFrame->frameProp.flags & flag::CROUCH_BLOCK))
-			{
-				GotoSequence(actTableG[act::GUARD1]);
-				frameDuration = hitTargetFrame->frameProp.blockstun;
-				blocked = true;
-			}
-			else if (!(keypress & key::buf::DOWN) && (hitTargetFrame->frameProp.flags & flag::STAND_BLOCK))
-			{
-				if (framePointer->frameProp.state == state::CROUCHED)
-					GotoSequence(selectedTable[act::GUARD1]);
-				else
-					GotoSequence(selectedTable[act::GUARD4]);
-				frameDuration = hitTargetFrame->frameProp.blockstun;
-				blocked = true;
-			}
+			GotoSequence(seq);
+			vel.x.value = vt.xSpeed*speedMultiplier*hitter->side;
+			vel.y.value = vt.ySpeed*speedMultiplier;
+			accel.x.value = vt.xAccel*speedMultiplier*hitter->side;
+			accel.y.value = vt.yAccel*speedMultiplier;
 		}
+	}
 
-		if (!blocked)
-		{
-			if (framePointer->frameProp.state == state::AIRBORNE)
-			{
-				if (hitTargetFrame->frameProp.painType == pain::HIGH)
-					GotoSequence(actTableA[act::HIGH_PAIN]);
-				else
-					GotoSequence(actTableA[act::MID_PAIN]);
-			}
-			else if (framePointer->frameProp.state != state::OTG)
-			{
-				if (framePointer->frameProp.state == state::CROUCHED)
-					GotoSequence(actTableG[act::LOW_PAIN]);
-				else if (hitTargetFrame->frameProp.painType == pain::HIGH)
-					GotoSequence(actTableG[act::HIGH_PAIN]);
-				else
-					GotoSequence(actTableG[act::MID_PAIN]);
-			}
-		}
-
-		if (blocked)
-		{
-			health -= hitTargetFrame->frameProp.damage[3];
-			target->impulses[PUSHBACKx] = hitTargetFrame->frameProp.pushback[1] * -target->side*0.5;
-		}
-		else
-		{
-			frameDuration = hitTargetFrame->frameProp.hitstun;
-			health -= hitTargetFrame->frameProp.damage[2];
-			target->impulses[PUSHBACKx] = hitTargetFrame->frameProp.pushback[0] * -target->side*0.5;
-		}
-
-		if (touchedWall != 0)
-		{
-			impulses[HITPUSHx] = hitTargetFrame->frameProp.push[0] * -side;
-			if (impulses[HITPUSHx] * -side <= FixedPoint(0)) //Doesn't get pushed when touching wall, only pulled.
-				impulses[HITPUSHx] = 0;
-		}
-		else
-		{
-			impulses[HITPUSHx] = hitTargetFrame->frameProp.push[0] * target->side;
-		} */
-
-		//TODO: Remove this nasty hack
-		//vel.y = hitTargetFrame->frameProp.push[1];
-
-		gotHit = false;
+	if (blocked)
+		return hitType::blocked;
+	else
+	{
+		health -= hitData->damage;
+		return hitType::hurt;
 	}
 }
 
@@ -299,10 +281,11 @@ void Character::Update()
 			std::cerr << err.what() << "\n";
 		}
 	}
+	SeqFun();
+	gotHit = false;
 	if (hitstop > 0)
 	{
 		--hitstop;
-		SeqFun();
 		return;
 	}
 
@@ -367,8 +350,6 @@ void Character::Update()
 			GotoFrame(currFrame);
 		}
 	}
-	
-	SeqFun();
 }
 
 bool Character::TurnAround(int sequence)
@@ -393,25 +374,26 @@ void Character::Input(input_deque &keyPresses)
 	lastKey = keyPresses.front();
 	cmd.Charge(keyPresses);
 	
-	//Block hit
-	ResolveHit((keyPresses)[0]);
-
 	int inputSide = GetSide();
 	if(mustTurnAround)
 		inputSide = -inputSide;
 	
 	MotionData command;
-	if(GetCurrentFrame()->frameProp.state == state::air)
+	auto &prop = framePointer->frameProp;
+	auto flags = prop.flags;
+	if(framePointer->frameProp.state == state::air)
 		command = cmd.ProcessInput(keyPresses, "air", inputSide);
 	else
 		command = cmd.ProcessInput(keyPresses, "ground", inputSide);
 	
-	if(!(GetCurrentFrame()->frameProp.flags & flag::canMove) &&
-		(!interrumpible || !(command.flags & CommandInputs::interrupts) || totalSubframeCount > command.bufLen))
+	if(prop.cancelType[0] > 0 && comboType != none && !(command.flags & CommandInputs::neutralMove))
+		goto canDo;
+	if(!(flags & flag::canMove) && (!interrumpible || !(command.flags & CommandInputs::interrupts) || totalSubframeCount > command.bufLen))
 		return;
+	canDo:
 
 	//Don't transition to the seq if the command is marked as a neutral move (walking).
-	if(command.flags & CommandInputs::neutralMove && GetCurrentFrame()->frameProp.flags & flag::dontWalk)
+	if(command.flags & CommandInputs::neutralMove && flags & flag::dontWalk)
 		return;
 
 	//The sequence can't go to itself unless it's flagged as such
@@ -445,7 +427,7 @@ void Character::ScriptSetup()
 	lua.open_libraries(sol::lib::base);
 
 	Actor::DeclareActorLua(lua);
-	lua["player"] = (Actor*)this;
+	
 
 	auto constant = lua["constant"].get_or_create<sol::table>();
 	constant["multiplier"] = speedMultiplier;
@@ -479,4 +461,5 @@ void Character::ScriptSetup()
 
 	updateFunction = lua["_update"];
 	hasUpdateFunction = updateFunction.get_type() == sol::type::function;
+	lua["player"] = (Actor*)this;
 }
