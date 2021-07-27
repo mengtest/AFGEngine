@@ -55,6 +55,7 @@ struct Frame_property
 struct Frame
 {
 	Frame_property frameProp;
+	std::string frameScript;
 	//Attack_property attackProp;
 	//Boxes are defined by BL, BR, TR, TL points, in that order.
 	std::vector<int> greenboxes;
@@ -85,6 +86,7 @@ public:
 public:
 	bool Load(std::string charFile);
 	bool LoadOld(std::string charFile);
+	bool LoadOlder(std::string charFile);
 	void Clear();
 	void Close();
 	void Save(std::string charFile);

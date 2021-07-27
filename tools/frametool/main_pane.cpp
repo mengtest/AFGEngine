@@ -224,4 +224,7 @@ void MainPane::DrawFrame(Frame &frame)
 		case 16: Tooltip("RESET_INFLICTED_VEL"); break;
 		case 31: Tooltip("Start hit"); break;
 	}
+
+	ImGui::Separator();
+	ImGui::InputTextMultiline("Frame script", &frame.frameScript);
 }

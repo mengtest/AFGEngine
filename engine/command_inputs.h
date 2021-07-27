@@ -18,6 +18,7 @@ struct MotionData
 	int bufLen = 0;
 	int seqRef = -1;
 	int flags = 0;
+	int priority = 0x7FFFFFFF; //Less is higher priority
 };
 
 class CommandInputs
@@ -55,6 +56,7 @@ public:
 		wipeBuffer = 0x4,
 		interrupts = 0x8, //Will interrupt any move marked as interrumpible.
 		interrumpible = 0x10,
+		noCombo = 0x20
 	};
 
 };

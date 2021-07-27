@@ -114,7 +114,12 @@ void Character::HitCollision(Character &blue, Character &red, int blueKey, int r
 			{
 				blue->comboType = red->ResolveHit(redKey, blue);
 				if(blue->comboType == blocked)
-					blue->hitstop = blue->attack.blockStop;
+				{
+					if(blue->attack.blockStop >= 0)
+						blue->hitstop = blue->attack.blockStop;
+					else
+						blue->hitstop = blue->attack.hitStop;
+				}
 				else if(blue->comboType == hurt)
 					blue->hitstop = blue->attack.hitStop;
 				blue->hitCount--;
@@ -124,7 +129,12 @@ void Character::HitCollision(Character &blue, Character &red, int blueKey, int r
 			{
 				red->comboType = blue->ResolveHit(blueKey, red);
 				if(red->comboType == blocked)
-					red->hitstop = red->attack.blockStop;
+				{
+					if(red->attack.blockStop >= 0)
+						red->hitstop = red->attack.blockStop;
+					else
+						red->hitstop = red->attack.hitStop;
+				}
 				else if(red->comboType == hurt)
 					red->hitstop = red->attack.hitStop;
 				red->hitCount--;
@@ -152,6 +162,64 @@ void Character::BoundaryCollision()
 
 	if (touchedWall == target->touchedWall) //Someone already has the wall.
 		touchedWall = 0;
+}
+
+
+int Character::ResolveHit(int keypress, Actor *hitter) //key processing really shouldn't be here.
+{
+	HitDef *hitData = &hitter->attack;
+	keypress = SanitizeKey(keypress);
+	gotHit = true;
+	hitstop = hitData->hitStop;
+
+	int left;
+	int right;
+	if (GetSide() < 0) //Inverts absolute input depending on side. Apparent input is corrected.
+	{
+		left = key::buf::RIGHT;
+		right = key::buf::LEFT;
+	}
+	else
+	{
+		left = key::buf::LEFT;
+		right = key::buf::RIGHT;
+	}
+
+	bool blocked = false;
+	//Can block
+	if (framePointer->frameProp.flags & flag::canMove && keypress & left)
+	{
+		//Always for now.
+		if(hitData->blockStop>=0)
+			hitstop = hitData->blockStop;
+		blocked	= true; 
+	}
+
+	int state = framePointer->frameProp.state;
+	if(hitData->vectorTables.count(state) == 0)
+		state = 0; //TODO: Fallback state from lua?
+	if(hitData->vectorTables.count(state) > 0)
+	{
+		auto &vt = hitData->vectorTables[state][blocked];
+		int seq = lua["_seqTable"][vt.sequenceName].get_or(-1);
+		if(seq > 0)
+		{
+			hurtSeq = seq;
+			impVel.x.value = vt.xSpeed*speedMultiplier*hitter->side;
+			impVel.y.value = vt.ySpeed*speedMultiplier;
+			impAccel.x.value = vt.xAccel*speedMultiplier*hitter->side;
+			impAccel.y.value = vt.yAccel*speedMultiplier;
+			pushTimer = vt.maxPushBackTime;
+		}
+	}
+
+	if (blocked)
+		return hitType::blocked;
+	else
+	{
+		health -= hitData->damage;
+		return hitType::hurt;
+	}
 }
 
 void Character::Translate(Point2d<FixedPoint> amount)
@@ -194,7 +262,7 @@ bool Character::SuggestSequence(int seq)
 void Character::GotoSequence(int seq)
 {
 	if (seq < 0)
-		seq = 0;
+		return;
 
 	
 	if(mustTurnAround)
@@ -216,60 +284,6 @@ void Character::GotoSequence(int seq)
 	GotoFrame(0);
 }
 
-int Character::ResolveHit(int keypress, Actor *hitter) //key processing really shouldn't be here.
-{
-	HitDef *hitData = &hitter->attack;
-	keypress = SanitizeKey(keypress);
-	gotHit = true;
-	hitstop = hitData->hitStop;
-
-	int left;
-	int right;
-	if (GetSide() < 0) //Inverts absolute input depending on side. Apparent input is corrected.
-	{
-		left = key::buf::RIGHT;
-		right = key::buf::LEFT;
-	}
-	else
-	{
-		left = key::buf::LEFT;
-		right = key::buf::RIGHT;
-	}
-
-	bool blocked = false;
-	//Can block
-	if (framePointer->frameProp.flags & flag::canMove && keypress & left)
-	{
-		//Always for now.
-		blocked	= true; 
-	}
-
-	int state = framePointer->frameProp.state;
-	if(hitData->vectorTables.count(state) == 0)
-		state = 0; //TODO: Fallback state from lua?
-	if(hitData->vectorTables.count(state) > 0)
-	{
-		auto &vt = hitData->vectorTables[state][blocked];
-		int seq = lua["_seqTable"][vt.sequenceName].get_or(-1);
-		if(seq > 0)
-		{
-			GotoSequence(seq);
-			vel.x.value = vt.xSpeed*speedMultiplier*hitter->side;
-			vel.y.value = vt.ySpeed*speedMultiplier;
-			accel.x.value = vt.xAccel*speedMultiplier*hitter->side;
-			accel.y.value = vt.yAccel*speedMultiplier;
-		}
-	}
-
-	if (blocked)
-		return hitType::blocked;
-	else
-	{
-		health -= hitData->damage;
-		return hitType::hurt;
-	}
-}
-
 void Character::Update()
 {
 	if(hasUpdateFunction)
@@ -282,24 +296,49 @@ void Character::Update()
 		}
 	}
 	SeqFun();
-	gotHit = false;
+	
+	if(gotHit) //Got hit.
+	{
+		GotoSequence(hurtSeq);
+		hurtSeq = -1;
+		gotHit = false;
+	}
+
 	if (hitstop > 0)
 	{
 		--hitstop;
 		return;
 	}
 
-	if (touchedWall != 0)
+	//Pushback can't accelerate. Only slow down.
+	if(impVel.x.value < 0 && impAccel.x.value < 0)
 	{
-		target->root.x += -impulses[0];
+		impVel.x.value = 0;
+		impAccel.x.value = 0;
+	}
+	else if(impVel.x.value > 0 && impAccel.x.value > 0)
+	{
+		impVel.x.value = 0;
+		impAccel.x.value = 0;
+	}
+
+	if (touchedWall != 0 && pushTimer > 0)
+	{
+		target->root.x -= impVel.x;
 	}
 
 	vel += accel;
 	Translate(vel);
-
+ 	Translate(impVel);
+	impVel += impAccel;
+	
 	if (root.y < floorPos) //Check collision with floor
 	{
 		root.y = floorPos;
+		impVel.x = 0;
+		impVel.y = 0;
+		impAccel.x = 0;
+		impAccel.y = 0;
 		//Jump to landing frame.
 		GotoFrame(seqPointer->props.landFrame);
 	}
@@ -308,6 +347,7 @@ void Character::Update()
 		(root.x < target->root.x && side == -1 || root.x > target->root.x && side == 1))
 		mustTurnAround = true;
 
+	--pushTimer;
 	--frameDuration;
 	++totalSubframeCount;
 	++subframeCount;
@@ -356,14 +396,14 @@ bool Character::TurnAround(int sequence)
 {
 	if (root.x < target->root.x && GetSide() < 0) //Side switching.
 	{
-		GotoSequence(sequence);
 		SetSide(1);
+		GotoSequence(sequence);
 		return true;
 	}
 	else if (root.x > target->root.x && GetSide() > 0)
 	{
-		GotoSequence(sequence);
 		SetSide(-1);
+		GotoSequence(sequence);
 		return true;
 	}
 	return false;
@@ -371,7 +411,8 @@ bool Character::TurnAround(int sequence)
 
 void Character::Input(input_deque &keyPresses)
 {
-	lastKey = keyPresses.front();
+	lastKey[0] = keyPresses[0];
+	lastKey[1] = keyPresses[1];
 	cmd.Charge(keyPresses);
 	
 	int inputSide = GetSide();
@@ -388,8 +429,8 @@ void Character::Input(input_deque &keyPresses)
 
 	if(hitstop)
 	{ 
-		//TODO: Bugfix
-		if(lastCommand.seqRef < 0)
+		//TODO: Keep higher priority command
+		if(command.seqRef > 0 && command.priority < lastCommand.priority)
 			lastCommand = command;
 		return;
 	}
@@ -400,7 +441,7 @@ void Character::Input(input_deque &keyPresses)
 		lastCommand = {};
 	}
 	
-	if(prop.cancelType[0] > 0 && comboType != none && !(command.flags & CommandInputs::neutralMove))
+	if(prop.cancelType[0] > 0 && comboType != none && !(command.flags & (CommandInputs::neutralMove | CommandInputs::noCombo)))
 		goto canDo;
 	if(!(flags & flag::canMove) && (!interrumpible || !(command.flags & CommandInputs::interrupts) || totalSubframeCount > command.bufLen))
 		return;
@@ -454,14 +495,16 @@ void Character::ScriptSetup()
 
 	auto global = lua["global"].get_or_create<sol::table>();
 	global.set_function("TurnAround", &Character::TurnAround, this);
-	global.set_function("GetInput", [this]() -> unsigned int{return this->lastKey;});
+	global.set_function("GetInput", [this]() -> unsigned int{return this->lastKey[0];});
+	global.set_function("GetInputPrev", [this]() -> unsigned int{return this->lastKey[1];});
 	global.set_function("GetInputRelative", [this]() -> unsigned int{
+		int lastkey = lastKey[0];
 		if(GetSide() > 0)
-			return this->lastKey;
+			return lastkey;
 		else{
-			int right = lastKey & key::buf::RIGHT;
-			int left = lastKey & key::buf::LEFT;
-			return (lastKey & ~0xC) | ((!!right) << key::LEFT) | ((!!left) << key::RIGHT);
+			int right = lastkey & key::buf::RIGHT;
+			int left = lastkey & key::buf::LEFT;
+			return (lastkey & ~0xC) | ((!!right) << key::LEFT) | ((!!left) << key::RIGHT);
 		}
 	});
 	auto result = lua.script_file("data/char/vaki/script.lua");

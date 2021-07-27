@@ -39,6 +39,8 @@ struct Frame
 {
 	
 	Frame_property frameProp;
+	sol::protected_function frameScript;
+	bool hasFunction = false;
 	//Attack_property attackProp;
 	//Boxes are defined by BL, BR, TR, TL points, in that order.
 	typedef std::vector<Rect2d<FixedPoint>> boxes_t;

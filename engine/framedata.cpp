@@ -22,7 +22,7 @@ struct BoxSizes
 bool LoadSequences(std::vector<Sequence> &sequences, std::filesystem::path charFile, sol::state &lua)
 {
 	constexpr const char *charSignature = "AFGECharacterFile";
-	constexpr uint32_t currentVersion = 99'4;
+	constexpr uint32_t currentVersion = 99'5;
 
 	//loads character from a file and fills sequences/frames and all that yadda.
 	std::ifstream file(charFile, std::ios_base::in | std::ios_base::binary);
@@ -77,6 +77,20 @@ bool LoadSequences(std::vector<Sequence> &sequences, std::filesystem::path charF
 		for (uint8_t i2 = 0; i2 < seqlength; ++i2)
 		{
 			auto &currFrame = currSeq.frames[i2];
+
+			file.read(rv(strSize), sizeof(strSize));
+			std::string frameScript((int)strSize, '\0');
+			file.read(rptr(frameScript.data()), strSize);
+			////Game only////
+			if(!frameScript.empty())
+			{
+				currFrame.frameScript = lua.load(frameScript);
+				if(currFrame.frameScript.get_type() == sol::type::function && currFrame.frameScript.valid())
+					currFrame.hasFunction = true;
+				else
+					std::cerr << "Invalid script in sequence "<<i<<" : frame "<<i2<<"\n";
+			}
+			////Game only////
 
 			BoxSizes bs;
 			file.read(rv(bs), sizeof(BoxSizes));

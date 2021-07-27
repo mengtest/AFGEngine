@@ -26,11 +26,15 @@ private:
 	int health = 10000;
 	//int hitsTaken;
 	//inr damageTaken;
+	int hurtSeq = -1;
 
-	FixedPoint impulses[2];//X speed set by outside forces. Pushback?
+	//Extra movement vectors for pushback
+	Point2d<FixedPoint> impVel;
+	Point2d<FixedPoint> impAccel;
+	int pushTimer = 0; //Counts down the pushback time.
 
 	CommandInputs cmd;
-	unsigned int lastKey = 0;
+	unsigned int lastKey[2]{};
 
 	Camera *currView;
 	Character* target;

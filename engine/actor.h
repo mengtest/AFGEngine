@@ -14,6 +14,7 @@ struct HitDef
 {
 	struct VectorTable
 	{
+		int maxPushBackTime;
 		int xSpeed, ySpeed;
 		int xAccel, yAccel;
 		std::string sequenceName;
@@ -27,7 +28,7 @@ struct HitDef
 	int correctionType = 0;
 	int meterGain = 0;
 	int hitStop = 0;
-	int blockStop = 0;
+	int blockStop = -1;
 	int untech = 0;
 	int blockstun = 0; //Untech and block
 	int priority = 0;

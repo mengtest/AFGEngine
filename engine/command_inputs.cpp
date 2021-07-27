@@ -58,6 +58,7 @@ void CommandInputs::LoadFromLua(std::filesystem::path defFile, sol::state &lua)
 			md.flags = arr["flag"].get_or(0);
 			md.condition = arr["cond"];
 			md.hasCondition = md.condition.get_type() == sol::type::function;
+			md.priority = val.first.as<int>();
 			//md.condition = arr["cond"].get_or(std::string());
 			motions[tableName].push_back(std::move(md));
 		}

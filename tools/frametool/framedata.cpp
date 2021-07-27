@@ -11,7 +11,7 @@
 #define rptr(X) ((char*)X)
 
 constexpr const char *charSignature = "AFGECharacterFile";
-constexpr uint32_t currentVersion = 99'4;
+constexpr uint32_t currentVersion = 99'5;
 
 struct BoxSizes
 {
@@ -20,7 +20,7 @@ struct BoxSizes
 	int8_t collision;
 };
 
-bool Framedata::LoadOld(std::string charFile)
+bool Framedata::LoadOlder(std::string charFile)
 {
 	//loads character from a file and fills sequences/frames and all that yadda.
 	std::ifstream file(charFile, std::ios_base::in | std::ios_base::binary);
@@ -81,6 +81,70 @@ bool Framedata::LoadOld(std::string charFile)
 	return true;
 }
 
+bool Framedata::LoadOld(std::string charFile)
+{
+	//loads character from a file and fills sequences/frames and all that yadda.
+	std::ifstream file(charFile, std::ios_base::in | std::ios_base::binary);
+	if (!file.is_open())
+	{
+		std::cerr << "Couldn't open character file.\n";
+		return false;
+	}
+
+	CharFileHeader header;
+	file.read(rv(header), sizeof(CharFileHeader));
+	if(strcmp(charSignature, header.signature))
+	{
+		std::cerr << "Signature mismatch.\n";
+		return false;
+	}
+	if(header.version != 99'4)
+	{
+		std::cerr << "Format version mismatch.\n";
+		return false;
+	}
+
+	sequences.resize(header.sequences_n);
+	for (uint16_t i = 0; i < header.sequences_n; ++i)
+	{
+		auto &currSeq = sequences[i];
+		uint8_t size;
+		file.read(rv(size), sizeof(size));
+		currSeq.name.resize(size);
+		file.read(rptr(currSeq.name.data()), size);
+
+		file.read(rv(size), sizeof(size));
+		currSeq.function.resize(size);
+		file.read(rptr(currSeq.function.data()), size);
+
+		file.read(rv(currSeq.props), sizeof(seqProp));
+
+		uint8_t seqlength;
+		file.read(rv(seqlength), sizeof(seqlength));
+		currSeq.frames.resize(seqlength);
+		for (uint8_t i2 = 0; i2 < seqlength; ++i2)
+		{
+			auto &currFrame = currSeq.frames[i2];
+
+			//How many boxes are used per frame
+			BoxSizes bs;
+			file.read(rv(bs), sizeof(BoxSizes));
+			currFrame.greenboxes.resize(bs.greens);
+			currFrame.redboxes.resize(bs.reds);
+			currFrame.colbox.resize(bs.collision);
+
+			file.read(rv(currFrame.frameProp), sizeof(Frame_property));
+
+			file.read(rptr(currFrame.greenboxes.data()), sizeof(int) * bs.greens);
+			file.read(rptr(currFrame.redboxes.data()), sizeof(int) * bs.reds);
+			file.read(rptr(currFrame.colbox.data()), sizeof(int) * bs.collision);
+		}
+	}
+
+	file.close();
+	loaded = true;
+	return true;
+}
 
 bool Framedata::Load(std::string charFile)
 {
@@ -126,6 +190,10 @@ bool Framedata::Load(std::string charFile)
 		for (uint8_t i2 = 0; i2 < seqlength; ++i2)
 		{
 			auto &currFrame = currSeq.frames[i2];
+
+			file.read(rv(size), sizeof(size));
+			currFrame.frameScript.resize(size);
+			file.read(rptr(currFrame.frameScript.data()), size);
 
 			//How many boxes are used per frame
 			BoxSizes bs;
@@ -181,6 +249,10 @@ void Framedata::Save(std::string charFile)
 		for (uint8_t i2 = 0; i2 < seqlength; ++i2)
 		{
 			auto &currFrame = currSeq.frames[i2];
+
+			strSize = currFrame.frameScript.size();
+			file.write(rv(strSize), sizeof(strSize));
+			file.write(rptr(currFrame.frameScript.data()), strSize);
 
 			//How many boxes are used per frame
 			BoxSizes bs;

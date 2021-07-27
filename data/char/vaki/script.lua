@@ -42,26 +42,27 @@ _vectors = {
 	croBlock2 = { xSpeed = 1200; xAccel = -75; ani = "croGuard"},
 	croBlock3 = { xSpeed = 1600; xAccel = -80; ani = "croGuard"},
 	airBlock = { xSpeed = 1000, ySpeed = 300; yAccel = -150; ani = "airGuard"},
-	
+	jumpIn = {xSpeed = 800, xAccel = -40;ani = "hurtLo3"},
+	jumpInBlock = {xSpeed = 800, xAccel = -40;ani = "guard"},
 	airHit = {
 		xSpeed = 800, ySpeed = 1700;
 		xAccel = 0, yAccel = -150;
+		maxTime = 8,
 		ani = "down"
 	},
 	down = {
 		xSpeed = 250, ySpeed = 2200;
 		xAccel = 0, yAccel = -150;
+		maxTime = 4,
 		ani = "down"
 	},
 	trip = {
 		xSpeed = 100, ySpeed = 1200;
 		xAccel = 0, yAccel = -150;
+		maxTime = 4,
 		ani = "trip"
 	},
-	jumpIn = {
-		xSpeed = 800, xAccel = -40;
-		ani = "hurtLo3"
-	},
+	
 }
 
 local histopTbl = {
@@ -89,6 +90,15 @@ function C_heightRestriction()
 	return (y>>16) >= 70
 end
 
+function C_notHeldFromJump()
+	local cs = player.currentSequence;
+	print(g.GetInputPrev())
+	if(cs >= 35 and cs <= 40 and (g.GetInputPrev() & key.up)~=0) then
+		return false 
+	end
+	return true
+end
+
 function A_spawnPosRel(actor, seq, x, y, side)
 	side = side or actor:GetSide()
 	local ball = player:SpawnChild(seq)
@@ -100,6 +110,7 @@ function A_spawnPosRel(actor, seq, x, y, side)
 	return ball
 end
 
+--Standing only
 function turnAround()
 	g.TurnAround(15)
 end
@@ -155,20 +166,32 @@ function speedLim(actor)
 	end
 end
 --------------------- Normals -------------------------
-function weakHit(hitdef)
-	hitdef:SetVectors(s.stand, v.hurtHi1, v.block1)
+function weakHit(hitdef, lo)
+	if(lo) then
+		hitdef:SetVectors(s.stand, v.hurtLo1, v.block1)
+	else
+		hitdef:SetVectors(s.stand, v.hurtHi1, v.block1)
+	end
 	hitdef:SetVectors(s.air, v.airHit, v.airBlock)
 	hitdef:SetVectors(s.crouch, v.croHurt1, v.croBlock1)
 end
 
-function mediumHit(hitdef)
-	hitdef:SetVectors(s.stand, v.hurtHi2, v.block2)
+function mediumHit(hitdef, lo)
+	if(lo) then
+		hitdef:SetVectors(s.stand, v.hurtLo2, v.block1)
+	else
+		hitdef:SetVectors(s.stand, v.hurtHi2, v.block1)
+	end
 	hitdef:SetVectors(s.air, v.airHit, v.airBlock)
 	hitdef:SetVectors(s.crouch, v.croHurt2, v.croBlock2)
 end
 
-function strongHit(hitdef)
-	hitdef:SetVectors(s.stand, v.hurtHi3, v.block3)
+function strongHit(hitdef, lo)
+	if(lo) then
+		hitdef:SetVectors(s.stand, v.hurtLo3, v.block1)
+	else
+		hitdef:SetVectors(s.stand, v.hurtHi3, v.block1)
+	end
 	hitdef:SetVectors(s.air, v.airHit, v.airBlock)
 	hitdef:SetVectors(s.crouch, v.croHurt3, v.croBlock2)
 end
@@ -185,7 +208,7 @@ end
 function s5b (actor)
 	if(actor.totalSubframeCount == 0) then
 		local hitdef = actor.hitDef
-		mediumHit(hitdef)
+		mediumHit(hitdef, true)
 		hitdef.hitStop = histopTbl.medium
 		hitdef.damage = 700
 	end
@@ -212,8 +235,7 @@ end
 function s2b (actor)
 	if(actor.totalSubframeCount == 0) then
 		local hitdef = actor.hitDef
-		weakHit(hitdef)
-		hitdef:SetVectors(s.stand, v.hurtLo1, v.block1)
+		weakHit(hitdef, true)
 		hitdef.hitStop = histopTbl.weakest
 		hitdef.damage = 250
 	end
@@ -269,9 +291,9 @@ function sjc (actor)
 	speedLim(actor)
 	if(actor.totalSubframeCount == 0) then
 		local hitdef = actor.hitDef
-		hitdef:SetVectors(s.stand, v.jumpIn, v.jumpIn)
+		hitdef:SetVectors(s.stand, v.jumpIn, v.jumpInBlock)
 		hitdef:SetVectors(s.air, v.down, v.airBlock)
-		hitdef:SetVectors(s.crouch, v.jumpIn, v.jumpIn)
+		hitdef:SetVectors(s.crouch, v.jumpIn, v.jumpInBlock)
 		hitdef.hitStop = histopTbl.strong
 		hitdef.damage = 1000
 	end
@@ -305,9 +327,9 @@ function sChargedTsuki(actor)
 	if(f == 1 and actor.subframeCount == 0) then
 		local projectile = A_spawnPosRel(actor, 185, 0, 0)
 		local hd = projectile.hitDef
-		weakHit(hd)
+		mediumHit(hd)
 		hd.hitStop = histopTbl.weak
-		hd.damage = 1
+		hd.damage = 230
 	end
 end
 

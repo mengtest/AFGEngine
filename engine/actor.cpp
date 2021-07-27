@@ -32,7 +32,6 @@ bool Actor::GotoFrame(int frame)
 		return false;
 	}
 
-	gotHit = false;
 	subframeCount = 0;
 	currFrame = frame;
 	framePointer = &seqPointer->frames[currFrame];
@@ -78,6 +77,16 @@ bool Actor::GotoFrame(int frame)
 	}
 
 	frameDuration = framePointer->frameProp.duration;
+
+	if(framePointer->hasFunction)
+	{
+		auto result = framePointer->frameScript(this);
+		if(!result.valid())
+		{
+			sol::error err = result;
+			std::cerr << err.what() << "\n";
+		}
+	}
 	return true;
 }
 
@@ -319,6 +328,7 @@ void HitDef::SetVectors(int state, sol::table onHitTbl, sol::table onBlockTbl)
 	for(int i = 0; i < 2; i++)
 	{
 		VectorTable &vector = vectorTables[state][i];
+		vector.maxPushBackTime = (*luaTables[i])["maxTime"].get_or(0x7FFFFFFF);
 		vector.xSpeed = (*luaTables[i])["xSpeed"].get_or(0);
 		vector.ySpeed = (*luaTables[i])["ySpeed"].get_or(0);
 		vector.xAccel = (*luaTables[i])["xAccel"].get_or(0);
@@ -336,7 +346,7 @@ void HitDef::Clear()
 	correctionType = 0;
 	meterGain = 0;
 	hitStop = 0;
-	blockStop = 0;
+	blockStop = -1;
 	untech = 0;
 	blockstun = 0; //Untech and block
 	priority = 0;
