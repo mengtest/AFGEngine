@@ -21,7 +21,8 @@ touchedWall(0)
 	hittable = true;
 
 	//loads character from a file and fills sequences/frames and all that yadda.
-	ScriptSetup();
+	if(!ScriptSetup())
+		abort();
 	cmd.LoadFromLua("data/char/vaki/moves.lua", lua);
 	LoadSequences(sequences, charFile, lua); //Sequences refer to script.
 
@@ -187,13 +188,17 @@ int Character::ResolveHit(int keypress, Actor *hitter) //key processing really s
 
 	bool blocked = false;
 	//Can block
-	if (framePointer->frameProp.flags & flag::canMove && keypress & left)
+	if (blockFlag || (framePointer->frameProp.flags & flag::canMove && keypress & left))
 	{
 		//Always for now.
 		if(hitData->blockStop>=0)
 			hitstop = hitData->blockStop;
-		blocked	= true; 
+		blocked	= true;
+		blockFlag = true;
+		blockTime = hitData->blockstun;
 	}
+	else
+		blockFlag = false;
 
 	int state = framePointer->frameProp.state;
 	if(hitData->vectorTables.count(state) == 0)
@@ -205,11 +210,12 @@ int Character::ResolveHit(int keypress, Actor *hitter) //key processing really s
 		if(seq > 0)
 		{
 			hurtSeq = seq;
-			impVel.x.value = vt.xSpeed*speedMultiplier*hitter->side;
-			impVel.y.value = vt.ySpeed*speedMultiplier;
-			impAccel.x.value = vt.xAccel*speedMultiplier*hitter->side;
-			impAccel.y.value = vt.yAccel*speedMultiplier;
-			pushTimer = vt.maxPushBackTime;
+			vel.x.value = vt.xSpeed*speedMultiplier*hitter->side;
+			vel.y.value = vt.ySpeed*speedMultiplier;
+			accel.x.value = vt.xAccel*speedMultiplier*hitter->side;
+			accel.y.value = vt.yAccel*speedMultiplier;
+			pushTimer = vt.maxPushBackTime;	
+			friction = true;
 		}
 	}
 
@@ -271,7 +277,6 @@ void Character::GotoSequence(int seq)
 		side = -side;
 	}
 	
-
 	interrumpible = false;
 	comboType = none;
 	currSeq = seq;
@@ -282,6 +287,12 @@ void Character::GotoSequence(int seq)
 
 	seqPointer = &sequences[currSeq];
 	GotoFrame(0);
+	if(framePointer->frameProp.flags & flag::canMove)
+	{
+		friction = false;
+		blockFlag = false;
+		pushTimer = 0;
+	}
 }
 
 void Character::Update()
@@ -295,57 +306,59 @@ void Character::Update()
 			std::cerr << err.what() << "\n";
 		}
 	}
-	SeqFun();
 	
 	if(gotHit) //Got hit.
 	{
 		GotoSequence(hurtSeq);
+		SeqFun();
 		hurtSeq = -1;
 		gotHit = false;
 	}
+	else
+		SeqFun();
 
 	if (hitstop > 0)
 	{
+		//Shake effect
 		--hitstop;
 		return;
 	}
 
-	//Pushback can't accelerate. Only slow down.
-	if(impVel.x.value < 0 && impAccel.x.value < 0)
+	if(friction && (vel.x.value < 0 && accel.x.value < 0)) //Pushback can't accelerate. Only slow down.
 	{
-		impVel.x.value = 0;
-		impAccel.x.value = 0;
+		vel.x.value = 0;
+		accel.x.value = 0;
 	}
-	else if(impVel.x.value > 0 && impAccel.x.value > 0)
+	else if(friction && (vel.x.value > 0 && accel.x.value > 0))
 	{
-		impVel.x.value = 0;
-		impAccel.x.value = 0;
-	}
-
-	if (touchedWall != 0 && pushTimer > 0)
-	{
-		target->root.x -= impVel.x;
+		vel.x.value = 0;
+		accel.x.value = 0;
 	}
 
-	vel += accel;
-	Translate(vel);
- 	Translate(impVel);
-	impVel += impAccel;
+	if (touchedWall != 0 && (pushTimer > 0))
+	{
+		target->root.x -= vel.x;
+	}
 	
+	Translate(vel);
+	vel += accel;
+
 	if (root.y < floorPos) //Check collision with floor
 	{
 		root.y = floorPos;
-		impVel.x = 0;
-		impVel.y = 0;
-		impAccel.x = 0;
-		impAccel.y = 0;
-		//Jump to landing frame.
 		GotoFrame(seqPointer->props.landFrame);
+		SeqFun(); //Extra state transition, so we run it again.
 	}
 
 	if((framePointer->frameProp.state == state::stand || framePointer->frameProp.state == state::crouch) &&
 		(root.x < target->root.x && side == -1 || root.x > target->root.x && side == 1))
 		mustTurnAround = true;
+
+	if(blockTime > 0)
+	{
+		--blockTime;
+		return;
+	}
 
 	--pushTimer;
 	--frameDuration;
@@ -477,7 +490,7 @@ void Character::Input(input_deque &keyPresses)
 	}	
 }
 
-void Character::ScriptSetup()
+bool Character::ScriptSetup()
 {
 	lua.open_libraries(sol::lib::base);
 
@@ -494,6 +507,8 @@ void Character::ScriptSetup()
 	key["any"] = key::buf::UP | key::buf::DOWN | key::buf::LEFT | key::buf::RIGHT;
 
 	auto global = lua["global"].get_or_create<sol::table>();
+	global.set_function("GetBlockTime", [this](){return blockTime;});
+	global.set_function("SetBlockTime", [this](int time){blockTime=time;});
 	global.set_function("TurnAround", &Character::TurnAround, this);
 	global.set_function("GetInput", [this]() -> unsigned int{return this->lastKey[0];});
 	global.set_function("GetInputPrev", [this]() -> unsigned int{return this->lastKey[1];});
@@ -513,10 +528,11 @@ void Character::ScriptSetup()
 		std::cerr << "The code has failed to run!\n"
 		          << err.what() << "\nPanicking and exiting..."
 		          << std::endl;
-		return;
+		return false;
 	}
 
 	updateFunction = lua["_update"];
 	hasUpdateFunction = updateFunction.get_type() == sol::type::function;
 	lua["player"] = (Actor*)this;
+	return true;
 }

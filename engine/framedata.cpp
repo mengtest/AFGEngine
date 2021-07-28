@@ -22,7 +22,7 @@ struct BoxSizes
 bool LoadSequences(std::vector<Sequence> &sequences, std::filesystem::path charFile, sol::state &lua)
 {
 	constexpr const char *charSignature = "AFGECharacterFile";
-	constexpr uint32_t currentVersion = 99'5;
+	constexpr uint32_t currentVersion = 99'6;
 
 	//loads character from a file and fills sequences/frames and all that yadda.
 	std::ifstream file(charFile, std::ios_base::in | std::ios_base::binary);

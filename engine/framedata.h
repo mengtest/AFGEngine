@@ -54,6 +54,7 @@ struct seqProp
 	int level = 0;
 	int landFrame = 0;
 	int zOrder = 0;
+	uint32_t flags = 0;
 };
 
 struct Sequence

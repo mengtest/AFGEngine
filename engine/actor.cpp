@@ -41,7 +41,7 @@ bool Actor::GotoFrame(int frame)
 
 	if(framePointer->frameProp.flags & flag::startHit)
 		hitCount = 1;
-
+	
 	//Keep?
 	/* if (framePointer->frameProp.flags & flag::RESET_INFLICTED_VEL)
 	{

@@ -50,6 +50,12 @@ _vectors = {
 		maxTime = 8,
 		ani = "down"
 	},
+	launch = {
+		xSpeed = 200, ySpeed = 2700;
+		xAccel = 0, yAccel = -150;
+		maxTime = 8,
+		ani = "airDown"
+	},
 	down = {
 		xSpeed = 250, ySpeed = 2200;
 		xAccel = 0, yAccel = -150;
@@ -65,7 +71,7 @@ _vectors = {
 	
 }
 
-local histopTbl = {
+histopTbl = {
 	weakest = 4,
 	weak = 6,
 	medium = 8,
@@ -79,7 +85,7 @@ local v = _vectors
 
 function C_toCrouch()
 	local crouchingSeq = player.currentSequence;
-	if(crouchingSeq == 13 or crouchingSeq == 16) then
+	if(crouchingSeq == 13 or crouchingSeq == 16 or crouchingSeq == 18) then
 		return false
 	end
 	return true
@@ -92,7 +98,6 @@ end
 
 function C_notHeldFromJump()
 	local cs = player.currentSequence;
-	print(g.GetInputPrev())
 	if(cs >= 35 and cs <= 40 and (g.GetInputPrev() & key.up)~=0) then
 		return false 
 	end
@@ -165,6 +170,13 @@ function speedLim(actor)
 		actor:SetVel(1000*constant.multiplier*actor:GetSide(), y)
 	end
 end
+
+function blocking(actor)
+	if(actor.gotHit) then
+		actor:GotoFrame(2)
+	end
+end
+
 --------------------- Normals -------------------------
 function weakHit(hitdef, lo)
 	if(lo) then
@@ -178,9 +190,9 @@ end
 
 function mediumHit(hitdef, lo)
 	if(lo) then
-		hitdef:SetVectors(s.stand, v.hurtLo2, v.block1)
+		hitdef:SetVectors(s.stand, v.hurtLo2, v.block2)
 	else
-		hitdef:SetVectors(s.stand, v.hurtHi2, v.block1)
+		hitdef:SetVectors(s.stand, v.hurtHi2, v.block2)
 	end
 	hitdef:SetVectors(s.air, v.airHit, v.airBlock)
 	hitdef:SetVectors(s.crouch, v.croHurt2, v.croBlock2)
@@ -188,12 +200,12 @@ end
 
 function strongHit(hitdef, lo)
 	if(lo) then
-		hitdef:SetVectors(s.stand, v.hurtLo3, v.block1)
+		hitdef:SetVectors(s.stand, v.hurtLo3, v.block3)
 	else
-		hitdef:SetVectors(s.stand, v.hurtHi3, v.block1)
+		hitdef:SetVectors(s.stand, v.hurtHi3, v.block3)
 	end
 	hitdef:SetVectors(s.air, v.airHit, v.airBlock)
-	hitdef:SetVectors(s.crouch, v.croHurt3, v.croBlock2)
+	hitdef:SetVectors(s.crouch, v.croHurt3, v.croBlock3)
 end
 
 function s5a (actor)
@@ -201,6 +213,7 @@ function s5a (actor)
 		local hitdef = actor.hitDef
 		weakHit(hitdef)
 		hitdef.hitStop = histopTbl.weak
+		hitdef.blockStun = 14
 		hitdef.damage = 300
 	end
 end
@@ -210,6 +223,7 @@ function s5b (actor)
 		local hitdef = actor.hitDef
 		mediumHit(hitdef, true)
 		hitdef.hitStop = histopTbl.medium
+		hitdef.blockStun = 17
 		hitdef.damage = 700
 	end
 end
@@ -219,6 +233,7 @@ function s5c (actor)
 		local hitdef = actor.hitDef
 		strongHit(hitdef)
 		hitdef.hitStop = histopTbl.strong
+		hitdef.blockStun = 20
 		hitdef.damage = 1400
 	end
 end
@@ -228,6 +243,7 @@ function s2a (actor)
 		local hitdef = actor.hitDef
 		weakHit(hitdef)
 		hitdef.hitStop = histopTbl.weak
+		hitdef.blockStun = 14
 		hitdef.damage = 350
 	end
 end
@@ -237,6 +253,7 @@ function s2b (actor)
 		local hitdef = actor.hitDef
 		weakHit(hitdef, true)
 		hitdef.hitStop = histopTbl.weakest
+		hitdef.blockStun = 14
 		hitdef.damage = 250
 	end
 end
@@ -248,6 +265,7 @@ function s2c (actor)
 		hitdef:SetVectors(s.air, v.trip, v.airBlock)
 		hitdef:SetVectors(s.crouch, v.trip, v.croBlock3)
 		hitdef.hitStop = histopTbl.strong
+		hitdef.blockStun = 20
 		hitdef.damage = 1200
 	end
 end
@@ -259,6 +277,7 @@ function s4c (actor)
 		hitdef:SetVectors(s.air, v.down, v.airBlock)
 		hitdef:SetVectors(s.crouch, v.down, v.croBlock3)
 		hitdef.hitStop = histopTbl.medium
+		hitdef.blockStun = 17
 		hitdef.damage = 500
 	end
 end
@@ -271,6 +290,7 @@ function sja (actor)
 		hitdef:SetVectors(s.air, v.airHit, v.airBlock)
 		hitdef:SetVectors(s.crouch, v.airHit, v.croBlock1)
 		hitdef.hitStop = histopTbl.weak
+		hitdef.blockStun = 14
 		hitdef.damage = 300
 	end
 end
@@ -283,6 +303,7 @@ function sjb (actor)
 		hitdef:SetVectors(s.air, v.airHit, v.airBlock)
 		hitdef:SetVectors(s.crouch, v.airHit, v.croBlock2)
 		hitdef.hitStop = histopTbl.medium
+		hitdef.blockStun = 17
 		hitdef.damage = 700
 	end
 end
@@ -295,7 +316,20 @@ function sjc (actor)
 		hitdef:SetVectors(s.air, v.down, v.airBlock)
 		hitdef:SetVectors(s.crouch, v.jumpIn, v.jumpInBlock)
 		hitdef.hitStop = histopTbl.strong
+		hitdef.blockStun = 20
 		hitdef.damage = 1000
+	end
+end
+
+function s3c (actor)
+	if(actor.totalSubframeCount == 0) then
+		local hitdef = actor.hitDef
+		hitdef:SetVectors(s.stand, v.launch, v.block3)
+		hitdef:SetVectors(s.air, v.launch, v.airBlock)
+		hitdef:SetVectors(s.crouch, v.launch, v.croBlock3)
+		hitdef.hitStop = histopTbl.medium
+		hitdef.blockStun = 20
+		hitdef.damage = 700
 	end
 end
 
@@ -329,6 +363,7 @@ function sChargedTsuki(actor)
 		local hd = projectile.hitDef
 		mediumHit(hd)
 		hd.hitStop = histopTbl.weak
+		hd.blockStun = 14
 		hd.damage = 230
 	end
 end

@@ -11,13 +11,20 @@
 #define rptr(X) ((char*)X)
 
 constexpr const char *charSignature = "AFGECharacterFile";
-constexpr uint32_t currentVersion = 99'5;
+constexpr uint32_t currentVersion = 99'6;
 
 struct BoxSizes
 {
 	int8_t greens;
 	int8_t reds;
 	int8_t collision;
+};
+
+struct seqProp_OLD
+{
+	int level = 0;
+	int landFrame = 0;
+	int zOrder = 0;
 };
 
 bool Framedata::LoadOlder(std::string charFile)
@@ -52,7 +59,7 @@ bool Framedata::LoadOlder(std::string charFile)
 		currSeq.name.resize(namelength);
 		file.read(rptr(currSeq.name.data()), namelength);
 
-		file.read(rv(currSeq.props), sizeof(seqProp));
+		file.read(rv(currSeq.props), sizeof(seqProp_OLD));
 
 		uint8_t seqlength;
 		file.read(rv(seqlength), sizeof(seqlength));
@@ -98,7 +105,7 @@ bool Framedata::LoadOld(std::string charFile)
 		std::cerr << "Signature mismatch.\n";
 		return false;
 	}
-	if(header.version != 99'4)
+	if(header.version != 99'5)
 	{
 		std::cerr << "Format version mismatch.\n";
 		return false;
@@ -117,7 +124,7 @@ bool Framedata::LoadOld(std::string charFile)
 		currSeq.function.resize(size);
 		file.read(rptr(currSeq.function.data()), size);
 
-		file.read(rv(currSeq.props), sizeof(seqProp));
+		file.read(rv(currSeq.props), sizeof(seqProp_OLD));
 
 		uint8_t seqlength;
 		file.read(rv(seqlength), sizeof(seqlength));
@@ -125,6 +132,10 @@ bool Framedata::LoadOld(std::string charFile)
 		for (uint8_t i2 = 0; i2 < seqlength; ++i2)
 		{
 			auto &currFrame = currSeq.frames[i2];
+
+			file.read(rv(size), sizeof(size));
+			currFrame.frameScript.resize(size);
+			file.read(rptr(currFrame.frameScript.data()), size);
 
 			//How many boxes are used per frame
 			BoxSizes bs;

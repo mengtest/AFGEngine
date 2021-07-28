@@ -110,6 +110,13 @@ void MainPane::Draw()
 			ImGui::InputInt("Land frame", &seq.props.landFrame);
 			ImGui::InputInt("Z order", &seq.props.zOrder);
 
+			unsigned int flagIndex = -1;
+			BitField("Set 1", &seq.props.flags, &flagIndex);
+			/* switch (flagIndex)
+			{
+				case 0: Tooltip("Can move"); break;
+			} */
+
 			im::TreePop();
 			im::Separator();
 		}

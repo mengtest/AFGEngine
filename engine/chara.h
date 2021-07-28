@@ -27,10 +27,9 @@ private:
 	//int hitsTaken;
 	//inr damageTaken;
 	int hurtSeq = -1;
-
-	//Extra movement vectors for pushback
-	Point2d<FixedPoint> impVel;
-	Point2d<FixedPoint> impAccel;
+	bool friction = false;
+	bool blockFlag = false;
+	int blockTime = 0;
 	int pushTimer = 0; //Counts down the pushback time.
 
 	CommandInputs cmd;
@@ -65,7 +64,7 @@ public:
 	void Input(input_deque &keyPresses);
 
 private:
-	void ScriptSetup();
+	bool ScriptSetup();
 	void Translate(Point2d<FixedPoint> amount);
 	void Translate(FixedPoint x, FixedPoint y);
 
