@@ -77,7 +77,8 @@ protected:
 	//comboType is set to unresolved if it connects, and then to hurt/blocked by the target. Resets when sequence changes. Used for cancelling purposes.
 	int comboType = none; 
 	//Set when getting hit (doesn't matter if you block). Resets when the hit is resolved.
-	bool gotHit = false; 
+	bool gotHit = false;
+	uint32_t flags = 0;
 	sol::table userData;
 
 public:
@@ -107,6 +108,11 @@ protected:
 	void SeqFun();
 	void SetHitDef(sol::table onHit, sol::table onBlock);
 	virtual int ResolveHit(int keypress, Actor *hitter);
+
+	enum actorFlags{
+		floorCheck = 0x1,
+		followParent = 0x2,
+	};
 };
 
 #endif /* ACTOR_H_GUARD */

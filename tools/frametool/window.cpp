@@ -137,8 +137,11 @@ bool Window::PollEvents()
 			case SDL_MOUSEBUTTONUP:
 				break;
 			case SDL_KEYDOWN:
-			//case SDL_KEYUP:
-				mf->HandleKeys(event.key.keysym.scancode);
+				if(!ImGui::GetIO().WantCaptureKeyboard)
+				{
+					mf->HandleKeys(event.key.keysym.scancode);
+
+				}
 				break;
 		}
 	}

@@ -119,21 +119,22 @@ int Actor::GetSpriteIndex()
 glm::mat4 Actor::GetSpriteTransform()
 {
 	glm::mat4 transform(1.f);
+	float rotX = framePointer->frameProp.rotation[0];
 	float rotY = framePointer->frameProp.rotation[1];
+	float rotZ = framePointer->frameProp.rotation[2];
 	float offsetX = framePointer->frameProp.spriteOffset[0];
 	float offsetY = framePointer->frameProp.spriteOffset[1];
+	float scaleX = framePointer->frameProp.scale[0];
+	float scaleY = framePointer->frameProp.scale[1];
 	
 	constexpr float tau = glm::pi<float>()*2.f;
-	//transform = glm::scale(transform, glm::vec3(scale, scale, 1.f));
-	//transform = glm::translate(transform, glm::vec3(x,y,0.f));
-	//transform = glm::scale(transform, glm::vec3(scaleX,scaleY,0));
-	//transform = glm::rotate(transform, rotZ*tau, glm::vec3(0.0, 0.f, 1.f));
-	
-	//transform = glm::rotate(transform, rotX*tau, glm::vec3(1.0, 0.f, 0.f));
-
-	transform = glm::translate(transform, glm::vec3(root.x+offsetX*side, root.y-offsetY, 0));
+	transform = glm::translate(transform, glm::vec3(root.x, root.y, 0));
+	transform = glm::scale(transform, glm::vec3(side*scaleX, scaleY, 1.f));
+	transform = glm::rotate(transform, rotX*tau, glm::vec3(1.0, 0.f, 0.f));
 	transform = glm::rotate(transform, rotY*tau, glm::vec3(0.0, 1.f, 0.f));
-	transform = glm::scale(transform, glm::vec3(side, 1.f, 1.f));
+	transform = glm::rotate(transform, rotZ*tau, glm::vec3(0.0, 0.f, 1.f));
+	transform = glm::translate(transform, glm::vec3(offsetX, -offsetY, 0));
+	
 	//transform = glm::translate(transform, glm::vec3(-128, -40.f, 0));
 	return transform;
 }
@@ -161,10 +162,16 @@ void Actor::Update()
 		return;
 	}
 
+	
+
 	vel += accel;
 	Translate(vel);
 
-	if (root.y < floorPos) //Check collision with floor
+	if(flags & followParent && parent)
+	{
+		root = parent->root;
+	}
+	if (flags & floorCheck && root.y < floorPos) //Check collision with floor
 	{
 		root.y = floorPos;
 		//Jump to landing frame.
@@ -318,7 +325,8 @@ void Actor::DeclareActorLua(sol::state &lua)
 		"hittable", &Actor::hittable,
 		"comboType", sol::readonly(&Actor::comboType),
 		"gotHit", sol::readonly(&Actor::gotHit),
-		"userData", &Actor::userData
+		"userData", &Actor::userData,
+		"flags", &Actor::flags
 	);
 }
 

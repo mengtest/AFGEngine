@@ -1,6 +1,3 @@
-local key = constant.key
-local g = global
-
 _states = {
 	stand = 0,
 	crouch = 1,
@@ -80,8 +77,14 @@ histopTbl = {
 	strongest = 30,
 }
 
+local key = constant.key
+local g = global
 local s = _states
 local v = _vectors
+a_flag = {
+	floorCheck = 0x1,
+	followParent = 0x2,
+}
 
 function C_toCrouch()
 	local crouchingSeq = player.currentSequence;
@@ -104,14 +107,18 @@ function C_notHeldFromJump()
 	return true
 end
 
-function A_spawnPosRel(actor, seq, x, y, side)
+function A_spawnPosRel(actor, seq, x, y, flags, side)
+	x = x or 0
+	y = y or 0
+	flags = flags or 0
 	side = side or actor:GetSide()
 	local ball = player:SpawnChild(seq)
 	local xA, yA = actor:GetPos()
 	x = xA + (x << 16) * actor:GetSide()
-	y = yA + y << 16
+	y = yA + (y << 16)
 	ball:SetPos(x,y)
 	ball:SetSide(side)
+	ball.flags = flags
 	return ball
 end
 
@@ -337,14 +344,14 @@ end
 function s236c(actor)
 	local fc = actor.totalSubframeCount
 	if(fc > 8 and fc < 20 and actor.subframeCount == 0) then
-		A_spawnPosRel(actor, 508, 60+(fc-8)*20, 120+(fc-8)*5, actor:GetSide())
+		A_spawnPosRel(actor, 508, 60+(fc-8)*20, 120+(fc-8)*5)
 	end
 end
 
 function s236a(actor)
 	local fc = actor.totalSubframeCount
 	if(fc > 8 and fc < 20) then
-		A_spawnPosRel(actor, 508, 60+(fc-8)*30, 120+(fc-8)*10, actor:GetSide())
+		A_spawnPosRel(actor, 508, 60+(fc-8)*30, 120+(fc-8)*10)
 	end
 end
 
