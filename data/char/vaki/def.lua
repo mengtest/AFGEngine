@@ -10,4 +10,9 @@ graphics = {
 		vertex = "vaki.vt4",
 		indexed = false
 	},
+	{
+		image = "effect32.png",
+		vertex = "effect.vt4",
+		indexed = false
+	},
 }

@@ -130,9 +130,9 @@ glm::mat4 Actor::GetSpriteTransform()
 	constexpr float tau = glm::pi<float>()*2.f;
 	transform = glm::translate(transform, glm::vec3(root.x, root.y, 0));
 	transform = glm::scale(transform, glm::vec3(side*scaleX, scaleY, 1.f));
-	transform = glm::rotate(transform, rotX*tau, glm::vec3(1.0, 0.f, 0.f));
+	transform = glm::rotate(transform, -rotZ*tau, glm::vec3(0.0, 0.f, 1.f));
 	transform = glm::rotate(transform, rotY*tau, glm::vec3(0.0, 1.f, 0.f));
-	transform = glm::rotate(transform, rotZ*tau, glm::vec3(0.0, 0.f, 1.f));
+	transform = glm::rotate(transform, rotX*tau, glm::vec3(1.0, 0.f, 0.f));
 	transform = glm::translate(transform, glm::vec3(offsetX, -offsetY, 0));
 	
 	//transform = glm::translate(transform, glm::vec3(-128, -40.f, 0));
@@ -154,33 +154,6 @@ void Actor::SeqFun()
 
 void Actor::Update()
 {
-	SeqFun();
-	gotHit = false;
-	if (hitstop > 0)
-	{
-		--hitstop;
-		return;
-	}
-
-	
-
-	vel += accel;
-	Translate(vel);
-
-	if(flags & followParent && parent)
-	{
-		root = parent->root;
-	}
-	if (flags & floorCheck && root.y < floorPos) //Check collision with floor
-	{
-		root.y = floorPos;
-		//Jump to landing frame.
-		GotoFrame(seqPointer->props.landFrame);
-	}
-
-	--frameDuration;
-	++totalSubframeCount;
-	++subframeCount;
 	if (frameDuration == 0)
 	{
 		int jump = framePointer->frameProp.jumpType;
@@ -220,6 +193,37 @@ void Actor::Update()
 				return;
 		}
 	}
+
+	if(flags & followParent && parent)
+	{
+		vel = parent->vel;
+		accel = parent->accel;
+	}
+	if (flags & floorCheck && root.y + vel.y < floorPos) //Check collision with floor
+	{
+		root.y = floorPos;
+		GotoFrame(seqPointer->props.landFrame);
+	}
+
+	SeqFun();
+	if (hitstop > 0)
+	{
+		--hitstop;
+		return;
+	}
+
+	
+	Translate(vel);
+	vel += accel;
+	if (root.y < floorPos) //Check collision with floor
+	{
+		root.y = floorPos;
+	}
+
+	--frameDuration;
+	++totalSubframeCount;
+	++subframeCount;
+	
 }
 
 Frame *Actor::GetCurrentFrame()
@@ -281,7 +285,7 @@ void Actor::GetAllChildren(std::list<Actor*> &list, bool includeSelf)
 
 int Actor::ResolveHit(int keypress, Actor *hitter)
 {
-	gotHit = true;
+	//Todo call hit lua func
 	return hurt;
 }
 
@@ -324,7 +328,6 @@ void Actor::DeclareActorLua(sol::state &lua)
 		"hitDef", &Actor::attack,
 		"hittable", &Actor::hittable,
 		"comboType", sol::readonly(&Actor::comboType),
-		"gotHit", sol::readonly(&Actor::gotHit),
 		"userData", &Actor::userData,
 		"flags", &Actor::flags
 	);

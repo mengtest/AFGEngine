@@ -344,14 +344,22 @@ end
 function s236c(actor)
 	local fc = actor.totalSubframeCount
 	if(fc > 8 and fc < 20 and actor.subframeCount == 0) then
-		A_spawnPosRel(actor, 508, 60+(fc-8)*20, 120+(fc-8)*5)
+		local hd = A_spawnPosRel(actor, 508, 60+(fc-8)*20, 120+(fc-8)*5).hitDef
+		weakHit(hd)
+		hd.damage = 100
+		hd.blockStun = 14
+		hd.hitStop = histopTbl.medium
 	end
 end
 
 function s236a(actor)
 	local fc = actor.totalSubframeCount
-	if(fc > 8 and fc < 20) then
-		A_spawnPosRel(actor, 508, 60+(fc-8)*30, 120+(fc-8)*10)
+	if(fc > 8 and fc < 20 and fc%2==0) then
+		local hd = A_spawnPosRel(actor, 508, 60+(fc-8)*30, 0+(fc-8)*10).hitDef
+		weakHit(hd)
+		hd.damage = 100
+		hd.blockStun = 14
+		hd.hitStop = histopTbl.medium
 	end
 end
 

@@ -1,5 +1,6 @@
 #include "ubo.h"
 #include <glad/glad.h>
+#include <stdexcept>
 
 Ubo::Ubo(const char* _blockName, unsigned int _bindingPoint):
 blockName(_blockName),
@@ -10,6 +11,12 @@ size(0)
 
 void Ubo::Init(int _size)
 {
+	
+	GLint maxSize;
+	glGetIntegerv(GL_MAX_UNIFORM_BLOCK_SIZE, &maxSize);
+	if(_size > maxSize)
+		throw std::length_error("Uniform buffer size exceeds GL_MAX_UNIFORM_BLOCK_SIZE.");
+
 	size = _size;
 	glGenBuffers(1, &buffer);
 	glBindBuffer(GL_UNIFORM_BUFFER, buffer);

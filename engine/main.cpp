@@ -192,7 +192,6 @@ void PlayLoop()
 		}
 
 		Character::HitCollision(player, player2, keyBufDelayed[0].front(), keyBufDelayed[1].front());
-
 		player.Input(keyBufDelayed[0]);
 		player2.Input(keyBufDelayed[1]);
 
@@ -201,6 +200,8 @@ void PlayLoop()
 		player2.GetAllChildren(updateList);
 		for(auto actor: updateList)
 			actor->Update();
+
+		
 
 		Character::Collision(&player, &player2);
 
@@ -240,6 +241,10 @@ void PlayLoop()
 			mainWindow->context.SetModelView(viewMatrix*actor->GetSpriteTransform());
 			gfx.Draw(actor->GetSpriteIndex());
 		}
+
+/* 		glBlendFunc(GL_SRC_ALPHA, GL_ONE);
+		gfx.Draw(2000);
+		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA); */
 		gfx.End();
 
 		//Draw HUD

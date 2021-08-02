@@ -109,7 +109,7 @@ void Render::Draw()
 	view = glm::scale(view, glm::vec3(scale, scale, 1.f));
 	view = glm::translate(view, glm::vec3(x,y,0.f));
  	view = glm::scale(view, glm::vec3(scaleX,scaleY,0));
-	view = glm::rotate(view, rotZ*tau, glm::vec3(0.0, 0.f, 1.f));
+	view = glm::rotate(view, -rotZ*tau, glm::vec3(0.0, 0.f, 1.f));
 	view = glm::rotate(view, rotY*tau, glm::vec3(0.0, 1.f, 0.f));
 	view = glm::rotate(view, rotX*tau, glm::vec3(1.0, 0.f, 0.f));
 	view = glm::translate(view, glm::vec3(offsetX, offsetY,0.f)); 

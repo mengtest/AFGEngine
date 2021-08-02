@@ -76,8 +76,6 @@ protected:
 	};
 	//comboType is set to unresolved if it connects, and then to hurt/blocked by the target. Resets when sequence changes. Used for cancelling purposes.
 	int comboType = none; 
-	//Set when getting hit (doesn't matter if you block). Resets when the hit is resolved.
-	bool gotHit = false;
 	uint32_t flags = 0;
 	sol::table userData;
 

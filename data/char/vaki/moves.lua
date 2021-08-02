@@ -3,7 +3,7 @@ local f = {
 	repeatable 		= 1 << 1,
 	wipeBuffer 		= 1 << 2,
 	interrupts 		= 1 << 3,
-	interrumpible	= 1 << 4,
+	interruptible	= 1 << 4,
 	noCombo			= 1 << 5,
 }
 
@@ -23,15 +23,15 @@ inputs = {
 		{input = "~4ab", buf = 1, ref = 45, flag = f.interrupts | f.noCombo},
 		{input = "~6ab", buf = 1, ref = 43, flag = f.interrupts | f.noCombo},
 		
-		{input = "~3c", buf = 1, ref = 445, flag = f.interrumpible},
-		{input = "~6c", buf = 2, ref = 60, flag = f.interrumpible},
-		{input = "~4c", buf = 2, ref = 80, flag = f.interrumpible},
-		{input = "~Dc", buf = 2, ref = 6, flag = f.interrumpible},
-		{input = "~Db", buf = 2, ref = 5, flag = f.interrumpible},
-		{input = "~Da", buf = 2, ref = 4, flag = f.interrumpible | f.repeatable},
-		{input = "~c", buf = 2, ref = 3, flag = f.interrumpible},
-		{input = "~b", buf = 2, ref = 2, flag = f.interrumpible},
-		{input = "~a", buf = 2, ref = 1, flag = f.interrumpible | f.repeatable},
+		{input = "~3c", buf = 1, ref = 445, flag = f.interruptible},
+		{input = "~6c", buf = 2, ref = 60, flag = f.interruptible},
+		{input = "~4c", buf = 2, ref = 80, flag = f.interruptible},
+		{input = "~Dc", buf = 2, ref = 6, flag = f.interruptible},
+		{input = "~Db", buf = 2, ref = 5, flag = f.interruptible},
+		{input = "~Da", buf = 2, ref = 4, flag = f.interruptible | f.repeatable},
+		{input = "~c", buf = 2, ref = 3, flag = f.interruptible},
+		{input = "~b", buf = 2, ref = 2, flag = f.interruptible},
+		{input = "~a", buf = 2, ref = 1, flag = f.interruptible | f.repeatable},
 		
 		{input = "6", buf = 1, ref = 10, flag = f.neutral},
 		{input = "4", buf = 1, ref = 11, flag = f.neutral},
@@ -45,9 +45,9 @@ inputs = {
 		{input = "5R56", buf = 8, ref = 46, flag = f.repeatable | f.wipeBuffer, cond = C_heightRestriction},
 		{input = "~4ab", buf = 1, ref = 47, flag = f.repeatable | f.interrupts | f.noCombo, cond = C_heightRestriction},
 		{input = "~6ab", buf = 1, ref = 46, flag = f.repeatable | f.interrupts, cond = C_heightRestriction},
-		{input = "~c", buf = 2, ref = 9, flag = f.interrumpible},
-		{input = "~b", buf = 2, ref = 8, flag = f.interrumpible},
-		{input = "~a", buf = 2, ref = 7, flag = f.interrumpible},
+		{input = "~c", buf = 2, ref = 9, flag = f.interruptible},
+		{input = "~b", buf = 2, ref = 8, flag = f.interruptible},
+		{input = "~a", buf = 2, ref = 7, flag = f.interruptible},
 		
 	}
 }

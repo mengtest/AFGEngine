@@ -170,7 +170,6 @@ int Character::ResolveHit(int keypress, Actor *hitter) //key processing really s
 {
 	HitDef *hitData = &hitter->attack;
 	keypress = SanitizeKey(keypress);
-	gotHit = true;
 	hitstop = hitData->hitStop;
 
 	int left;
@@ -209,13 +208,16 @@ int Character::ResolveHit(int keypress, Actor *hitter) //key processing really s
 		int seq = lua["_seqTable"][vt.sequenceName].get_or(-1);
 		if(seq > 0)
 		{
-			hurtSeq = seq;
 			vel.x.value = vt.xSpeed*speedMultiplier*hitter->side;
 			vel.y.value = vt.ySpeed*speedMultiplier;
 			accel.x.value = vt.xAccel*speedMultiplier*hitter->side;
 			accel.y.value = vt.yAccel*speedMultiplier;
 			pushTimer = vt.maxPushBackTime;	
 			friction = true;
+
+			gotHit = true;
+			hurtSeq = seq;
+			//TODO: Call lua hit func Here.
 		}
 	}
 
@@ -249,27 +251,10 @@ float Character::getHealthRatio()
 	return health * (1.f / 10000.f);
 }
 
-bool Character::SuggestSequence(int seq)
-{
-	if(seq == -1)
-		return false;
-
-	//Checks if it should ignore the next command
-	//if not cancellable. Do nothing
-	//if next seq is not attack do nothing <- Define in movelist
-		
-	//If you're in pain. Do nothing?
-
-	//Attack cancel rules and all that stuff go here.
-	GotoSequence(seq);
-	return true;
-}
-
 void Character::GotoSequence(int seq)
 {
 	if (seq < 0)
 		return;
-
 	
 	if(mustTurnAround)
 	{
@@ -297,74 +282,13 @@ void Character::GotoSequence(int seq)
 
 void Character::Update()
 {
-	if(hasUpdateFunction)
-	{
-		auto result = updateFunction();
-		if(!result.valid())
-		{
-			sol::error err = result;
-			std::cerr << err.what() << "\n";
-		}
-	}
-	
-	if(gotHit) //Got hit.
+	if(gotHit)
 	{
 		GotoSequence(hurtSeq);
-		SeqFun();
 		hurtSeq = -1;
 		gotHit = false;
 	}
-	else
-		SeqFun();
-
-	if (hitstop > 0)
-	{
-		//Shake effect
-		--hitstop;
-		return;
-	}
-
-	if(friction && (vel.x.value < 0 && accel.x.value < 0)) //Pushback can't accelerate. Only slow down.
-	{
-		vel.x.value = 0;
-		accel.x.value = 0;
-	}
-	else if(friction && (vel.x.value > 0 && accel.x.value > 0))
-	{
-		vel.x.value = 0;
-		accel.x.value = 0;
-	}
-
-	if (touchedWall != 0 && (pushTimer > 0))
-	{
-		target->root.x -= vel.x;
-	}
-	
-	Translate(vel);
-	vel += accel;
-
-	if (root.y < floorPos) //Check collision with floor
-	{
-		root.y = floorPos;
-		GotoFrame(seqPointer->props.landFrame);
-		SeqFun(); //Extra state transition, so we run it again.
-	}
-
-	if((framePointer->frameProp.state == state::stand || framePointer->frameProp.state == state::crouch) &&
-		(root.x < target->root.x && side == -1 || root.x > target->root.x && side == 1))
-		mustTurnAround = true;
-
-	if(blockTime > 0)
-	{
-		--blockTime;
-		return;
-	}
-
-	--pushTimer;
-	--frameDuration;
-	++totalSubframeCount;
-	++subframeCount;
-	if (frameDuration == 0)
+	else if (frameDuration == 0)
 	{
 		int jump = framePointer->frameProp.jumpType;
 		if(jump == jump::frame)
@@ -403,18 +327,83 @@ void Character::Update()
 			GotoFrame(currFrame);
 		}
 	}
+
+	if (root.y + vel.y < floorPos) //Check collision with floor
+	{
+		root.y = floorPos;
+		GotoFrame(seqPointer->props.landFrame);
+	}
+
+	mustTurnAround = ((framePointer->frameProp.state == state::stand || framePointer->frameProp.state == state::crouch) &&
+		(root.x < target->root.x && side == -1 || root.x > target->root.x && side == 1));
+
+	if(hasUpdateFunction)
+	{
+		auto result = updateFunction();
+		if(!result.valid())
+		{
+			sol::error err = result;
+			std::cerr << err.what() << "\n";
+		}
+	}
+
+	SeqFun();
+
+	if (hitstop > 0)
+	{
+		//Shake effect
+		--hitstop;
+		return;
+	}
+
+	if(friction && (vel.x.value < 0 && accel.x.value < 0)) //Pushback can't accelerate. Only slow down.
+	{
+		vel.x.value = 0;
+		accel.x.value = 0;
+	}
+	else if(friction && (vel.x.value > 0 && accel.x.value > 0))
+	{
+		vel.x.value = 0;
+		accel.x.value = 0;
+	}
+
+	if (touchedWall != 0 && (pushTimer > 0))
+	{
+		target->root.x -= vel.x;
+	}
+	
+	Translate(vel);
+	vel += accel;
+
+	if (root.y < floorPos) //Check collision with floor
+	{
+		root.y = floorPos;
+	}
+
+	if(blockTime > 0)
+	{
+		--blockTime;
+		return;
+	}
+
+	--pushTimer;
+	--frameDuration;
+	++totalSubframeCount;
+	++subframeCount;
 }
 
 bool Character::TurnAround(int sequence)
 {
 	if (root.x < target->root.x && GetSide() < 0) //Side switching.
 	{
+		mustTurnAround = false;
 		SetSide(1);
 		GotoSequence(sequence);
 		return true;
 	}
 	else if (root.x > target->root.x && GetSide() > 0)
 	{
+		mustTurnAround = false;
 		SetSide(-1);
 		GotoSequence(sequence);
 		return true;
@@ -480,8 +469,9 @@ void Character::Input(input_deque &keyPresses)
 			return;
 	}
 
-	if(SuggestSequence(command.seqRef))
+	if(command.seqRef != -1)
 	{
+		GotoSequence(command.seqRef);
 		if(command.flags & CommandInputs::wipeBuffer) 
 			keyPresses.front() |= key::buf::CUT;
 

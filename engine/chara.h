@@ -27,6 +27,7 @@ private:
 	//int hitsTaken;
 	//inr damageTaken;
 	int hurtSeq = -1;
+	bool gotHit = false;
 	bool friction = false;
 	bool blockFlag = false;
 	int blockTime = 0;
@@ -40,6 +41,7 @@ private:
 
 	bool interrumpible = false;
 	bool mustTurnAround = false;
+
 
 	static bool isColliding;
 	//FixedPoint getAway; //Amount to move after collision
@@ -67,9 +69,6 @@ private:
 	bool ScriptSetup();
 	void Translate(Point2d<FixedPoint> amount);
 	void Translate(FixedPoint x, FixedPoint y);
-
-	bool SuggestSequence(int seq); //returns true on success
-
 	void GotoSequence(int seq);
 	int ResolveHit(int keypress, Actor *hitter);
 	bool TurnAround(int sequence = -1);
