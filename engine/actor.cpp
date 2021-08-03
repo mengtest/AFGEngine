@@ -194,11 +194,6 @@ void Actor::Update()
 		}
 	}
 
-	if(flags & followParent && parent)
-	{
-		vel = parent->vel;
-		accel = parent->accel;
-	}
 	if (flags & floorCheck && root.y + vel.y < floorPos) //Check collision with floor
 	{
 		root.y = floorPos;
@@ -211,7 +206,6 @@ void Actor::Update()
 		--hitstop;
 		return;
 	}
-
 	
 	Translate(vel);
 	vel += accel;
@@ -273,7 +267,7 @@ void Actor::KillSelf()
 	}
 }
 
-void Actor::GetAllChildren(std::list<Actor*> &list, bool includeSelf)
+void Actor::GetAllChildren(std::vector<Actor*> &list, bool includeSelf)
 {
 	for(auto &child : children)
 	{

@@ -70,10 +70,14 @@ void RenderContext::UpdateViewport(float width, float height)
 	}
 }
 
-void RenderContext::SetModelView(glm::mat4 view)
+void RenderContext::SetModelView(glm::mat4& view)
 {
-	view = projection*view;
-	uniforms.SetData(glm::value_ptr(view));
+	uniforms.SetData(glm::value_ptr(projection*view));
+}
+
+void RenderContext::SetModelView(glm::mat4&& view)
+{
+	uniforms.SetData(glm::value_ptr(projection*view));
 }
 
 void RenderContext::PushShaderUboBind(Shader *shader)

@@ -12,6 +12,8 @@
 #include <string>
 #include <unordered_map>
 #include <vector>
+#include <thread>
+#include <functional>
 
 //#include "audio.h"
 #include "camera.h"
@@ -36,6 +38,25 @@ const char *texNames[] ={
 
 int gameState = GS_MENU;
 
+void ExecuteSplitThread(std::function<void(int,int)> func, int containerSize)
+{		
+	constexpr int maxThreads = 2;
+	std::array<std::thread,maxThreads> threads;
+	int size = containerSize;
+	int mod = size%maxThreads;
+	int i = 0;
+	for(auto &th : threads)
+	{
+		int adder = size/maxThreads;
+		if(i==0)
+			adder+=mod;
+		th = std::thread(func, i, i+adder);
+		
+		i += adder;
+	}
+	for(auto &th : threads)
+		th.join();
+}
 
 int main(int argc, char** argv)
 {
@@ -167,6 +188,9 @@ void PlayLoop()
 
 	VaoTexOnly.Bind();
 	glClearColor(1, 1, 1, 1.f); 
+	std::vector<Actor*> drawList;
+	std::vector<Actor*> updateList;
+	std::vector<glm::mat4> transforms;
 
 	int32_t gameTicks = 0;
 	bool gameOver = false;
@@ -195,14 +219,13 @@ void PlayLoop()
 		player.Input(keyBufDelayed[0]);
 		player2.Input(keyBufDelayed[1]);
 
-		std::list<Actor*> updateList;
+		updateList.clear();
 		player.GetAllChildren(updateList);
 		player2.GetAllChildren(updateList);
+
 		for(auto actor: updateList)
 			actor->Update();
-
 		
-
 		Character::Collision(&player, &player2);
 
 		barHandler[B_P1Life].Resize(player.getHealthRatio(), 1);
@@ -222,35 +245,53 @@ void PlayLoop()
 		VaoTexOnly.Draw(stageId, 0, GL_TRIANGLE_FAN);
 
 		//Draw characters
+		auto setTransforms = [&drawList, &transforms, &viewMatrix](int from, int to){
+			for(int i = from; i < to; i++)
+			{
+				transforms[i] = (viewMatrix*drawList[i]->GetSpriteTransform());
+			}
+		};
+
+		
   		gfx.Begin();
-		gfx.SetPaletteSlot(1);
+ 		gfx.SetPaletteSlot(1);
 
-		std::list<Actor*> drawList;
-		player2.GetAllChildren(drawList);
-		for(auto actor : drawList)
-		{
-			mainWindow->context.SetModelView(viewMatrix*actor->GetSpriteTransform());
-			gfx.Draw(actor->GetSpriteIndex());
-		}
 		drawList.clear();
+		player2.GetAllChildren(drawList);
+		transforms.resize(drawList.size());
+		ExecuteSplitThread(setTransforms, drawList.size());
 
-		gfx.SetPaletteSlot(0);
-		player.GetAllChildren(drawList);
+		int transI = 0;
 		for(auto actor : drawList)
 		{
-			mainWindow->context.SetModelView(viewMatrix*actor->GetSpriteTransform());
+			//mainWindow->context.SetModelView(viewMatrix*actor->GetSpriteTransform());
+			mainWindow->context.SetModelView(transforms[transI]);
 			gfx.Draw(actor->GetSpriteIndex());
+			++transI;
 		}
+		
+		
+		gfx.SetPaletteSlot(0);
 
-/* 		glBlendFunc(GL_SRC_ALPHA, GL_ONE);
-		gfx.Draw(2000);
-		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA); */
+		drawList.clear();
+		player.GetAllChildren(drawList);
+		transforms.resize(drawList.size());
+		ExecuteSplitThread(setTransforms, drawList.size());
+
+		transI = 0;
+		for(auto actor : drawList)
+		{
+			//mainWindow->context.SetModelView(viewMatrix*actor->GetSpriteTransform());
+			mainWindow->context.SetModelView(transforms[transI]);
+			gfx.Draw(actor->GetSpriteIndex());
+			++transI;
+		}
 		gfx.End();
 
 		//Draw HUD
 		VaoTexOnly.Bind();
 		mainWindow->context.SetShader(RenderContext::DEFAULT);
-		mainWindow->context.SetModelView();
+		mainWindow->context.SetModelView(glm::mat4(1));
 		glBindTexture(GL_TEXTURE_2D, activeTextures[T_HUD].id);
 		VaoTexOnly.Draw(hudId); 
 

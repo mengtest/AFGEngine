@@ -102,7 +102,7 @@ void Character::Collision(Character *playerOne, Character *playerTwo)
 
 void Character::HitCollision(Character &blue, Character &red, int blueKey, int redKey)
 {
-	std::list<Actor*> blueList, redList;
+	std::vector<Actor*> blueList, redList;
 	//Idea: getEvil/GoodChildren maybe? lol
 	blue.GetAllChildren(blueList); 
 	red.GetAllChildren(redList); 
@@ -328,7 +328,7 @@ void Character::Update()
 		}
 	}
 
-	if (root.y + vel.y < floorPos) //Check collision with floor
+	if (root.y < floorPos) //Check collision with floor
 	{
 		root.y = floorPos;
 		GotoFrame(seqPointer->props.landFrame);
@@ -377,7 +377,7 @@ void Character::Update()
 
 	if (root.y < floorPos) //Check collision with floor
 	{
-		root.y = floorPos;
+		root.y.value = floorPos.value-1;
 	}
 
 	if(blockTime > 0)

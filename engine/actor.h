@@ -100,7 +100,7 @@ public:
 	static bool HitCollision(const Actor& hurt, const Actor& hit);
 	static void DeclareActorLua(sol::state &lua);
 
-	void GetAllChildren(std::list<Actor*> &list, bool includeSelf = true);
+	void GetAllChildren(std::vector<Actor*> &list, bool includeSelf = true);
 
 protected:
 	void SeqFun();

@@ -25,7 +25,8 @@ public:
 	~RenderContext();
 
 	void SetupGl(SDL_Window *window);
-	void SetModelView(glm::mat4 view = glm::mat4(1));
+	void SetModelView(glm::mat4 &view);
+	void SetModelView(glm::mat4 &&view);
 	void UpdateViewport(float width, float height);
 
 	//Bad idea maybe
