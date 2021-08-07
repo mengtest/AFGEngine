@@ -7,6 +7,7 @@
 #include <vector>
 #include <filesystem>
 #include <sol/sol.hpp>
+#include <glm/mat4x4.hpp>
 
 constexpr int speedMultiplier = 240;
 
@@ -47,6 +48,7 @@ struct Frame
 	boxes_t greenboxes;
 	boxes_t redboxes;
 	Rect2d<FixedPoint> colbox;
+	glm::mat4 transform;
 };
 
 struct seqProp

@@ -1,22 +1,32 @@
 [submodule "SDL"]
 	path = submodules/SDL
 	url = https://github.com/libsdl-org/SDL.git
-[submodule "submodules/imgui"]
-	path = submodules/imgui
-	url = https://github.com/ocornut/imgui.git
-	branch = docking
+	shallow = true
 [submodule "submodules/zlib"]
 	path = submodules/zlib
 	url = https://github.com/meifuku/zlib.git
+	shallow = true
 [submodule "submodules/libpng"]
 	path = submodules/libpng
 	url = https://github.com/glennrp/libpng.git
+	shallow = true
 [submodule "submodules/glm"]
 	path = submodules/glm
 	url = https://github.com/g-truc/glm.git
+	shallow = true
 [submodule "submodules/nfd"]
 	path = submodules/nfd
 	url = https://github.com/btzy/nativefiledialog-extended.git
+	shallow = true
 [submodule "submodules/lua"]
 	path = submodules/lua
 	url = https://github.com/walterschell/Lua.git
+	shallow = true
+[submodule "submodules/lz4"]
+	path = submodules/lz4
+	url = https://github.com/lz4/lz4.git
+	shallow = true
+[submodule "submodules/zstd"]
+	path = submodules/zstd
+	url = https://github.com/facebook/zstd.git
+	shallow = true

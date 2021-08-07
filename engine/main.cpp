@@ -38,26 +38,6 @@ const char *texNames[] ={
 
 int gameState = GS_MENU;
 
-void ExecuteSplitThread(std::function<void(int,int)> func, int containerSize)
-{		
-	constexpr int maxThreads = 2;
-	std::array<std::thread,maxThreads> threads;
-	int size = containerSize;
-	int mod = size%maxThreads;
-	int i = 0;
-	for(auto &th : threads)
-	{
-		int adder = size/maxThreads;
-		if(i==0)
-			adder+=mod;
-		th = std::thread(func, i, i+adder);
-		
-		i += adder;
-	}
-	for(auto &th : threads)
-		th.join();
-}
-
 int main(int argc, char** argv)
 {
 	mainWindow = new Window();
@@ -190,7 +170,6 @@ void PlayLoop()
 	glClearColor(1, 1, 1, 1.f); 
 	std::vector<Actor*> drawList;
 	std::vector<Actor*> updateList;
-	std::vector<glm::mat4> transforms;
 
 	int32_t gameTicks = 0;
 	bool gameOver = false;
@@ -245,27 +224,17 @@ void PlayLoop()
 		VaoTexOnly.Draw(stageId, 0, GL_TRIANGLE_FAN);
 
 		//Draw characters
-		auto setTransforms = [&drawList, &transforms, &viewMatrix](int from, int to){
-			for(int i = from; i < to; i++)
-			{
-				transforms[i] = (viewMatrix*drawList[i]->GetSpriteTransform());
-			}
-		};
-
-		
   		gfx.Begin();
  		gfx.SetPaletteSlot(1);
 
 		drawList.clear();
 		player2.GetAllChildren(drawList);
-		transforms.resize(drawList.size());
-		ExecuteSplitThread(setTransforms, drawList.size());
+
 
 		int transI = 0;
 		for(auto actor : drawList)
 		{
-			//mainWindow->context.SetModelView(viewMatrix*actor->GetSpriteTransform());
-			mainWindow->context.SetModelView(transforms[transI]);
+			mainWindow->context.SetModelView(viewMatrix*actor->GetSpriteTransform());
 			gfx.Draw(actor->GetSpriteIndex());
 			++transI;
 		}
@@ -275,17 +244,14 @@ void PlayLoop()
 
 		drawList.clear();
 		player.GetAllChildren(drawList);
-		transforms.resize(drawList.size());
-		ExecuteSplitThread(setTransforms, drawList.size());
 
 		transI = 0;
 		for(auto actor : drawList)
 		{
-			//mainWindow->context.SetModelView(viewMatrix*actor->GetSpriteTransform());
-			mainWindow->context.SetModelView(transforms[transI]);
+			mainWindow->context.SetModelView(viewMatrix*actor->GetSpriteTransform());
 			gfx.Draw(actor->GetSpriteIndex());
 			++transI;
-		}
+		} 
 		gfx.End();
 
 		//Draw HUD
@@ -296,13 +262,12 @@ void PlayLoop()
 		VaoTexOnly.Draw(hudId); 
 
 		timerString.seekp(0);
-		timerString << "SFP: " << mainWindow->GetSpf() << " FPS: " << 1/mainWindow->GetSpf();
+		timerString << "SFP: " << mainWindow->GetSpf() << " FPS: " << 1/mainWindow->GetSpf()<<"      Entities:"<<updateList.size()<<"  ";
 
 		glBindTexture(GL_TEXTURE_2D, activeTextures[T_FONT].id);
 		int count = DrawText(timerString.str(), textVertData, 2, 10);
 		VaoTexOnly.UpdateBuffer(textId, textVertData.data());
 		VaoTexOnly.Draw(textId, count);
-
 		//End drawing.
 		++gameTicks;
 		mainWindow->SwapBuffers();

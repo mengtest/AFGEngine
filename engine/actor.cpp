@@ -118,25 +118,11 @@ int Actor::GetSpriteIndex()
 
 glm::mat4 Actor::GetSpriteTransform()
 {
-	glm::mat4 transform(1.f);
-	float rotX = framePointer->frameProp.rotation[0];
-	float rotY = framePointer->frameProp.rotation[1];
-	float rotZ = framePointer->frameProp.rotation[2];
-	float offsetX = framePointer->frameProp.spriteOffset[0];
-	float offsetY = framePointer->frameProp.spriteOffset[1];
-	float scaleX = framePointer->frameProp.scale[0];
-	float scaleY = framePointer->frameProp.scale[1];
-	
-	constexpr float tau = glm::pi<float>()*2.f;
-	transform = glm::translate(transform, glm::vec3(root.x, root.y, 0));
-	transform = glm::scale(transform, glm::vec3(side*scaleX, scaleY, 1.f));
-	transform = glm::rotate(transform, -rotZ*tau, glm::vec3(0.0, 0.f, 1.f));
-	transform = glm::rotate(transform, rotY*tau, glm::vec3(0.0, 1.f, 0.f));
-	transform = glm::rotate(transform, rotX*tau, glm::vec3(1.0, 0.f, 0.f));
-	transform = glm::translate(transform, glm::vec3(offsetX, -offsetY, 0));
-	
-	//transform = glm::translate(transform, glm::vec3(-128, -40.f, 0));
-	return transform;
+	int x = framePointer->frameProp.spriteOffset[0];
+	int y = framePointer->frameProp.spriteOffset[1];
+	glm::mat4 transform = glm::scale(glm::mat4(1.f), glm::vec3(side,1,0))*framePointer->transform *
+		glm::translate(glm::mat4(1.f), glm::vec3(x, -y, 0));
+	return glm::translate(glm::mat4(1.f), glm::vec3(root.x, root.y, 0))*transform;
 }
 
 void Actor::SeqFun()
