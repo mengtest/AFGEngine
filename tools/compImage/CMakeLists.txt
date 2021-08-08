@@ -3,6 +3,7 @@ add_executable(compImage)
 target_link_libraries(compImage PRIVATE
 	Image
 	squish
+	lz4_static
 )
 
 #target_include_directories(PackImage PRIVATE ".")

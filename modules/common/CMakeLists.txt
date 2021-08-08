@@ -9,5 +9,5 @@ target_sources(Common PRIVATE
 	gfx_handler.cpp
 )
 
-target_link_libraries(Common PUBLIC Image glad::glad)
+target_link_libraries(Common PUBLIC Image lz4_static glad::glad)
 target_link_libraries(Common PRIVATE sol2::sol2)

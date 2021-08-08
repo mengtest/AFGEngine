@@ -166,6 +166,7 @@ bool ImageData::WriteAsPng(const char* file_name, const char* palette_file) cons
 
 bool ImageData::LoadFromPng(const char* file_name, const char* palette_file, bool linearAlpha)
 {
+	FreeData();
 	png_byte header[8];
 	FILE *fp = fopen(file_name, "rb");
 	if (fp == 0)

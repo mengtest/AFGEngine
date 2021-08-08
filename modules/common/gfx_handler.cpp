@@ -38,19 +38,18 @@ int GfxHandler::LoadGfxFromDef(std::filesystem::path defFile)
 		Texture texture;
 		if(indexed)
 		{
-			texture.Load((folder/imageFile).string(), true);
-			texture.Apply(false, false, true);
+			texture_options opt;
+			opt.rectangle = true;
+			texture.LoadPng(folder/imageFile, opt);
 		}
 		else
 		{
-			texture.Load((folder/imageFile).string(), true);
-			texture.Apply(false, true, true);
+			texture_options opt;
+			opt.linearFilter = true;
+			opt.rectangle = true;
+			texture.LoadPng(folder/imageFile, opt);
 		}
-		
-		
-		texture.Unload();
 		textures.push_back(std::move(texture));
-
 		LoadToVao(folder/vertexFile, mapId, textures.size()-1);
 	}
 	return mapId;
@@ -117,7 +116,7 @@ void GfxHandler::Draw(int id, int defId)
 			boundTexture = meta.textureIndex;
 			glBindTexture(GL_TEXTURE_RECTANGLE, textures[boundTexture].id);
 		}
-		int nextProgram = textures[boundTexture].image->bytesPerPixel;
+		int nextProgram = textures[boundTexture].is8bpp;
 		if(boundProgram != nextProgram)
 		{
 			boundProgram = nextProgram;

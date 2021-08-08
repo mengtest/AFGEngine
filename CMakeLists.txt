@@ -43,6 +43,11 @@ if(AFGE_USE_SUBMODULES)
 	add_subdirectory(submodules/glm)
 	add_subdirectory(submodules/SDL)
 	include(imgui)
+
+	set(LZ4_BUILD_CLI OFF)
+	set(LZ4_BUILD_LEGACY_LZ4C OFF)
+	add_subdirectory(submodules/lz4/build/cmake)
+	target_include_directories(lz4_static INTERFACE submodules/lz4/lib)
 endif()
 
 if(NOT AFGE_USE_SUBMODULES)
