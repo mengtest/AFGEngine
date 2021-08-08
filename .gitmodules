@@ -30,3 +30,9 @@
 	path = submodules/zstd
 	url = https://github.com/facebook/zstd.git
 	shallow = true
+[submodule "submodules/imgui"]
+	path = submodules/imgui
+	url = https://github.com/ocornut/imgui.git
+[submodule "submodules/squish"]
+	path = submodules/squish
+	url = https://github.com/meifuku/libsquish.git

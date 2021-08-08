@@ -59,6 +59,7 @@ if(AFGE_BUILD_TOOLS)
 	if(NOT AFGE_USE_SUBMODULES)
 		find_package(imgui CONFIG REQUIRED)
 	endif()
+	add_subdirectory(submodules/squish) 
 	#Not supported by non-submodule build
 	add_subdirectory(submodules/nfd) 
 
