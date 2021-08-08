@@ -89,10 +89,15 @@ void Texture::Apply(const texture_options &options, int dataType, int w, int h, 
 		glTexParameteri(textype, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE );
 	}
 	if(options.linearFilter)
+	{
 		glTexParameteri(textype, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+		glTexParameteri(textype, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	}
 	else
+	{
 		glTexParameteri(textype, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	glTexParameteri(textype, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+		glTexParameteri(textype, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	}
 
 	if(compressedSize)
 	{
