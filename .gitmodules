@@ -26,10 +26,6 @@
 	path = submodules/lz4
 	url = https://github.com/lz4/lz4.git
 	shallow = true
-[submodule "submodules/zstd"]
-	path = submodules/zstd
-	url = https://github.com/facebook/zstd.git
-	shallow = true
 [submodule "submodules/imgui"]
 	path = submodules/imgui
 	url = https://github.com/ocornut/imgui.git
