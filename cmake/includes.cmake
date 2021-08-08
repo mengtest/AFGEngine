@@ -1,2 +1,2 @@
-add_library(SingleHeaders INTERFACE)
-target_include_directories(SingleHeaders INTERFACE "${PROJECT_SOURCE_DIR}/submodules/include")
+add_library(args INTERFACE)
+target_include_directories(args INTERFACE "${PROJECT_SOURCE_DIR}/submodules/include")

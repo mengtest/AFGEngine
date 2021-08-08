@@ -96,7 +96,7 @@ void Texture::Apply(const texture_options &options, int dataType, int w, int h, 
 
 	if(compressedSize)
 	{
-		GLenum intType = GL_COMPRESSED_RGBA_S3TC_DXT1_EXT;
+		GLenum intType = 0;
 		switch(dataType)
 		{
 			case 1:
@@ -107,7 +107,7 @@ void Texture::Apply(const texture_options &options, int dataType, int w, int h, 
 				break;
 			case 3:
 				intType = GL_COMPRESSED_RGBA_S3TC_DXT5_EXT;
-				//intType = GL_COMPRESSED_RGBA;
+				break;
 			default:
 				std::cerr << filename.c_str() << " unhandled s3tc format "<< dataType << ".\n";
 				break;

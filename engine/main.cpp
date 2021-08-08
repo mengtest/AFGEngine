@@ -31,9 +31,9 @@ int inputDelay = 0;
 
 //TODO: Remove
 const char *texNames[] ={
-	"data/images/background.png",
-	"data/images/hud.png",
-	"data/images/font.png"
+	"data/images/background.lzs3",
+	"data/images/hud.lzs3",
+	"data/images/font.lzs3"
 	};
 
 int gameState = GS_MENU;
@@ -102,11 +102,9 @@ void PlayLoop()
 {
 	//TODO: Remove
 	std::vector<Texture> activeTextures;
-	activeTextures.reserve(3);
-	activeTextures.push_back({});
 	texture_options opt; opt.linearFilter = true;
-	activeTextures[0].LoadLzs3("data/images/background.lzs3", opt);
-	for(int i = 1; i < 3; ++i)
+	activeTextures.reserve(3);
+	for(int i = 0; i < 3; ++i)
 	{
 		Texture texture;
 		texture_options opt;
@@ -114,7 +112,7 @@ void PlayLoop()
 		if(i<3)
 			opt.linearFilter = true;
 
-		texture.LoadPng(texNames[i], opt);
+		texture.LoadLzs3(texNames[i], opt);
 		activeTextures.push_back(std::move(texture));
 	}
 	LoadPaletteTEMP();

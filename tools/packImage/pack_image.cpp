@@ -91,8 +91,8 @@ int main(int argc, char **argv)
 
 	fs::path folderIn = srcFolder.Get();
 	std::string filenameOut = folderIn.filename().string();
-	if(outName)
-		filenameOut = outName.Get();
+	
+	
 
 	int chunkSize = tileSize.Get();
 	if(chunkSize < 4 || chunkSize > 256)

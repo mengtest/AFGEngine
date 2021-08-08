@@ -5,6 +5,7 @@
 
 #Original image data
 /data/char/vaki/src/
+/data/images/src/
 pack.bat
 
 #clangd
