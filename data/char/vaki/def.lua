@@ -1,18 +1,14 @@
 --Tells the engine what files it should use.
+
 graphics = {
 	{
 		image = "vaki8.png",
 		vertex = "vaki.vt1",
-		indexed = true
 	},
 	{
+		--type = lzs3,
 		image = "vaki32.png",
 		vertex = "vaki.vt4",
-		indexed = false
-	},
-	{
-		image = "effect32.png",
-		vertex = "effect.vt4",
-		indexed = false
-	},
+		filter = true,
+	}
 }

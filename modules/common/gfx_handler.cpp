@@ -19,6 +19,7 @@ int GfxHandler::LoadGfxFromDef(std::filesystem::path defFile)
 {
 	auto folder = defFile.parent_path();
 	sol::state lua;
+	lua["lzs3"] = 1;
 	auto result = lua.script_file(defFile.string());
 	if(!result.valid()){
 		sol::error err = result;
@@ -33,22 +34,20 @@ int GfxHandler::LoadGfxFromDef(std::filesystem::path defFile)
 		sol::table arr = entry.second;
 		std::string imageFile = arr["image"];
 		std::string vertexFile = arr["vertex"];
-		bool indexed = arr["indexed"];
+		int type = arr["type"].get_or(0);
+		bool filter = arr["filter"].get_or(false);
 
 		Texture texture;
-		if(indexed)
-		{
-			texture_options opt;
-			opt.rectangle = true;
-			texture.LoadPng(folder/imageFile, opt);
-		}
-		else
-		{
-			texture_options opt;
+		texture_options opt;
+		opt.rectangle = true;
+		if(filter)
 			opt.linearFilter = true;
-			opt.rectangle = true;
+		
+		if(type == 1)
+			texture.LoadLzs3(folder/imageFile, opt);
+		else
 			texture.LoadPng(folder/imageFile, opt);
-		}
+
 		textures.push_back(std::move(texture));
 		LoadToVao(folder/vertexFile, mapId, textures.size()-1);
 	}
@@ -57,7 +56,7 @@ int GfxHandler::LoadGfxFromDef(std::filesystem::path defFile)
 
 void GfxHandler::LoadToVao(std::filesystem::path file, int mapId, int textureIndex)
 {
-	int nSprites, nChunks, indexed;
+	int nSprites, nChunks;
 	std::ifstream vertexFile(file, std::ios_base::binary);
 
 	vertexFile.read((char *)&nSprites, sizeof(int));
