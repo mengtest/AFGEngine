@@ -39,7 +39,7 @@ int GfxHandler::LoadGfxFromDef(std::filesystem::path defFile)
 
 		Texture texture;
 		texture_options opt;
-		opt.rectangle = true;
+		opt.repeat = true;
 		if(filter)
 			opt.linearFilter = true;
 		
@@ -107,13 +107,13 @@ void GfxHandler::End()
 void GfxHandler::Draw(int id, int defId)
 {
 	auto search = idMapList[defId].find(id);
-    if (search != idMapList[defId].end())
+	if (search != idMapList[defId].end())
 	{
-        auto meta = search->second;
+		auto meta = search->second;
 		if(boundTexture != meta.textureIndex)
 		{
 			boundTexture = meta.textureIndex;
-			glBindTexture(GL_TEXTURE_RECTANGLE, textures[boundTexture].id);
+			glBindTexture(GL_TEXTURE_2D, textures[boundTexture].id);
 		}
 		int nextProgram = textures[boundTexture].is8bpp;
 		if(boundProgram != nextProgram)

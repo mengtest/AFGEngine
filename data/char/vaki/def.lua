@@ -6,8 +6,8 @@ graphics = {
 		vertex = "vaki.vt1",
 	},
 	{
-		--type = lzs3,
-		image = "vaki32.png",
+		type = lzs3,
+		image = "vaki32.lzs3",
 		vertex = "vaki.vt4",
 		filter = true,
 	}
