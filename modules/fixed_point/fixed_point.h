@@ -47,12 +47,12 @@ public:
 
 	FixedPoint abs() const;
 
-	template<typename T> FixedPoint(T number);
+	template<typename T> constexpr FixedPoint(T number);
 
-	template<typename T> FixedPoint& operator=(T a);
+	template<typename T> constexpr FixedPoint& operator=(T a);
 
-	template<typename T> FixedPoint operator+(T a) const;
-	template<typename T> FixedPoint operator-(T a) const;
+	template<typename T> constexpr FixedPoint operator+(T a) const;
+	template<typename T> constexpr FixedPoint operator-(T a) const;
 	template<typename T> void operator+=(T a);
 	template<typename T> void operator-=(T a);
 
@@ -64,8 +64,8 @@ public:
 	template<typename T> bool operator!=(const T &a) const;
 
 
-	template<typename T> FixedPoint operator/(T a) const;
-	template<typename T> FixedPoint operator*(T a) const;
+	template<typename T> constexpr FixedPoint operator/(T a) const;
+	template<typename T> constexpr FixedPoint operator*(T a) const;
 
 private:
 	static constexpr int fracBits = FP_FRACBITS;
@@ -121,13 +121,13 @@ constexpr FixedPoint::FixedPoint(int integral, unsigned int fractional) : value(
 }
 
 template<typename T>
-FixedPoint::FixedPoint(T number)
+constexpr FixedPoint::FixedPoint(T number)
 {
 	value = ToFixed(number);
 }
 
 template<typename T>
-FixedPoint& FixedPoint::operator=(T a)
+constexpr FixedPoint& FixedPoint::operator=(T a)
 {
 	value = ToFixed(a);
 	return *this;
@@ -136,28 +136,28 @@ FixedPoint& FixedPoint::operator=(T a)
 //Arithmetic
 
 template<typename T>
-FixedPoint FixedPoint::operator+(T a) const
+constexpr FixedPoint FixedPoint::operator+(T a) const
 {
 	const FixedPoint operand(a);
 	return operator+(operand);
 }
 
 template<typename T>
-FixedPoint FixedPoint::operator-(T a) const
+constexpr FixedPoint FixedPoint::operator-(T a) const
 {
 	const FixedPoint operand(a);
 	return operator-(operand);
 }
 
 template<typename T>
-FixedPoint FixedPoint::operator*(T a) const
+constexpr FixedPoint FixedPoint::operator*(T a) const
 {
 	const FixedPoint operand(a);
 	return operator*(operand);
 }
 
 template<typename T>
-FixedPoint FixedPoint::operator/(T a) const
+constexpr FixedPoint FixedPoint::operator/(T a) const
 {
 	const FixedPoint operand(a);
 	return operator/(operand);

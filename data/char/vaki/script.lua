@@ -179,7 +179,7 @@ function speedLim(actor)
 end
 
 function blocking(actor)
-	if(actor.gotHit) then
+	if(global.GetBlockTime() > 0) then
 		actor:GotoFrame(2)
 	end
 end
