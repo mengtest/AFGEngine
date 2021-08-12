@@ -17,6 +17,7 @@ pack.bat
 
 #build artifacts
 /build/
+/static/
 /release/
 AFGEngine.exe
 compile_commands.json

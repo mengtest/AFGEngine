@@ -242,6 +242,7 @@ function s5c (actor)
 		hitdef.hitStop = histopTbl.strong
 		hitdef.blockStun = 20
 		hitdef.damage = 1400
+		hitdef.shakeTime = 12
 	end
 end
 
@@ -274,6 +275,7 @@ function s2c (actor)
 		hitdef.hitStop = histopTbl.strong
 		hitdef.blockStun = 20
 		hitdef.damage = 1200
+		hitdef.shakeTime = 12
 	end
 end
 
@@ -286,6 +288,7 @@ function s4c (actor)
 		hitdef.hitStop = histopTbl.medium
 		hitdef.blockStun = 17
 		hitdef.damage = 500
+		hitdef.shakeTime = 12
 	end
 end
 
@@ -325,6 +328,7 @@ function sjc (actor)
 		hitdef.hitStop = histopTbl.strong
 		hitdef.blockStun = 20
 		hitdef.damage = 1000
+		hitdef.shakeTime = 12
 	end
 end
 
@@ -337,6 +341,7 @@ function s3c (actor)
 		hitdef.hitStop = histopTbl.medium
 		hitdef.blockStun = 20
 		hitdef.damage = 700
+		hitdef.shakeTime = 8
 	end
 end
 

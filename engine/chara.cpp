@@ -11,9 +11,10 @@
 
 bool Character::isColliding;
 
-Character::Character(FixedPoint xPos, float side, std::string charFile) :
+Character::Character(FixedPoint xPos, float side, std::string charFile, BattleScene& scene) :
 Actor(sequences, lua),
-touchedWall(0)
+touchedWall(0),
+scene(scene)
 {
 	root.x = xPos;
 	root.y = floorPos;
@@ -39,11 +40,6 @@ touchedWall(0)
 Point2d<FixedPoint> Character::getXYCoords()
 {
 	return root;
-}
-
-void Character::SetCameraRef(Camera *ref)
-{
-	currView = ref;
 }
 
 void Character::setTarget(Character *t)
@@ -146,19 +142,20 @@ void Character::HitCollision(Character &blue, Character &red, int blueKey, int r
 
 void Character::BoundaryCollision()
 {
+	Camera &currView = scene.view;
 	const FixedPoint wallOffset(10);
 	touchedWall = 0;
 
-	if (root.x <= currView->GetWallPos(camera::leftWall) + wallOffset)
+	if (root.x <= currView.GetWallPos(camera::leftWall) + wallOffset)
 	{
 		touchedWall = -1;
-		root.x = currView->GetWallPos(camera::leftWall) + wallOffset;
+		root.x = currView.GetWallPos(camera::leftWall) + wallOffset;
 	}
 
-	else if (root.x >= currView->GetWallPos(camera::rightWall) - wallOffset)
+	else if (root.x >= currView.GetWallPos(camera::rightWall) - wallOffset)
 	{
 		touchedWall = 1;
-		root.x = currView->GetWallPos(camera::rightWall) - wallOffset;
+		root.x = currView.GetWallPos(camera::rightWall) - wallOffset;
 	}
 
 	if (touchedWall == target->touchedWall) //Someone already has the wall.
@@ -217,6 +214,7 @@ int Character::ResolveHit(int keypress, Actor *hitter) //key processing really s
 
 			gotHit = true;
 			hurtSeq = seq;
+			shaking = true;
 			//TODO: Call lua hit func Here.
 		}
 	}
@@ -225,6 +223,7 @@ int Character::ResolveHit(int keypress, Actor *hitter) //key processing really s
 		return hitType::blocked;
 	else
 	{
+		scene.view.SetShakeTime(hitData->shakeTime);
 		health -= hitData->damage;
 		return hitType::hurt;
 	}
@@ -328,7 +327,7 @@ void Character::Update()
 		}
 	}
 
-	if (root.y < floorPos) //Check collision with floor
+	if (root.y < floorPos && !hitstop) //Check collision with floor
 	{
 		root.y = floorPos;
 		GotoFrame(seqPointer->props.landFrame);
@@ -355,6 +354,8 @@ void Character::Update()
 		--hitstop;
 		return;
 	}
+	else
+		shaking = false;
 
 	if(friction && (vel.x.value < 0 && accel.x.value < 0)) //Pushback can't accelerate. Only slow down.
 	{

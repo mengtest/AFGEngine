@@ -15,7 +15,7 @@
 #include <thread>
 #include <functional>
 
-//#include "audio.h"
+#include "battle_scene.h"
 #include "camera.h"
 #include "chara.h"
 #include "hud.h"
@@ -142,20 +142,17 @@ void PlayLoop()
 		VaoTexOnly.Load();
 	}
 
-	Camera view(1.5);
+	BattleScene scene;
+	Camera &view = scene.view;
 
-	Character player(-50, 1, "data/char/vaki/vaki.char");
-	Character player2(50, -1, "data/char/vaki/vaki.char");
+	Character player(-50, 1, "data/char/vaki/vaki.char", scene);
+	Character player2(50, -1, "data/char/vaki/vaki.char", scene);
 	
 	GfxHandler gfx;
 	mainWindow->context.PushShaderUboBind(&gfx.indexedS);
 	mainWindow->context.PushShaderUboBind(&gfx.rectS);
 	gfx.LoadGfxFromDef("data/char/vaki/def.lua");
 	gfx.LoadingDone();
-
-	player.SetCameraRef(&view);
-	player2.SetCameraRef(&view);
-	//player.SpawnChild();
 
 	player.setTarget(&player2);
 	player2.setTarget(&player);

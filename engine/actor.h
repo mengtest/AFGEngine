@@ -34,6 +34,7 @@ struct HitDef
 	int priority = 0;
 	int soundFx = 0;
 	int hitFx = 0;
+	int shakeTime;
 
 	void Clear();
 	void SetVectors(int state, sol::table onHit, sol::table onBlock);
@@ -69,6 +70,7 @@ protected:
 
 	int hitCount = 0;
 	bool hittable = false;
+	bool shaking = false; //Shakes on hitstop.
 	enum hitType {
 		none,
 		hurt,

@@ -6,6 +6,7 @@
 #include "command_inputs.h"
 #include "fixed_point.h"
 #include "actor.h"
+#include "battle_scene.h"
 #include <geometry.h>
 
 #include <deque>
@@ -36,7 +37,7 @@ private:
 	CommandInputs cmd;
 	unsigned int lastKey[2]{};
 
-	Camera *currView;
+	BattleScene& scene;
 	Character* target;
 
 	bool interrumpible = false;
@@ -49,14 +50,13 @@ private:
 	MotionData lastCommand;
 
 public:
-	Character(FixedPoint posX, float side, std::string charFile);
+	Character(FixedPoint posX, float side, std::string charFile, BattleScene& scene);
 
 	void Update();
 
 	float getHealthRatio();
 	Point2d<FixedPoint> getXYCoords();
 
-	void SetCameraRef(Camera *ref);
 	void setTarget(Character* target);
 
 	void BoundaryCollision(); //Collision against stage

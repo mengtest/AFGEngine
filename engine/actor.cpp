@@ -120,6 +120,8 @@ glm::mat4 Actor::GetSpriteTransform()
 {
 	int x = framePointer->frameProp.spriteOffset[0];
 	int y = framePointer->frameProp.spriteOffset[1];
+	if(hitstop && shaking)
+		x -= 2*(hitstop%2);
 	glm::mat4 transform = glm::scale(glm::mat4(1.f), glm::vec3(side,1,0))*framePointer->transform *
 		glm::translate(glm::mat4(1.f), glm::vec3(x, -y, 0));
 	return glm::translate(glm::mat4(1.f), glm::vec3(root.x, root.y, 0))*transform;
@@ -192,6 +194,8 @@ void Actor::Update()
 		--hitstop;
 		return;
 	}
+	else
+		shaking = false;
 	
 	Translate(vel);
 	vel += accel;
@@ -285,7 +289,8 @@ void Actor::DeclareActorLua(sol::state &lua)
 		"priority", &HitDef::priority, 
 		"soundFx", &HitDef::soundFx, 
 		"hitFx", &HitDef::hitFx,
-		"SetVectors", &HitDef::SetVectors
+		"SetVectors", &HitDef::SetVectors,
+		"shakeTime", &HitDef::shakeTime
 	);
 
 	lua.new_usertype<Actor>("Actor",
@@ -343,5 +348,6 @@ void HitDef::Clear()
 	priority = 0;
 	soundFx = 0;
 	hitFx = 0;
+	shakeTime = 0;
 	vectorTables.clear();
 }
