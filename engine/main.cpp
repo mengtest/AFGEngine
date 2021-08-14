@@ -151,6 +151,7 @@ void PlayLoop()
 	GfxHandler gfx;
 	mainWindow->context.PushShaderUboBind(&gfx.indexedS);
 	mainWindow->context.PushShaderUboBind(&gfx.rectS);
+	mainWindow->context.PushShaderUboBind(&gfx.particleS);
 	gfx.LoadGfxFromDef("data/char/vaki/def.lua");
 	gfx.LoadingDone();
 
@@ -165,6 +166,8 @@ void PlayLoop()
 	glClearColor(1, 1, 1, 1.f); 
 	std::vector<Actor*> drawList;
 	std::vector<Actor*> updateList;
+
+	std::vector<GfxHandler::particleData> particles(120);
 
 	int32_t gameTicks = 0;
 	bool gameOver = false;
@@ -202,6 +205,22 @@ void PlayLoop()
 		
 		Character::Collision(&player, &player2);
 
+		for(auto &particle : particles)
+		{
+			particle.pos[0] += (float)(rand()%256 - 128)/10;
+			particle.pos[1] += (float)(rand()%256 - 128)/10;
+			if(gameTicks%60 == 0)
+			{
+				particle.scale[0] = 1;
+				particle.scale[1] = 1;
+			}
+			else
+			{
+				particle.scale[0] *= (float)(rand()%4000+2000)/4000.f;
+				particle.scale[1] = particle.scale[0];
+			}
+		}
+
 		barHandler[B_P1Life].Resize(player.getHealthRatio(), 1);
 		barHandler[B_P2Life].Resize(player2.getHealthRatio(), 1);
 		VaoTexOnly.UpdateBuffer(hudId, GetHudData().data(), GetHudData().size()*sizeof(float));
@@ -209,6 +228,8 @@ void PlayLoop()
 
 		//Start rendering
 		glClear(GL_COLOR_BUFFER_BIT);
+
+		
 		
 		//Should calculations be performed earlier? Watchout for this (Why?)
 		glm::mat4 viewMatrix = view.Calculate(player.getXYCoords(), player2.getXYCoords());
@@ -216,38 +237,34 @@ void PlayLoop()
 
 		//Draw stage quad
 		glBindTexture(GL_TEXTURE_2D, activeTextures[T_STAGELAYER1].id);
-		VaoTexOnly.Draw(stageId, 0, GL_TRIANGLE_FAN);
+		VaoTexOnly.Draw(stageId, GL_TRIANGLE_FAN);
 
 		//Draw characters
   		gfx.Begin();
+		
  		gfx.SetPaletteSlot(1);
-
 		drawList.clear();
 		player2.GetAllChildren(drawList);
 
-
-		int transI = 0;
 		for(auto actor : drawList)
 		{
 			mainWindow->context.SetModelView(viewMatrix*actor->GetSpriteTransform());
 			gfx.Draw(actor->GetSpriteIndex());
-			++transI;
 		}
 		
-		
 		gfx.SetPaletteSlot(0);
-
 		drawList.clear();
 		player.GetAllChildren(drawList);
-
-		transI = 0;
 		for(auto actor : drawList)
 		{
 			mainWindow->context.SetModelView(viewMatrix*actor->GetSpriteTransform());
 			gfx.Draw(actor->GetSpriteIndex());
-			++transI;
 		} 
+		//glBlendFunc(GL_SRC_ALPHA, GL_ONE);
+		gfx.DrawParticles(particles, 2000);
+		//glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 		gfx.End();
+		
 
 		//Draw HUD
 		VaoTexOnly.Bind();
@@ -262,7 +279,7 @@ void PlayLoop()
 		glBindTexture(GL_TEXTURE_2D, activeTextures[T_FONT].id);
 		int count = DrawText(timerString.str(), textVertData, 2, 10);
 		VaoTexOnly.UpdateBuffer(textId, textVertData.data());
-		VaoTexOnly.Draw(textId, count);
+		VaoTexOnly.Draw(textId);
 		//End drawing.
 		++gameTicks;
 		mainWindow->SwapBuffers();

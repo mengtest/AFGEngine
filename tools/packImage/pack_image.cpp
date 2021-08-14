@@ -18,6 +18,8 @@
 
 //Pairs filename with the desired ID.
 int xOffset, yOffset;
+bool centerH = false;
+bool centerV = false;
 std::unordered_map<std::string, int> nameMap;
 
 bool ignoreCaseCompare(std::string &&str1, std::string &&str2)
@@ -50,50 +52,58 @@ int main(int argc, char **argv)
 	args::Positional<std::string> srcFolder(parser, "FOLDER", "Folder containing the images.");
 	args::Positional<std::tuple<int,int>> pivot(parser, "X,Y", "Pivot: X and Y amount to offset the ouput vertex coordinates");
 	args::HelpFlag help(parser, "help", "Display this help menu.", {'h', "help"});
-    args::ValueFlag<std::string> outName(parser, "name", "Output filename. Defaults to [FOLDER].", {'o'});
+	args::Flag namesOnly(parser, "namesOnly", "Only output names.txt", {'n',"names"});
+	args::ValueFlag<int> startingNameIndex(parser, "index", "Starting index in names.txt.", {'i', "index"}, 16);
+	args::ValueFlag<std::string> outName(parser, "name", "Output filename. Defaults to [FOLDER].", {'o'});
 	args::Flag pow2flag(parser, "pow2", "Make output dimensions a power of two.", {'p',"pow2"});
 	args::Flag borderFlag(parser, "border", "Add a 1px border around each tile to avoid texture bleeding.", {'b',"border"});
 	args::ValueFlag<int> tileSize(parser, "size",
 		"The size in pixel of a square tile. Defaults to 16.", {'s', "size"}, 16);
+	args::ValueFlag<std::string> center(parser, "'h' or 'v'", "Center the pivot horizontally and/or vertically. Overrides pivot offset.", {'c'});
 	args::Group pickGroup(parser, "Optionally pick only one type:", args::Group::Validators::AtMostOne);
-    args::Flag only8(pickGroup, "only8", "Only process 8bpp images", {"8bpp"});
-    args::Flag only32(pickGroup, "only32", "Only process 32bpp images", {"32bpp"});
+	args::Flag only8(pickGroup, "only8", "Only process 8bpp images", {"8bpp"});
+	args::Flag only32(pickGroup, "only32", "Only process 32bpp images", {"32bpp"});
 
-    try
-    {
-        parser.ParseCLI(argc, argv);
+	try
+	{
+		parser.ParseCLI(argc, argv);
 		if(!srcFolder)
 		{
 			std::cout << "No folder chosen. Use -h for help.";
 			return 0;
 		}
-    }
-    catch (const args::Help&)
-    {
-        std::cout << parser;
-        return 0;
-    }
-    catch (const args::ParseError& e)
-    {
-        std::cerr << e.what() << std::endl;
-        std::cerr << parser;
-        return 1;
-    }
+	}
+	catch (const args::Help&)
+	{
+		std::cout << parser;
+		return 0;
+	}
+	catch (const args::ParseError& e)
+	{
+		std::cerr << e.what() << std::endl;
+		std::cerr << parser;
+		return 1;
+	}
 	catch (args::ValidationError e)
-    {
-        std::cerr << e.what() << std::endl;
-        std::cerr << parser;
-        return 1;
-    }
+	{
+		std::cerr << e.what() << std::endl;
+		std::cerr << parser;
+		return 1;
+	}
 	bool border = borderFlag;
 	xOffset = std::get<0>(args::get(pivot));
 	yOffset = std::get<1>(args::get(pivot));
 
-	fs::path folderIn = srcFolder.Get();
-	std::string filenameOut = folderIn.filename().string();
-	
-	
+	if(center.Get().find('h') != std::string::npos)
+		centerH = true;
+	if(center.Get().find('v') != std::string::npos)
+		centerV = true;
 
+	fs::path folderIn = srcFolder.Get();
+	std::string filenameOut = (folderIn.parent_path()/folderIn.stem()).string();
+	if(outName)
+		filenameOut = outName;
+	
 	int chunkSize = tileSize.Get();
 	if(chunkSize < 4 || chunkSize > 256)
 	{
@@ -134,20 +144,50 @@ int main(int argc, char **argv)
 	int nChunks8 = 0; int nChunks32 = 0;
 	std::list<ImageMeta> images8bpp, images32bpp;
 	try {
-		int counter = 0;
+		int counter = startingNameIndex;
 		for(const fs::directory_entry &file : fs::directory_iterator(folderIn))
 		{
 			if(ignoreCaseCompare(file.path().extension().string(), ".png"))
 			{
-				ImageMeta im {
-					std::make_unique<ImageData>(file.path().generic_string().c_str(), nullptr, true),
-					file.path().filename().string()
-				};
-				if(im.data->data)
+				if(namesOnly)
 				{
-					if(im.data->bytesPerPixel == 1)
+					std::string&& fn = file.path().filename().string();
+					if(nameMap.count(fn) == 0)
 					{
-						if(!only32)
+						while(usedIds.count(counter) > 0)
+							counter++;
+						nameMap.insert({fn, counter});
+						counter++;
+					}
+				}
+				else
+				{
+					ImageMeta im {
+						std::make_unique<ImageData>(file.path().generic_string().c_str(), nullptr, true),
+						file.path().filename().string()
+					};
+					if(im.data->data)
+					{
+						if(im.data->bytesPerPixel == 1)
+						{
+							if(!only32)
+							{
+								if(nameMap.count(im.name) == 0)
+								{
+									while(usedIds.count(counter) > 0)
+										counter++;
+									nameMap.insert({im.name, counter});
+									counter++;
+								}
+
+								im.CalculateChunks(chunkSize);
+								nChunks8 += im.chunks.size();
+								nameMap.insert({im.name, counter});
+								images8bpp.push_back(std::move(im));
+								
+							}
+						}
+						else if(!only8)
 						{
 							if(nameMap.count(im.name) == 0)
 							{
@@ -156,26 +196,10 @@ int main(int argc, char **argv)
 								nameMap.insert({im.name, counter});
 								counter++;
 							}
-
 							im.CalculateChunks(chunkSize);
-							nChunks8 += im.chunks.size();
-							nameMap.insert({im.name, counter});
-							images8bpp.push_back(std::move(im));
-							
+							nChunks32 += im.chunks.size();
+							images32bpp.push_back(std::move(im));
 						}
-					}
-					else if(!only8)
-					{
-						if(nameMap.count(im.name) == 0)
-						{
-							while(usedIds.count(counter) > 0)
-								counter++;
-							nameMap.insert({im.name, counter});
-							counter++;
-						}
-						im.CalculateChunks(chunkSize);
-						nChunks32 += im.chunks.size();
-						images32bpp.push_back(std::move(im));
 					}
 				}
 			}
@@ -186,6 +210,15 @@ int main(int argc, char **argv)
 		std::cout << "Filesystem error: "<< ex.what() << '\n'<<"Make sure the input folder actually exists and is accessible.\n";
 		return 1;
 	}
+
+	std::ofstream outNames(folderIn.string() + "/names.txt");
+	for(const auto &name : nameMap)
+	{
+		outNames << quoted(name.first) << " "<<name.second<<"\n";
+	}
+
+	if(namesOnly)
+		return 0;
 
 	//Calculate size of atlas and write image data.
 	if(nChunks8)
@@ -231,13 +264,6 @@ int main(int argc, char **argv)
 
 		std::cout << "Done\n\n";
 	}
-
-	std::ofstream outNames(folderIn.string() + "/names.txt");
-	for(const auto &name : nameMap)
-	{
-		outNames << quoted(name.first) << " "<<name.second<<"\n";
-	}
-
 	return 0;
 }
 
@@ -395,14 +421,20 @@ void WriteVertexData(std::string filename, int nChunks, std::list<ImageMeta> &me
 	int spriteI = 0;
 	for(auto &meta: metas)
 	{
+		int x = xOffset;
+		int y = yOffset;
+		if(centerH)
+			x += meta.data->width>>1;
+		if(centerV)
+			y += meta.data->height>>1;
 		//nameMap.insert({meta.name, spriteI});
 		chunksPerSprite[spriteI] = meta.chunks.size();
 		for(auto &chunk: meta.chunks)
 		{
 			for(int i = 0; i < 6; i++)
 			{
-				data[dataI+i].x = -xOffset + chunk.pos.x + chunkSize*tX[i];
-				data[dataI+i].y = -yOffset + chunk.pos.y + chunkSize*tY[i];
+				data[dataI+i].x = -x + chunk.pos.x + chunkSize*tX[i];
+				data[dataI+i].y = -y + chunk.pos.y + chunkSize*tY[i];
 				data[dataI+i].s = chunk.tex.x + chunkSize*tX[i];
 				data[dataI+i].t = chunk.tex.y + chunkSize*tY[i];
 

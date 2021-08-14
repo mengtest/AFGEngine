@@ -47,7 +47,7 @@ inputs = {
 		{input = "~6ab", buf = 1, ref = 46, flag = f.repeatable | f.interrupts, cond = C_heightRestriction},
 		{input = "~c", buf = 2, ref = 9, flag = f.interruptible},
 		{input = "~b", buf = 2, ref = 8, flag = f.interruptible},
-		{input = "~a", buf = 2, ref = 7, flag = f.interruptible},
+		{input = "~a", buf = 2, ref = 7, flag = f.interruptible | f.repeatable},
 		
 	}
 }

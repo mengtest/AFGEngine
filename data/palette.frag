@@ -36,6 +36,4 @@ vec4 BilinearSmoothstepSample (vec2 P)
 void main(void)
 {
 	fragColor = BilinearSmoothstepSample(texCoord);
-	fragColor.g *= 0.9;
-	fragColor.b *= 0.7;
 }

@@ -34,15 +34,14 @@ private:
 	unsigned int vboId;
 	unsigned int eboId;
 
-
-
 public:
 	Vao(AttribType type, unsigned int usage, size_t eboSize = 0);
 	~Vao();
 
 	//Returns index of object that can be drawn.
 	int Prepare(size_t size, void *ptr);
-	void Draw(int which, size_t count = 0, int mode = GL_TRIANGLES);
+	void Draw(int which, int mode = GL_TRIANGLES);
+	void DrawInstances(int which, size_t instances, int mode = GL_TRIANGLES);
 	void UpdateBuffer(int which, void *data, size_t count = 0);
 	void UpdateElementBuffer(void *data, size_t count);
 	void Bind();

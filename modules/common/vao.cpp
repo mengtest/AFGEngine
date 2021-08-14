@@ -52,12 +52,18 @@ int Vao::Prepare(size_t size, void *ptr)
 	return dataPointers.size() - 1;
 }
 
-void Vao::Draw(int which, size_t count, int mode)
+void Vao::Draw(int which, int mode)
 {
-	if(count == 0)
-		count = dataPointers[which].size/stride;
+	size_t count = dataPointers[which].size/stride;
 	glDrawArrays(mode, dataPointers[which].location, count);
 }
+
+void Vao::DrawInstances(int which, size_t instances, int mode)
+{
+	int vCount = dataPointers[which].size/stride;
+	glDrawArraysInstanced(mode, dataPointers[which].location, vCount, instances);
+}
+
 
 void Vao::UpdateBuffer(int which, void *data, size_t count)
 {

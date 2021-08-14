@@ -100,7 +100,7 @@ void Render::Draw()
 	SetModelView(std::move(view));
 	glUniform1f(lAlphaS, 0.25f);
 	vGeometry.Bind();
-	vGeometry.Draw(geoParts[LINES], 0, GL_LINES);
+	vGeometry.Draw(geoParts[LINES], GL_LINES);
 
 	//Sprite
 	gfx.Begin();

@@ -30,6 +30,8 @@ private:
 	std::vector<std::unordered_map<int, spriteIdMeta>> idMapList;
 	
 	std::vector<Texture> textures;
+	
+	
 	int boundTexture = -1;
 	int boundProgram = -1;
 	int paletteSlot = 0;
@@ -39,11 +41,21 @@ private:
 
 	void LoadToVao(std::filesystem::path file, int mapId, int textureIndex);
 
+	static constexpr int stride = sizeof(float)*4;
+	static constexpr int maxParticles = 256;
+	static constexpr GLsizeiptr particleAttributeSize = stride*maxParticles; 
+	GLuint particleBuffer;
+
 public:
-	Shader indexedS, rectS;
-	
+	struct particleData{
+		float pos[2]{};
+		float scale[2] = {1,1};
+	};
+
+	Shader indexedS, rectS, particleS;
 
 	GfxHandler();
+	~GfxHandler();
 
 	//Returns the id that identifies the def file
 	int LoadGfxFromDef(std::filesystem::path defFile);
@@ -51,6 +63,7 @@ public:
 
 	void SetPaletteSlot(int palette);
 	void Draw(int id, int defId = 0);
+	void DrawParticles(std::vector<particleData> &data, int id, int defId = 0);
 	void Begin();
 	void End();
 

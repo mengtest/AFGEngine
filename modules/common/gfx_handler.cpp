@@ -8,11 +8,17 @@ vertices(Vao::F2F2_short, GL_STATIC_DRAW)
 {
 	rectS.LoadShader("data/def.vert", "data/defRect.frag");
 	indexedS.LoadShader("data/def.vert", "data/palette.frag");
+	particleS.LoadShader("data/particle.vert", "data/defRect.frag");
 	indexedS.Use();
 	//Set texture unit indexes
 	glUniform1i(indexedS.GetLoc("tex0"), 0 ); 
 	glUniform1i(indexedS.GetLoc("palette"), 1 );
 	paletteSlotL = indexedS.GetLoc("paletteSlot");
+}
+
+GfxHandler::~GfxHandler()
+{
+	glDeleteBuffers(1, &particleBuffer);
 }
 
 int GfxHandler::LoadGfxFromDef(std::filesystem::path defFile)
@@ -91,6 +97,16 @@ void GfxHandler::LoadingDone()
 	vertices.Load();
 	tempVDContainer.clear();
 	loaded = true;
+	assert(sizeof(particleData) == stride);
+	glGenBuffers(1, &particleBuffer);
+	glBindBuffer(GL_ARRAY_BUFFER, particleBuffer);
+	glBufferData(GL_ARRAY_BUFFER, particleAttributeSize, nullptr, GL_STREAM_DRAW);
+	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, stride, nullptr);
+	glEnableVertexAttribArray(2);
+	glVertexAttribPointer(3, 2, GL_FLOAT, GL_FALSE, stride, (void*)(sizeof(float)*2));
+	glEnableVertexAttribArray(3);
+	glVertexAttribDivisor(2,1);
+	glVertexAttribDivisor(3,1);
 }
 
 void GfxHandler::Begin()
@@ -127,15 +143,43 @@ void GfxHandler::Draw(int id, int defId)
 				rectS.Use();
 		}
 		
-		if(boundProgram == 1)
-			glUniform1i(paletteSlotL, paletteSlot);
 		vertices.Draw(meta.trueId);
-    }
+	}
+}
+
+void GfxHandler::DrawParticles(std::vector<particleData> &data, int id, int defId)
+{
+	const auto size = data.size();
+	if(size > 0 && size < maxParticles){
+		auto search = idMapList[defId].find(id);
+		if (search != idMapList[defId].end())
+		{
+			auto meta = search->second;
+			if(boundTexture != meta.textureIndex)
+			{
+				boundTexture = meta.textureIndex;
+				glBindTexture(GL_TEXTURE_2D, textures[boundTexture].id);
+			}
+
+			if(boundProgram != particleS.program)
+			{
+				boundProgram = particleS.program;
+				particleS.Use();
+			}
+
+			glBindBuffer(GL_ARRAY_BUFFER, particleBuffer);
+			glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(particleData)*size, data.data());
+			vertices.DrawInstances(meta.trueId, size);
+		}
+	}
 }
 
 void GfxHandler::SetPaletteSlot(int palette)
 {
+	indexedS.Use();
 	paletteSlot = palette;
+	glUniform1i(paletteSlotL, paletteSlot);
+	boundProgram = 1;
 }
 
 int GfxHandler::GetVirtualId(int id, int defId)
