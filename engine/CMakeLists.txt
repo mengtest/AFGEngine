@@ -13,7 +13,7 @@ target_sources(AFGEngine PRIVATE
 	raw_input.cpp
 	util.cpp
 	window.cpp
-	render_context.cpp
+	battle_scene.cpp
 	framedata.cpp
 	actor.cpp
 )

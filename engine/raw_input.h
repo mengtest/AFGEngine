@@ -48,5 +48,7 @@ void GameLoopJoy(); //Called directly to poll Joy stick/pad status.
 //Callbacks that are called when polling anyway.
 void GameLoopKeyHandle(SDL_KeyboardEvent &e); //In-game input processing.
 void SetupKeys(int offset); //Sets up and uses the callback to configure keys.
+void EventLoop();
+
 
 #endif // RAW_INPUT_H_INCLUDED

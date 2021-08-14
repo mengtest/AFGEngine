@@ -1,12 +1,14 @@
 #include "window.h"
+#include "raw_input.h"
 #include <shader.h>
-
-#include <SDL.h>
 
 #include <assert.h>
 #include <iostream>
 #include <chrono>
 #include <thread>
+
+#include <SDL.h>
+#include <glad/glad.h>
 
 Window *mainWindow = nullptr;
 
@@ -26,7 +28,6 @@ startClock(std::chrono::high_resolution_clock::now())
 		std::cerr << SDL_GetError();
 		throw std::runtime_error("Couldn't init SDL.");
 	}
-
 	
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
@@ -47,7 +48,7 @@ startClock(std::chrono::high_resolution_clock::now())
 		throw std::runtime_error("Couldn't create window.");
 	}
 
-	context.SetupGl(window);
+	SetupGl(window);
 
 	if(vsync)
 		SDL_GL_SetSwapInterval(1);
@@ -55,6 +56,8 @@ startClock(std::chrono::high_resolution_clock::now())
 
 Window::~Window()
 {
+	if(glcontext)
+		SDL_GL_DeleteContext(glcontext);
 	SDL_DestroyWindow( window );
 	SDL_Quit();
 }
@@ -114,3 +117,32 @@ void Window::ChangeFramerate()
 		frameRateChoice = 0;
 	targetSpf = framerateList[frameRateChoice];
 }
+
+void Window::SetupGl(SDL_Window *window)
+{
+	glcontext = SDL_GL_CreateContext(window);
+	if (!gladLoadGLLoader((GLADloadproc) SDL_GL_GetProcAddress))
+	{
+		SDL_DestroyWindow( window );
+		SDL_Quit();
+		throw std::runtime_error("Glad couldn't initialize OpenGL context.");
+	}
+
+	int width, height;
+	SDL_GetWindowSize(window, &width, &height);
+	UpdateViewport(width, height);
+}
+
+void Window::UpdateViewport(float width, float height)
+{
+	constexpr float asRatio = (float)internalWidth/(float)internalHeight;
+	if(width/height > asRatio) //wider
+	{
+		glViewport((width-height*asRatio)/2, 0, height*asRatio, height);
+	}
+	else
+	{
+		glViewport(0, (height-width/asRatio)/2, width, width/asRatio);
+	}
+}
+

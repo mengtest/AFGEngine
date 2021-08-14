@@ -1,20 +1,22 @@
 #ifndef WINDOW_H_INCLUDED
 #define WINDOW_H_INCLUDED
 
-#include "render_context.h"
 #include <SDL.h>
 #include <chrono>
+
+constexpr int internalWidth = 480;
+constexpr int internalHeight = 270;
 
 class Window
 {
 public:
-	RenderContext context;
+	SDL_GLContext glcontext = nullptr;
 	bool wantsToClose;
+	
+private:
 	bool fullscreen;
 	bool vsync;
 	bool busyWait;
-
-private:
 	SDL_Window* window;
 
 	int frameRateChoice;
@@ -22,7 +24,7 @@ private:
 	double realSpf;
 	std::chrono::time_point<std::chrono::high_resolution_clock> startClock; 
 
-	
+	void SetupGl(SDL_Window *window);
 public:
 	Window();
 	~Window();
@@ -34,6 +36,7 @@ public:
 	void SleepUntilNextFrame();
 
 	double GetSpf();
+	void UpdateViewport(float width, float height);
 };
 
 extern Window *mainWindow;

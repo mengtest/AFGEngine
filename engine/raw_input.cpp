@@ -1,11 +1,7 @@
 #include "raw_input.h"
+#include "window.h"
 #include <SDL.h>
 #include <fstream>
-
-#include "window.h"
-
-//As usual, all of this should be wrapped in a class?
-//And as always, there are temporary(?) globals for convenience.
 
 unsigned int keySend[2] {};
 SDL_Scancode modifiableSCKeys[buttonsN*2];
@@ -156,4 +152,30 @@ void GameLoopJoy()
 		}
 	}
 	*/
+}
+
+void EventLoop()
+{
+	SDL_Event event;
+	while(SDL_PollEvent(&event))
+	{
+		switch(event.type)
+		{
+			case SDL_QUIT:
+				mainWindow->wantsToClose = true;
+				return;
+			case SDL_WINDOWEVENT:
+				switch(event.window.event)
+				{
+					case SDL_WINDOWEVENT_SIZE_CHANGED:
+						mainWindow->UpdateViewport(event.window.data1, event.window.data2);
+						break;
+				}
+				break;
+			case SDL_KEYDOWN:
+			case SDL_KEYUP:
+				GameLoopKeyHandle(event.key);
+				break;
+		}
+	}
 }

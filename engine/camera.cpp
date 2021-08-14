@@ -73,7 +73,7 @@ glm::mat4 Camera::Calculate(Point2d<FixedPoint> p1, Point2d<FixedPoint> p2)
 	if(center.y > 450-internalHeight)
 	{
 		center.y = 450-internalHeight;
-		center.y.value -= abs((shakeTime % 4) - 1)<<17;
+		center.y.value -= abs((shakeTime % 4) - 1)<<17; //Shake backwards
 	}
 	
 	glm::mat4 view(1);
