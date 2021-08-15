@@ -215,7 +215,7 @@ Frame *Actor::GetCurrentFrame()
 	return framePointer;
 }
 
-bool Actor::HitCollision(const Actor& hurt, const Actor& hit)
+std::pair<bool, Point2d<FixedPoint>> Actor::HitCollision(const Actor& hurt, const Actor& hit)
 {
 	if(hurt.hittable && hit.hitCount > 0)
 	{
@@ -231,12 +231,12 @@ bool Actor::HitCollision(const Actor& hurt, const Actor& hit)
 				hitbox = hitbox.Translate(hit.root);
 				if(hitbox.Intersects(hurtbox))
 				{
-					return true;
+					return {true, hitbox.MiddlePoint(hurtbox)};
 				}
 			}
 		}
 	}
-	return false;
+	return {false,{}};
 }
 
 Actor& Actor::SpawnChild(int sequence)

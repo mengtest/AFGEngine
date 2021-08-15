@@ -1,6 +1,7 @@
 #ifndef GFX_HANDLER_H_GUARD
 #define GFX_HANDLER_H_GUARD
 
+#include "particle.h"
 #include "vao.h"
 #include "texture.h"
 #include <shader.h>
@@ -44,13 +45,11 @@ private:
 	static constexpr int stride = sizeof(float)*4;
 	static constexpr int maxParticles = 256;
 	static constexpr GLsizeiptr particleAttributeSize = stride*maxParticles; 
+	static_assert(sizeof(Particle) == stride);
+
 	GLuint particleBuffer;
 
 public:
-	struct particleData{
-		float pos[2]{};
-		float scale[2] = {1,1};
-	};
 
 	Shader indexedS, rectS, particleS;
 
@@ -63,7 +62,7 @@ public:
 
 	void SetPaletteSlot(int palette);
 	void Draw(int id, int defId = 0);
-	void DrawParticles(std::vector<particleData> &data, int id, int defId = 0);
+	void DrawParticles(std::vector<Particle> &data, int id, int defId = 0);
 	void Begin();
 	void End();
 

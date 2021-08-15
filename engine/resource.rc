@@ -12,10 +12,10 @@ BEGIN
       VALUE "FileDescription", "Another fighting game engine."
       VALUE "FileVersion", "0.0"
       VALUE "InternalName", "AFGEngine"
-      VALUE "LegalCopyright", "Copyright (C) 2020"
+      VALUE "LegalCopyright", "Copyright (C) 2021"
       VALUE "OriginalFilename", "AFGEngine.exe"
-      VALUE "ProductName", "PNM"
-      VALUE "ProductVersion", "pre-alpha"
+      VALUE "ProductName", "AFGEngine"
+      VALUE "ProductVersion", "Alpha"
     END
   END
   BLOCK "VarFileInfo"

@@ -3,6 +3,8 @@
 #include <sol/sol.hpp>
 #include <fstream>
 
+
+
 GfxHandler::GfxHandler():
 vertices(Vao::F2F2_short, GL_STATIC_DRAW)
 {
@@ -97,7 +99,6 @@ void GfxHandler::LoadingDone()
 	vertices.Load();
 	tempVDContainer.clear();
 	loaded = true;
-	assert(sizeof(particleData) == stride);
 	glGenBuffers(1, &particleBuffer);
 	glBindBuffer(GL_ARRAY_BUFFER, particleBuffer);
 	glBufferData(GL_ARRAY_BUFFER, particleAttributeSize, nullptr, GL_STREAM_DRAW);
@@ -147,13 +148,15 @@ void GfxHandler::Draw(int id, int defId)
 	}
 }
 
-void GfxHandler::DrawParticles(std::vector<particleData> &data, int id, int defId)
+void GfxHandler::DrawParticles(std::vector<Particle> &data, int id, int defId)
 {
-	const auto size = data.size();
-	if(size > 0 && size < maxParticles){
+	auto size = data.size();
+	if(size > 0){
 		auto search = idMapList[defId].find(id);
 		if (search != idMapList[defId].end())
 		{
+			if(size > maxParticles)
+				size = maxParticles;
 			auto meta = search->second;
 			if(boundTexture != meta.textureIndex)
 			{
@@ -168,7 +171,7 @@ void GfxHandler::DrawParticles(std::vector<particleData> &data, int id, int defI
 			}
 
 			glBindBuffer(GL_ARRAY_BUFFER, particleBuffer);
-			glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(particleData)*size, data.data());
+			glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(Particle)*size, data.data());
 			vertices.DrawInstances(meta.trueId, size);
 		}
 	}

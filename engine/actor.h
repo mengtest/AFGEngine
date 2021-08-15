@@ -99,7 +99,8 @@ public:
 	int GetSpriteIndex();
 	glm::mat4 GetSpriteTransform();
 
-	static bool HitCollision(const Actor& hurt, const Actor& hit);
+	//If collided and where
+	static std::pair<bool, Point2d<FixedPoint>> HitCollision(const Actor& hurt, const Actor& hit);
 	static void DeclareActorLua(sol::state &lua);
 
 	void GetAllChildren(std::vector<Actor*> &list, bool includeSelf = true);

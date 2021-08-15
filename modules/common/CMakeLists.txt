@@ -7,6 +7,8 @@ target_sources(Common PRIVATE
 	vao.cpp
 	ubo.cpp
 	gfx_handler.cpp
+	particle.cpp
+	xorshift.cpp
 )
 
 target_link_libraries(Common PUBLIC Image lz4_static glad::glad)

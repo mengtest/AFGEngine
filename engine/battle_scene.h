@@ -3,13 +3,16 @@
 #include "camera.h"
 #include "texture.h"
 #include "hud.h"
+#include <particle.h>
 #include <shader.h>
 #include <ubo.h>
 #include <glm/mat4x4.hpp>
 
+
 class BattleScene
 {
 public:
+	ParticleGroup pg;
 	Camera view{1.05};
 	int timer;
 

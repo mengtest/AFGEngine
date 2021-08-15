@@ -23,7 +23,8 @@ public:
 	Rect2d Translate(T x, T y);
 	Rect2d FlipHorizontal();
 
-	bool Intersects(Rect2d rect);
+	bool Intersects(const Rect2d &rect);
+	Point2d<T> MiddlePoint(const Rect2d &rect);
 	
 	void printCoords();
 private:
@@ -97,7 +98,7 @@ void Rect2d<T>::Normalize()
 }
 
 template <class T>
-bool Rect2d<T>::Intersects(Rect2d<T> b)
+bool Rect2d<T>::Intersects(const Rect2d<T> &b)
 {
 	Rect2d<T>& a = *this;
 
@@ -108,6 +109,17 @@ bool Rect2d<T>::Intersects(Rect2d<T> b)
 		a.topRight.y <= b.bottomLeft.y ||
 		b.topRight.y <= a.bottomLeft.y
 	);
+}
+
+template <class T>
+Point2d<T> Rect2d<T>::MiddlePoint(const Rect2d<T> &b)
+{
+	Rect2d<T>& a = *this;
+
+	return {
+		(a.topRight.x+b.topRight.x+b.bottomLeft.x+a.bottomLeft.x)/4,
+		(a.topRight.y+b.topRight.y+b.bottomLeft.y+a.bottomLeft.y)/4
+	};
 }
 
 template <class T>

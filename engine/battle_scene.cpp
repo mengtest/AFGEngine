@@ -120,11 +120,8 @@ void BattleScene::PlayLoop()
 		VaoTexOnly.Load();
 	}
 
-	BattleScene scene;
-	Camera &view = scene.view;
-
-	Character player(-50, 1, "data/char/vaki/vaki.char", scene);
-	Character player2(50, -1, "data/char/vaki/vaki.char", scene);
+	Character player(-50, 1, "data/char/vaki/vaki.char", *this);
+	Character player2(50, -1, "data/char/vaki/vaki.char", *this);
 	
 	GfxHandler gfx;
 	uniforms.Bind(gfx.indexedS.program);
@@ -145,7 +142,8 @@ void BattleScene::PlayLoop()
 	std::vector<Actor*> drawList;
 	std::vector<Actor*> updateList;
 
-	std::vector<GfxHandler::particleData> particles;
+	std::vector<Particle> particles;
+
 
 	int32_t gameTicks = 0;
 	bool gameOver = false;
@@ -183,21 +181,9 @@ void BattleScene::PlayLoop()
 		
 		Character::Collision(&player, &player2);
 
-		for(auto &particle : particles)
-		{
-			particle.pos[0] += (float)(rand()%256 - 128)/10;
-			particle.pos[1] += (float)(rand()%256 - 128)/10;
-			if(gameTicks%60 == 0)
-			{
-				particle.scale[0] = 1;
-				particle.scale[1] = 1;
-			}
-			else
-			{
-				particle.scale[0] *= (float)(rand()%4000+2000)/4000.f;
-				particle.scale[1] = particle.scale[0];
-			}
-		}
+		//pg.PushNormalHit(10,0,0);
+		pg.Update();
+		pg.FillParticleVector(particles);
 
 		barHandler[B_P1Life].Resize(player.getHealthRatio(), 1);
 		barHandler[B_P2Life].Resize(player2.getHealthRatio(), 1);
@@ -235,9 +221,10 @@ void BattleScene::PlayLoop()
 			SetModelView(viewMatrix*actor->GetSpriteTransform());
 			gfx.Draw(actor->GetSpriteIndex());
 		} 
-		//glBlendFunc(GL_SRC_ALPHA, GL_ONE);
+		glBlendFunc(GL_SRC_ALPHA, GL_ONE);
+		SetModelView(viewMatrix);
 		gfx.DrawParticles(particles, 2000);
-		//glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 		gfx.End();
 		
 
@@ -249,7 +236,8 @@ void BattleScene::PlayLoop()
 		VaoTexOnly.Draw(hudId); 
 
 		timerString.seekp(0);
-		timerString << "SFP: " << mainWindow->GetSpf() << " FPS: " << 1/mainWindow->GetSpf()<<"      Entities:"<<updateList.size()<<"  ";
+		timerString << "SFP: " << mainWindow->GetSpf() << " FPS: " << 1/mainWindow->GetSpf()<<"      Entities:"<<updateList.size()<<"  "
+			<< "Particles:"<<particles.size()<<"  ";
 
 		glBindTexture(GL_TEXTURE_2D, activeTextures[T_FONT].id);
 		int count = DrawText(timerString.str(), textVertData, 2, 10);

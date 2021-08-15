@@ -96,45 +96,40 @@ void Character::Collision(Character *playerOne, Character *playerTwo)
 	return;
 }
 
-void Character::HitCollision(Character &blue, Character &red, int blueKey, int redKey)
+void Character::HitCollision(Character &bluePlayer, Character &redPlayer, int blueKey, int redKey)
 {
 	std::vector<Actor*> blueList, redList;
 	//Idea: getEvil/GoodChildren maybe? lol
-	blue.GetAllChildren(blueList); 
-	red.GetAllChildren(redList); 
+	bluePlayer.GetAllChildren(blueList); 
+	redPlayer.GetAllChildren(redList); 
 	for(auto blue : blueList)
 	{
 		for(auto red : redList)
 		{
-			//blue hits red
-			if (Actor::HitCollision(*red, *blue))
+			Actor* mutual[][2] = {{red,blue},{blue,red}};
+			for(int i = 0; i < 2; i++)
 			{
-				blue->comboType = red->ResolveHit(redKey, blue);
-				if(blue->comboType == blocked)
+				Actor* const red = mutual[i][0];
+				Actor* const blue = mutual[i][1];
+				auto result = Actor::HitCollision(*red, *blue);
+				if (result.first)
 				{
-					if(blue->attack.blockStop >= 0)
-						blue->hitstop = blue->attack.blockStop;
-					else
+					blue->comboType = red->ResolveHit(redKey, blue);
+					if(blue->comboType == blocked)
+					{
+						if(blue->attack.blockStop >= 0)
+							blue->hitstop = blue->attack.blockStop;
+						else
+							blue->hitstop = blue->attack.hitStop;
+					}
+					else if(blue->comboType == hurt)
+					{
 						blue->hitstop = blue->attack.hitStop;
+						int amount = (blue->hitstop*blue->hitstop)>>2;
+						bluePlayer.scene.pg.PushNormalHit(amount, result.second.x, result.second.y);
+					}
+					blue->hitCount--;
 				}
-				else if(blue->comboType == hurt)
-					blue->hitstop = blue->attack.hitStop;
-				blue->hitCount--;
-			}
-			//red hits blue
-			if (Actor::HitCollision(*blue, *red))
-			{
-				red->comboType = blue->ResolveHit(blueKey, red);
-				if(red->comboType == blocked)
-				{
-					if(red->attack.blockStop >= 0)
-						red->hitstop = red->attack.blockStop;
-					else
-						red->hitstop = red->attack.hitStop;
-				}
-				else if(red->comboType == hurt)
-					red->hitstop = red->attack.hitStop;
-				red->hitCount--;
 			}
 		}
 	}
