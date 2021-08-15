@@ -6,7 +6,7 @@ A character data editor and scripting support are in progress.
 Rollback netplay code is planned.
 Don't expect it to be usable for anything serious yet.
 
-![screenshot](https://user-images.githubusercontent.com/39018575/97825338-20c29b80-1c9d-11eb-9d25-5287eea75cba.png "Rather outdated screenshot")
+![screenshot](https://user-images.githubusercontent.com/39018575/129495632-f9d50690-9469-4033-b8fe-1e218d82892c.png)
 
 
 -----------------------
