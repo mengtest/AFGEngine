@@ -17,8 +17,9 @@ void ParticleGroup::Update()
 		{
 			particle.p.pos[i] += particle.vel[i];
 			particle.vel[i] += particle.acc[i];
-			particle.p.scale[0] *= particle.growRate;
-			particle.p.scale[1] *= particle.growRate; 
+			float g2 = particle.growRate*particle.growRate;
+			particle.p.scale[0] *= g2;
+			particle.p.scale[1] *= g2; 
 		}
 		particle.remainingTicks -= 1;
 	}
@@ -29,7 +30,8 @@ void ParticleGroup::FillParticleVector(std::vector<Particle> &v)
 	int size = particles.size();
 	v.resize(size);
 	for(int i = 0; i < size; ++i)
-		v[i] = particles[i].p;
+		v[size-i-1] = particles[i].p;
+	//A backward order allows us to still render the lastest particles if the limit is reaching.
 }
 
 constexpr float max32 = static_cast<float>(std::numeric_limits<int32_t>::max());
@@ -39,10 +41,21 @@ void ParticleGroup::PushNormalHit(int amount, float x, float y)
 {
 	constexpr float deceleration = -0.05;
 	constexpr float maxSpeed = 8;
-	float scale = amount/20.f;
+	float scale = fmax(amount/20.f, 0.5);
 	int start = particles.size();
 	particles.resize(start+amount);
-	for(int i = start; i < start+amount; ++i)
+
+	{
+		auto &p = particles[start];
+		p = {};
+		p.p.pos[0] = x;
+		p.p.pos[1] = y;
+		p.p.scale[0] = 2;
+		p.p.scale[1] = 2;
+		p.growRate = 0.90;
+		p.remainingTicks = 10;
+	}
+	for(int i = start+1; i < start+amount; ++i)
 	{
 		auto &p = particles[i];
 		p.p.pos[0] = x;
@@ -52,8 +65,8 @@ void ParticleGroup::PushNormalHit(int amount, float x, float y)
 		p.vel[0] = maxSpeed*(float)(xorShift32.Get())/max32;
 		p.vel[1] = maxSpeed*(float)(xorShift32.Get())/max32;
 		p.acc[0] = p.vel[0]*deceleration;
-		p.acc[1] = p.vel[1]*deceleration;
-		p.growRate = 0.9f - 0.1*(float)(xorShift32.GetU())/max32u;
+		p.acc[1] = p.vel[1]*deceleration + 0.05;
+		p.growRate = 0.95f - 0.05*(float)(xorShift32.GetU())/max32u;
 		p.remainingTicks = 20;
 	}
 }

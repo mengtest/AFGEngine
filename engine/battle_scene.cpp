@@ -181,7 +181,6 @@ void BattleScene::PlayLoop()
 		
 		Character::Collision(&player, &player2);
 
-		//pg.PushNormalHit(10,0,0);
 		pg.Update();
 		pg.FillParticleVector(particles);
 
