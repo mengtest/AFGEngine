@@ -31,6 +31,9 @@ private:
 	bool gotHit = false;
 	bool friction = false;
 	bool blockFlag = false;
+	int hitFlags = 0; //When getting hit
+
+	HitDef::Vector bounceVector;
 	int blockTime = 0;
 	int pushTimer = 0; //Counts down the pushback time.
 

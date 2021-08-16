@@ -9,8 +9,16 @@ local f = {
 
 inputs = {
 	ground = {
+
 		{input = "23~6b", buf = 8, ref = 507},
 		{input = "23~6a", buf = 8, ref = 506},
+
+		--Power dunk
+		{input = "62~3c", buf = 8, ref = 207},
+		{input = "62~3b", buf = 8, ref = 206},
+		{input = "62~3a", buf = 8, ref = 554},
+		
+		--Tsuki
 		{input = "21~4a", buf = 8, ref = 180},
 		--{input = "\030R/~4a", buf = 8, ref = 155},
 

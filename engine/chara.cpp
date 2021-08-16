@@ -125,8 +125,11 @@ void Character::HitCollision(Character &bluePlayer, Character &redPlayer, int bl
 					else if(blue->comboType == hurt)
 					{
 						blue->hitstop = blue->attack.hitStop;
-						int amount = (blue->hitstop*blue->hitstop)>>2;
-						bluePlayer.scene.pg.PushNormalHit(amount, result.second.x, result.second.y);
+						if(blue->hitstop >0)
+						{
+							int amount = (blue->hitstop*blue->hitstop)>>2;
+							bluePlayer.scene.pg.PushNormalHit(amount, result.second.x, result.second.y);
+						}
 					}
 					blue->hitCount--;
 				}
@@ -206,6 +209,14 @@ int Character::ResolveHit(int keypress, Actor *hitter) //key processing really s
 			accel.y.value = vt.yAccel*speedMultiplier;
 			pushTimer = vt.maxPushBackTime;	
 			friction = true;
+			hitFlags = hitData->attackFlags;
+			sol::optional<sol::table> t = lua["_vectors"][vt.bounceTable];
+			if(t)
+			{
+				bounceVector = hitData->getVectorTableFromTable(t.value());
+				bounceVector.xSpeed *= hitter->side;
+				bounceVector.xAccel *= hitter->side;
+			}
 
 			gotHit = true;
 			hurtSeq = seq;
@@ -325,7 +336,18 @@ void Character::Update()
 	if (root.y < floorPos && !hitstop) //Check collision with floor
 	{
 		root.y = floorPos;
-		GotoFrame(seqPointer->props.landFrame);
+		if(hitFlags & HitDef::canBounce)
+		{
+			hitFlags &= ~HitDef::canBounce;
+			vel.x.value = bounceVector.xSpeed*speedMultiplier;
+			vel.y.value = bounceVector.ySpeed*speedMultiplier;
+			accel.x.value = bounceVector.xAccel*speedMultiplier;
+			accel.y.value = bounceVector.yAccel*speedMultiplier;
+			pushTimer = bounceVector.maxPushBackTime;
+			GotoSequence(lua["_seqTable"][bounceVector.sequenceName].get_or(-1));
+		}
+		else
+			GotoFrame(seqPointer->props.landFrame);
 	}
 
 	mustTurnAround = ((framePointer->frameProp.state == state::stand || framePointer->frameProp.state == state::crouch) &&

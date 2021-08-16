@@ -12,15 +12,16 @@ const FixedPoint floorPos(32);
 
 struct HitDef
 {
-	struct VectorTable
+	struct Vector
 	{
 		int maxPushBackTime;
 		int xSpeed, ySpeed;
 		int xAccel, yAccel;
 		std::string sequenceName;
+		std::string bounceTable;
 	};
 	//key is type (air, cro, sta), array value is vector subtable (hit and block)
-	std::unordered_map<int, std::array<VectorTable, 2>> vectorTables;
+	std::unordered_map<int, std::array<Vector, 2>> vectorTables;
 	int attackFlags = 0;
 	int damage = 0;
 	int guardDamage = 0;
@@ -38,6 +39,12 @@ struct HitDef
 
 	void Clear();
 	void SetVectors(int state, sol::table onHit, sol::table onBlock);
+
+	enum flag{
+		canBounce = 0x1,
+	};
+
+	static Vector getVectorTableFromTable(const sol::table &table);
 };
 
 class Actor{

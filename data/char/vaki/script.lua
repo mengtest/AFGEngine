@@ -65,6 +65,19 @@ _vectors = {
 		maxTime = 4,
 		ani = "trip"
 	},
+	slam = {
+		xSpeed = 2800, ySpeed = -2500;
+		xAccel = 0, yAccel = -150;
+		maxTime = 4,
+		ani = "down",
+		onBounce = "slamBounce"
+	},
+	slamBounce = {
+		xSpeed = 700, ySpeed = 2800;
+		xAccel = 0, yAccel = -150;
+		maxTime = 0,
+		ani = "airDown",
+	}
 	
 }
 
@@ -144,7 +157,7 @@ function crouch(actor)
 end
 
 function slide1(actor)
-	frame = actor.currentFrame
+	local frame = actor.currentFrame
 	if(frame > 5 and frame < 12) then
 		local x, y = actor:GetVel()
 		local input = g.GetInput()
@@ -158,7 +171,7 @@ function slide1(actor)
 end
 
 function slide2(actor)
-	frame = actor.currentFrame
+	local frame = actor.currentFrame
 	if(frame > 2 and frame < 7) then
 		local x, y = actor:GetVel()
 		local input = global.GetInput()
@@ -219,6 +232,7 @@ function s5a (actor)
 	if(actor.totalSubframeCount == 0) then
 		local hitdef = actor.hitDef
 		weakHit(hitdef)
+		hitdef:SetVectors(s.crouch, v.slam, v.croBlock3)
 		hitdef.hitStop = histopTbl.weak
 		hitdef.blockStun = 14
 		hitdef.damage = 300
@@ -346,6 +360,35 @@ function s3c (actor)
 end
 
 --------------------- Special moves -----------------------
+function s623b (actor)
+	frame = actor.currentFrame
+	if(frame == 0 and actor.subframeCount == 0) then
+		local hitdef = actor.hitDef
+		mediumHit(hitdef)
+		hitdef.hitStop = histopTbl.weakest
+		hitdef.blockStun = 17
+		hitdef.damage = 200
+		--hitdef.shakeTime = 8
+	elseif(frame == 14 and actor.subframeCount == 0) then
+		local hitdef = actor.hitDef
+		hitdef:SetVectors(s.stand, v.down, v.block1)
+		hitdef:SetVectors(s.air, v.down, v.airBlock)
+		hitdef:SetVectors(s.crouch, v.down, v.croBlock1)
+		hitdef.hitStop = histopTbl.strong
+		hitdef.blockStun = 14
+		hitdef.damage = 500
+	elseif(frame == 19 and actor.subframeCount == 0) then
+		local hitdef = actor.hitDef
+		hitdef:SetVectors(s.stand, v.slam, v.block3)
+		hitdef:SetVectors(s.air, v.slam, v.airBlock)
+		hitdef:SetVectors(s.crouch, v.slam, v.croBlock3)
+		hitdef.hitStop = histopTbl.strong
+		hitdef.blockStun = 20
+		hitdef.damage = 500
+		hitdef.attackFlags = _hit.bounce
+	end
+end
+
 function s236c(actor)
 	local fc = actor.totalSubframeCount
 	if(fc > 8 and fc < 20 and actor.subframeCount == 0) then

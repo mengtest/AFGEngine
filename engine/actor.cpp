@@ -316,6 +316,9 @@ void Actor::DeclareActorLua(sol::state &lua)
 		"userData", &Actor::userData,
 		"flags", &Actor::flags
 	);
+
+	auto table = lua["_hit"].get_or_create<sol::table>();
+	table["bounce"] = HitDef::canBounce;
 }
 
 void HitDef::SetVectors(int state, sol::table onHitTbl, sol::table onBlockTbl)
@@ -323,14 +326,22 @@ void HitDef::SetVectors(int state, sol::table onHitTbl, sol::table onBlockTbl)
 	sol::table *luaTables[2] = {&onHitTbl, &onBlockTbl};
 	for(int i = 0; i < 2; i++)
 	{
-		VectorTable &vector = vectorTables[state][i];
-		vector.maxPushBackTime = (*luaTables[i])["maxTime"].get_or(0x7FFFFFFF);
-		vector.xSpeed = (*luaTables[i])["xSpeed"].get_or(0);
-		vector.ySpeed = (*luaTables[i])["ySpeed"].get_or(0);
-		vector.xAccel = (*luaTables[i])["xAccel"].get_or(0);
-		vector.yAccel = (*luaTables[i])["yAccel"].get_or(0);
-		vector.sequenceName = (*luaTables[i])["ani"].get_or(std::string());
+		Vector &vt = vectorTables[state][i];
+		vt = getVectorTableFromTable(*luaTables[i]);
 	}
+}
+
+HitDef::Vector HitDef::getVectorTableFromTable(const sol::table &t)
+{
+	Vector vt;
+	vt.maxPushBackTime = t["maxTime"].get_or(0x7FFFFFFF);
+	vt.xSpeed = t["xSpeed"].get_or(0);
+	vt.ySpeed = t["ySpeed"].get_or(0);
+	vt.xAccel = t["xAccel"].get_or(0);
+	vt.yAccel = t["yAccel"].get_or(0);
+	vt.sequenceName = t["ani"].get_or(std::string());
+	vt.bounceTable = t["onBounce"].get_or(std::string());
+	return vt;
 }
 
 void HitDef::Clear()
@@ -351,3 +362,4 @@ void HitDef::Clear()
 	shakeTime = 0;
 	vectorTables.clear();
 }
+
