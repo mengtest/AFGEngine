@@ -107,6 +107,7 @@ void Character::HitCollision(Character &bluePlayer, Character &redPlayer, int bl
 		for(auto red : redList)
 		{
 			Actor* mutual[][2] = {{red,blue},{blue,red}};
+			const int keys[2] = {redKey, blueKey};
 			for(int i = 0; i < 2; i++)
 			{
 				Actor* const red = mutual[i][0];
@@ -114,7 +115,7 @@ void Character::HitCollision(Character &bluePlayer, Character &redPlayer, int bl
 				auto result = Actor::HitCollision(*red, *blue);
 				if (result.first)
 				{
-					blue->comboType = red->ResolveHit(redKey, blue);
+					blue->comboType = red->ResolveHit(keys[i], blue);
 					if(blue->comboType == blocked)
 					{
 						if(blue->attack.blockStop >= 0)
@@ -185,11 +186,20 @@ int Character::ResolveHit(int keypress, Actor *hitter) //key processing really s
 	if (blockFlag || (framePointer->frameProp.flags & flag::canMove && keypress & left))
 	{
 		//Always for now.
-		if(hitData->blockStop>=0)
-			hitstop = hitData->blockStop;
-		blocked	= true;
-		blockFlag = true;
-		blockTime = hitData->blockstun;
+		const auto &st = framePointer->frameProp.state;
+		const auto &flag = hitData->attackFlags;
+		if( (flag & HitDef::hitsAir && st == state::air) ||
+			(flag & HitDef::hitsCrouch && st == state::crouch) ||
+			(flag & HitDef::hitsStand && st == state::stand))
+			blockFlag = false;
+		else
+		{
+			if(hitData->blockStop>=0)
+				hitstop = hitData->blockStop;
+			blocked	= true;
+			blockFlag = true;
+			blockTime = hitData->blockstun;
+		}
 	}
 	else
 		blockFlag = false;

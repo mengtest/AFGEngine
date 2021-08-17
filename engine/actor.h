@@ -42,6 +42,10 @@ struct HitDef
 
 	enum flag{
 		canBounce = 0x1,
+		hitsCrouch = 0x2,
+		hitsAir = 0x4,
+		hitsStand = 0x8,
+		unblockable = hitsCrouch | hitsAir | hitsStand,
 	};
 
 	static Vector getVectorTableFromTable(const sol::table &table);

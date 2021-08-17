@@ -267,6 +267,7 @@ function s2a (actor)
 		hitdef.hitStop = histopTbl.weak
 		hitdef.blockStun = 14
 		hitdef.damage = 350
+		hitdef.attackFlags = _hit.hitsStand
 	end
 end
 
@@ -356,6 +357,7 @@ function s3c (actor)
 		hitdef.blockStun = 20
 		hitdef.damage = 700
 		hitdef.shakeTime = 8
+		hitdef.attackFlags = _hit.hitsAir
 	end
 end
 
@@ -368,7 +370,6 @@ function s623b (actor)
 		hitdef.hitStop = histopTbl.weakest
 		hitdef.blockStun = 17
 		hitdef.damage = 200
-		--hitdef.shakeTime = 8
 	elseif(frame == 14 and actor.subframeCount == 0) then
 		local hitdef = actor.hitDef
 		hitdef:SetVectors(s.stand, v.down, v.block1)
@@ -377,6 +378,7 @@ function s623b (actor)
 		hitdef.hitStop = histopTbl.strong
 		hitdef.blockStun = 14
 		hitdef.damage = 500
+		hitdef.shakeTime = 8
 	elseif(frame == 19 and actor.subframeCount == 0) then
 		local hitdef = actor.hitDef
 		hitdef:SetVectors(s.stand, v.slam, v.block3)

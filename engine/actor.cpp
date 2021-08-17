@@ -319,6 +319,10 @@ void Actor::DeclareActorLua(sol::state &lua)
 
 	auto table = lua["_hit"].get_or_create<sol::table>();
 	table["bounce"] = HitDef::canBounce;
+	table["hitsStand"] = HitDef::hitsStand;
+	table["hitsCrouch"] = HitDef::hitsCrouch;
+	table["hitsAir"] = HitDef::hitsAir;
+	table["unblockable"] = HitDef::unblockable;
 }
 
 void HitDef::SetVectors(int state, sol::table onHitTbl, sol::table onBlockTbl)
