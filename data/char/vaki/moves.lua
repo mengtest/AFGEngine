@@ -10,6 +10,7 @@ local f = {
 inputs = {
 	ground = {
 
+			
 		{input = "23~6b", buf = 8, ref = 507},
 		{input = "23~6a", buf = 8, ref = 506},
 

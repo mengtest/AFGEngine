@@ -42,8 +42,8 @@ private:
 
 	void LoadToVao(std::filesystem::path file, int mapId, int textureIndex);
 
-	static constexpr int stride = sizeof(float)*4;
-	static constexpr int maxParticles = 1024;
+	static constexpr int stride = sizeof(float)*6;
+	static constexpr int maxParticles = 512;
 	static constexpr GLsizeiptr particleAttributeSize = stride*maxParticles; 
 	static_assert(sizeof(Particle) == stride);
 

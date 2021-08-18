@@ -102,9 +102,9 @@ void GfxHandler::LoadingDone()
 	glGenBuffers(1, &particleBuffer);
 	glBindBuffer(GL_ARRAY_BUFFER, particleBuffer);
 	glBufferData(GL_ARRAY_BUFFER, particleAttributeSize, nullptr, GL_STREAM_DRAW);
-	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, stride, nullptr);
+	glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, stride, nullptr);
 	glEnableVertexAttribArray(2);
-	glVertexAttribPointer(3, 2, GL_FLOAT, GL_FALSE, stride, (void*)(sizeof(float)*2));
+	glVertexAttribPointer(3, 2, GL_FLOAT, GL_FALSE, stride, (void*)(sizeof(float)*4));
 	glEnableVertexAttribArray(3);
 	glVertexAttribDivisor(2,1);
 	glVertexAttribDivisor(3,1);

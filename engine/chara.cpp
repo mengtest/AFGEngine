@@ -128,7 +128,7 @@ void Character::HitCollision(Character &bluePlayer, Character &redPlayer, int bl
 						blue->hitstop = blue->attack.hitStop;
 						if(blue->hitstop >0)
 						{
-							int amount = (blue->hitstop*blue->hitstop)>>2;
+							int amount = blue->hitstop*2;
 							bluePlayer.scene.pg.PushNormalHit(amount, result.second.x, result.second.y);
 						}
 					}

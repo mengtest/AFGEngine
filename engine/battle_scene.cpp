@@ -181,6 +181,8 @@ void BattleScene::PlayLoop()
 		
 		Character::Collision(&player, &player2);
 
+		auto &&pos = player.getXYCoords();
+		//pg.PushNormalHit(5, 256, 128);
 		pg.Update();
 		pg.FillParticleVector(particles);
 
