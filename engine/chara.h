@@ -55,7 +55,7 @@ private:
 public:
 	Character(FixedPoint posX, float side, std::string charFile, BattleScene& scene);
 
-	void Update();
+	bool Update();
 
 	float getHealthRatio();
 	Point2d<FixedPoint> getXYCoords();

@@ -127,6 +127,35 @@ glm::mat4 Actor::GetSpriteTransform()
 	return glm::translate(glm::mat4(1.f), glm::vec3(root.x, root.y, 0))*transform;
 }
 
+void Actor::SendHitboxData(HitboxRenderer &hr)
+{
+	static std::vector<float> vertices;
+	auto col = framePointer->colbox;
+	if(side == -1)
+		col = col.FlipHorizontal();
+	col = col.Translate(root);
+	vertices = {col.bottomLeft.x, col.bottomLeft.y, col.topRight.x, col.topRight.y};
+	hr.GenerateHitboxVertices(vertices, HitboxRenderer::gray);
+
+	Frame::boxes_t *selector[] = {&framePointer->greenboxes, &framePointer->redboxes};
+	for(int i = 0; i < 2; ++i)
+	{
+		vertices.resize(selector[i]->size()*4);
+		for(int bi = 0; bi < selector[i]->size(); ++bi)
+		{
+			auto box = (*selector[i])[bi];
+			if(side == -1)
+				box = box.FlipHorizontal();
+			box = box.Translate(root);
+			vertices[bi*4 + 0] = box.bottomLeft.x;
+			vertices[bi*4 + 1] = box.bottomLeft.y;
+			vertices[bi*4 + 2] = box.topRight.x;
+			vertices[bi*4 + 3] = box.topRight.y;
+		}
+		hr.GenerateHitboxVertices(vertices, i+1);
+	}
+}
+
 void Actor::SeqFun()
 {
 	if(seqPointer->hasFunction)
@@ -140,7 +169,7 @@ void Actor::SeqFun()
 	}
 }
 
-void Actor::Update()
+bool Actor::Update()
 {
 	if (frameDuration == 0)
 	{
@@ -178,7 +207,7 @@ void Actor::Update()
 		{
 			currFrame += 1;	
 			if(!GotoFrame(currFrame)) //If dead don't continue;
-				return;
+				return false;
 		}
 	}
 
@@ -192,7 +221,7 @@ void Actor::Update()
 	if (hitstop > 0)
 	{
 		--hitstop;
-		return;
+		return true;
 	}
 	else
 		shaking = false;
@@ -207,7 +236,8 @@ void Actor::Update()
 	--frameDuration;
 	++totalSubframeCount;
 	++subframeCount;
-	
+
+	return true;	
 }
 
 Frame *Actor::GetCurrentFrame()

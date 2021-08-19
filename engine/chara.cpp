@@ -295,7 +295,7 @@ void Character::GotoSequence(int seq)
 	}
 }
 
-void Character::Update()
+bool Character::Update()
 {
 	if(gotHit)
 	{
@@ -379,7 +379,7 @@ void Character::Update()
 	{
 		//Shake effect
 		--hitstop;
-		return;
+		return true;
 	}
 	else
 		shaking = false;
@@ -411,13 +411,15 @@ void Character::Update()
 	if(blockTime > 0)
 	{
 		--blockTime;
-		return;
+		return true;
 	}
 
 	--pushTimer;
 	--frameDuration;
 	++totalSubframeCount;
 	++subframeCount;
+
+	return true;
 }
 
 bool Character::TurnAround(int sequence)

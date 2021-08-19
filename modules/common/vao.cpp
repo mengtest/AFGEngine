@@ -85,6 +85,8 @@ void Vao::UpdateElementBuffer(void *data, size_t count)
 void Vao::Bind()
 {
 	glBindVertexArray(vaoId);
+	if(eboId)
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, eboId);
 }
 
 void Vao::Load()

@@ -1,6 +1,4 @@
 #include "render.h"
-#include "hitbox.h"
-
 #include <iostream>
 #include <fstream>
 

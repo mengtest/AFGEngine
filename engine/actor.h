@@ -1,6 +1,7 @@
 #ifndef ACTOR_H_GUARD
 #define ACTOR_H_GUARD
 
+#include "hitbox_renderer.h"
 #include "framedata.h"
 #include <geometry.h>
 #include <fixed_point.h>
@@ -95,7 +96,7 @@ protected:
 public:
 	Actor(std::vector<Sequence> &sequences, sol::state &lua);
 
-	virtual void Update();
+	virtual bool Update();
 	void GotoSequence(int seq);
 	bool GotoFrame(int frame);
 	void Translate(Point2d<FixedPoint> amount);
@@ -115,6 +116,8 @@ public:
 	static void DeclareActorLua(sol::state &lua);
 
 	void GetAllChildren(std::vector<Actor*> &list, bool includeSelf = true);
+
+	void SendHitboxData(HitboxRenderer &hr);
 
 protected:
 	void SeqFun();

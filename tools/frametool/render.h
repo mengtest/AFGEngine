@@ -5,7 +5,6 @@
 #include <shader.h>
 #include <vao.h>
 #include <ubo.h>
-#include "hitbox.h"
 #include "types.h"
 
 #include <vector>

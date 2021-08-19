@@ -3,6 +3,7 @@
 #include "util.h"
 #include "raw_input.h"
 #include "window.h"
+#include "hitbox_renderer.h"
 #include <gfx_handler.h>
 #include <vao.h>
 #include <fstream>
@@ -120,16 +121,24 @@ void BattleScene::PlayLoop()
 		VaoTexOnly.Load();
 	}
 
+	
+
 	Character player(-50, 1, "data/char/vaki/vaki.char", *this);
 	Character player2(50, -1, "data/char/vaki/vaki.char", *this);
 	
+	//For rendering purposes only.
+	std::vector<float> hitboxData;
+	HitboxRenderer hr;
+
 	GfxHandler gfx;
-	uniforms.Bind(gfx.indexedS.program);
-	uniforms.Bind(gfx.rectS.program);
-	uniforms.Bind(gfx.particleS.program);
 	gfx.LoadGfxFromDef("data/char/vaki/def.lua");
 	gfx.LoadingDone();
 
+	uniforms.Bind(hr.sSimple.program);
+	uniforms.Bind(gfx.indexedS.program);
+	uniforms.Bind(gfx.rectS.program);
+	uniforms.Bind(gfx.particleS.program);
+	
 	player.setTarget(&player2);
 	player2.setTarget(&player);
 
@@ -144,7 +153,7 @@ void BattleScene::PlayLoop()
 
 	std::vector<Particle> particles;
 
-
+	defaultS.Use();
 	int32_t gameTicks = 0;
 	bool gameOver = false;
 	while(!gameOver && !mainWindow->wantsToClose)
@@ -177,7 +186,10 @@ void BattleScene::PlayLoop()
 		player2.GetAllChildren(updateList);
 
 		for(auto actor: updateList)
-			actor->Update();
+		{
+			if(actor->Update())
+				actor->SendHitboxData(hr);
+		}
 		
 		Character::Collision(&player, &player2);
 
@@ -227,12 +239,15 @@ void BattleScene::PlayLoop()
 		gfx.DrawParticles(particles, 2000);
 		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 		gfx.End();
-		
 
+		//Draw boxes
+		hr.LoadHitboxVertices();
+		hr.Draw();
+		
 		//Draw HUD
+		SetModelView(glm::mat4(1));
 		VaoTexOnly.Bind();
 		defaultS.Use();
-		SetModelView(glm::mat4(1));
 		glBindTexture(GL_TEXTURE_2D, activeTextures[T_HUD].id);
 		VaoTexOnly.Draw(hudId); 
 

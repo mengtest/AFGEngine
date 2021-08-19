@@ -16,6 +16,7 @@ target_sources(AFGEngine PRIVATE
 	battle_scene.cpp
 	framedata.cpp
 	actor.cpp
+	hitbox_renderer.cpp
 )
 
 target_link_libraries(AFGEngine PRIVATE
