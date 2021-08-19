@@ -159,6 +159,8 @@ int main(int argc, char **argv)
 						nameMap.insert({fn, counter});
 						counter++;
 					}
+					else
+						counter = nameMap[fn]+1;
 				}
 				else
 				{
@@ -179,10 +181,11 @@ int main(int argc, char **argv)
 									nameMap.insert({im.name, counter});
 									counter++;
 								}
+								else
+									counter = nameMap[im.name]+1;
 
 								im.CalculateChunks(chunkSize);
 								nChunks8 += im.chunks.size();
-								nameMap.insert({im.name, counter});
 								images8bpp.push_back(std::move(im));
 								
 							}
@@ -196,6 +199,9 @@ int main(int argc, char **argv)
 								nameMap.insert({im.name, counter});
 								counter++;
 							}
+							else
+								counter = nameMap[im.name]+1;
+
 							im.CalculateChunks(chunkSize);
 							nChunks32 += im.chunks.size();
 							images32bpp.push_back(std::move(im));

@@ -32,6 +32,7 @@ inputs = {
 		{input = "~4ab", buf = 1, ref = 45, flag = f.interrupts | f.noCombo},
 		{input = "~6ab", buf = 1, ref = 43, flag = f.interrupts | f.noCombo},
 		
+		{input = "~d", buf = 2, ref = 62, flag = f.interruptible | f.repeatable},
 		{input = "~3c", buf = 1, ref = 445, flag = f.interruptible},
 		{input = "~6c", buf = 2, ref = 60, flag = f.interruptible},
 		{input = "~4c", buf = 2, ref = 80, flag = f.interruptible},

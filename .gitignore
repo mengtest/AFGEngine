@@ -4,7 +4,8 @@
 *.code-workspace
 
 #Original image data
-/data/char/vaki/src/
+/data/char/vaki/effect/
+/data/char/vaki/vaki/
 /data/images/src/
 pack.bat
 
