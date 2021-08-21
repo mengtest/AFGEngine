@@ -5,6 +5,12 @@ Actor::Actor(std::vector<Sequence> &sequences, sol::state &lua) :
 lua(lua),
 sequences(sequences)
 {
+	//userData = lua.create_table();
+}
+
+Actor::~Actor()
+{
+	//userData = nullptr;
 }
 
 void Actor::GotoSequence(int seq)
@@ -84,6 +90,7 @@ bool Actor::GotoFrame(int frame)
 		if(!result.valid())
 		{
 			sol::error err = result;
+			std::cerr << "Sequence("<<currSeq<<"), frame("<<currFrame<<"):\n";
 			std::cerr << err.what() << "\n";
 		}
 	}
@@ -171,6 +178,8 @@ void Actor::SeqFun()
 
 bool Actor::Update()
 {
+	if(frozen)
+		return true;
 	if (frameDuration == 0)
 	{
 		int jump = framePointer->frameProp.jumpType;
@@ -303,6 +312,41 @@ int Actor::ResolveHit(int keypress, Actor *hitter)
 	return hurt;
 }
 
+bool Actor::ThrowCheck(Actor& enemy, int frontRange, int upRange, int downRange)
+{
+	FixedPoint front = frontRange;
+	FixedPoint up = upRange, down = downRange;
+	
+	//TODO: Also check if enemy is in throwable state.
+	if(upRange - downRange > 0) //Air throw
+	{ 
+		FixedPoint yDif = enemy.root.y - root.y;
+		return (
+			enemy.framePointer->frameProp.state == state::air &&
+			((enemy.root.x.value - root.x.value)*side < front.value) &&
+			(yDif < up && yDif > downRange)
+		);
+	}
+	else //Ground throw
+	{
+		return (
+			enemy.framePointer->frameProp.state != state::air &&
+			(enemy.root.x.value - root.x.value)*side < front.value
+		);
+	}
+}
+
+int Actor::SetVectorFromTable(const sol::table &table, int side)
+{
+	auto vt = HitDef::getVectorTableFromTable(table);
+	vel.x.value = vt.xSpeed*speedMultiplier*side;
+	vel.y.value = vt.ySpeed*speedMultiplier;
+	accel.x.value = vt.xAccel*speedMultiplier*side;
+	accel.y.value = vt.yAccel*speedMultiplier;
+	return lua["_seqTable"][vt.sequenceName].get_or(-1);
+}
+
+
 void Actor::DeclareActorLua(sol::state &lua)
 {
 	lua.new_usertype<HitDef>("HitDef",
@@ -333,18 +377,25 @@ void Actor::DeclareActorLua(sol::state &lua)
 		"SetVel", [](Actor &actor, int x, int y){actor.vel.x.value = x; actor.vel.y.value = y;},
 		"GetSide", &Actor::GetSide,
 		"SetSide", &Actor::SetSide,
+
+		"SetVector", &Actor::SetVectorFromTable,
+		"ThrowCheck", &Actor::ThrowCheck,
+
+		"SpawnChild", &Actor::SpawnChild,
+		"KillSelf", &Actor::KillSelf,
+		"ChildCount", [](Actor &actor){return actor.children.size();},
+
 		"currentFrame", sol::readonly(&Actor::currFrame),
 		"currentSequence", sol::readonly(&Actor::currSeq),
 		"subframeCount", sol::readonly(&Actor::subframeCount),
 		"totalSubframeCount", sol::readonly(&Actor::totalSubframeCount),
-		"SpawnChild", &Actor::SpawnChild,
-		"KillSelf", &Actor::KillSelf,
-		"ChildCount", [](Actor &actor){return actor.children.size();},
+
 		"hitDef", &Actor::attack,
 		"hittable", &Actor::hittable,
 		"comboType", sol::readonly(&Actor::comboType),
 		"userData", &Actor::userData,
-		"flags", &Actor::flags
+		"flags", &Actor::flags,
+		"frozen", &Actor::frozen
 	);
 
 	auto table = lua["_hit"].get_or_create<sol::table>();

@@ -119,6 +119,7 @@ void GfxHandler::End()
 {
 	boundTexture = -1;
 	boundProgram = -1;
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 }
 
 void GfxHandler::Draw(int id, int defId)
@@ -139,11 +140,14 @@ void GfxHandler::Draw(int id, int defId)
 			if(nextProgram == 1)
 			{
 				indexedS.Use();
+				glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 			}
 			else
+			{
+				glBlendFunc(GL_SRC_ALPHA, GL_ONE);
 				rectS.Use();
+			}
 		}
-		
 		vertices.Draw(meta.trueId);
 	}
 }

@@ -54,10 +54,11 @@ struct HitDef
 
 class Actor{
 	friend class Character;
-	sol::state &lua;
 	std::vector<Sequence> &sequences;
 
 protected:
+	sol::state *luaM;
+	sol::state &lua;
 	std::list<Actor> children;
 	std::list<Actor>::iterator myPos;
 	Actor* parent = nullptr;
@@ -81,6 +82,7 @@ protected:
 	int hitstop = 0; //hitstop counter
 
 	int hitCount = 0;
+	bool frozen = false;
 	bool hittable = false;
 	bool shaking = false; //Shakes on hitstop.
 	enum hitType {
@@ -95,6 +97,7 @@ protected:
 
 public:
 	Actor(std::vector<Sequence> &sequences, sol::state &lua);
+	~Actor();
 
 	virtual bool Update();
 	void GotoSequence(int seq);
@@ -123,6 +126,9 @@ protected:
 	void SeqFun();
 	void SetHitDef(sol::table onHit, sol::table onBlock);
 	virtual int ResolveHit(int keypress, Actor *hitter);
+
+	bool ThrowCheck(Actor& enemy, int frontRange, int upRange, int downRange);
+	int SetVectorFromTable(const sol::table &table, int side);
 
 	enum actorFlags{
 		floorCheck = 0x1,

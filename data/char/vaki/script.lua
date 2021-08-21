@@ -361,6 +361,17 @@ function s3c (actor)
 	end
 end
 
+--------------------- Other --------------------------
+function sgthrow(actor)
+	frame = actor.currentFrame
+	if(frame == 3 and actor.subframeCount == 0) then
+		if(actor:ThrowCheck(g.GetTarget(), 50, 0 ,0)) then
+			actor.userData.t = g.GetTarget()
+			actor:GotoFrame(13)
+		end
+	end
+end
+
 --------------------- Special moves -----------------------
 function s623b (actor)
 	frame = actor.currentFrame
@@ -433,14 +444,17 @@ function sChargedTsuki(actor)
 	end
 end
 
+
 --[[ 
 function _update()
 	print(player.totalSubframeCount)
 end
 --]]
---[[ 
-function _init()
-	player:GotoSequence()
-end
---]]
+
+--[[ function _init()
+	print(player.userData)
+	player.userData = {}
+	print(player.userData)
+end ]]
+
 print("V.Akiha script initialized")

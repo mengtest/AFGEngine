@@ -11,7 +11,7 @@
 
 bool Character::isColliding;
 
-Character::Character(FixedPoint xPos, float side, std::string charFile, BattleScene& scene) :
+Character::Character(FixedPoint xPos, float side, std::string charFile, BattleScene& scene, sol::state &lua) :
 Actor(sequences, lua),
 touchedWall(0),
 scene(scene)
@@ -22,6 +22,7 @@ scene(scene)
 	hittable = true;
 
 	//loads character from a file and fills sequences/frames and all that yadda.
+	userData = lua.create_table();
 	if(!ScriptSetup())
 		abort();
 	cmd.LoadFromLua("data/char/vaki/moves.lua", lua);
@@ -30,9 +31,13 @@ scene(scene)
 	GotoSequence(0);
 	GotoFrame(0);
 
+	
+
 	sol::protected_function init = lua["_init"];
 	if(init.get_type() == sol::type::function)
 		init();
+
+	
 
 	return;
 }
@@ -297,6 +302,8 @@ void Character::GotoSequence(int seq)
 
 bool Character::Update()
 {
+	if(frozen)
+		return true;
 	if(gotHit)
 	{
 		GotoSequence(hurtSeq);
@@ -527,6 +534,9 @@ bool Character::ScriptSetup()
 	key["any"] = key::buf::UP | key::buf::DOWN | key::buf::LEFT | key::buf::RIGHT;
 
 	auto global = lua["global"].get_or_create<sol::table>();
+	global.set_function("DamageTarget", [this](int amount){target->health -= amount;});
+	global.set_function("ParticlesNormalRel", [this](int amount, float x, float y){scene.pg.PushNormalHit(amount, (float)root.x+x*side, float(root.y)+y);});
+	global.set_function("GetTarget", [this]()->Actor&{return *target;});
 	global.set_function("GetBlockTime", [this](){return blockTime;});
 	global.set_function("SetBlockTime", [this](int time){blockTime=time;});
 	global.set_function("TurnAround", &Character::TurnAround, this);

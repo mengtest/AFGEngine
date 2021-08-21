@@ -18,7 +18,7 @@
 class Character : public Actor
 {
 private:
-	sol::state lua;
+	//sol::state lua;
 	sol::protected_function updateFunction;
 	bool hasUpdateFunction = false;
 
@@ -52,9 +52,9 @@ private:
 	FixedPoint touchedWall; //left wall: -1, right wall = 1, no wall = 0;
 	MotionData lastCommand;
 
-public:
-	Character(FixedPoint posX, float side, std::string charFile, BattleScene& scene);
 
+public:
+	Character(FixedPoint posX, float side, std::string charFile, BattleScene& scene, sol::state &lua);
 	bool Update();
 
 	float getHealthRatio();

@@ -121,10 +121,9 @@ void BattleScene::PlayLoop()
 		VaoTexOnly.Load();
 	}
 
-	
-
-	Character player(-50, 1, "data/char/vaki/vaki.char", *this);
-	Character player2(50, -1, "data/char/vaki/vaki.char", *this);
+	sol::state state1, state2;
+	Character player(-50, 1, "data/char/vaki/vaki.char", *this, state1);
+	Character player2(50, -1, "data/char/vaki/vaki.char", *this, state2);
 	
 	//For rendering purposes only.
 	std::vector<float> hitboxData;
@@ -187,8 +186,9 @@ void BattleScene::PlayLoop()
 
 		for(auto actor: updateList)
 		{
-			if(actor->Update())
-				actor->SendHitboxData(hr);
+			actor->Update();
+			/* if(actor->Update())
+				actor->SendHitboxData(hr); */
 		}
 		
 		Character::Collision(&player, &player2);
@@ -241,8 +241,8 @@ void BattleScene::PlayLoop()
 		gfx.End();
 
 		//Draw boxes
-		hr.LoadHitboxVertices();
-		hr.Draw();
+		/* hr.LoadHitboxVertices();
+		hr.Draw(); */
 		
 		//Draw HUD
 		SetModelView(glm::mat4(1));
