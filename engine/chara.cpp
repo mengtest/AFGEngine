@@ -291,6 +291,7 @@ void Character::GotoSequence(int seq)
 	hitCount = 0;
 
 	seqPointer = &sequences[currSeq];
+	landingFrame = seqPointer->props.landFrame;
 	GotoFrame(0);
 	if(framePointer->frameProp.flags & flag::canMove)
 	{
@@ -302,6 +303,11 @@ void Character::GotoSequence(int seq)
 
 bool Character::Update()
 {
+	pastRoot = root;
+	if(attachPoint)
+	{
+		root += attachPoint->root - attachPoint->pastRoot;
+	}
 	if(frozen)
 		return true;
 	if(gotHit)
@@ -364,7 +370,7 @@ bool Character::Update()
 			GotoSequence(lua["_seqTable"][bounceVector.sequenceName].get_or(-1));
 		}
 		else
-			GotoFrame(seqPointer->props.landFrame);
+			GotoFrame(landingFrame);
 	}
 
 	mustTurnAround = ((framePointer->frameProp.state == state::stand || framePointer->frameProp.state == state::crouch) &&

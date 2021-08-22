@@ -26,6 +26,7 @@ void Actor::GotoSequence(int seq)
 	attack.Clear();
 
 	seqPointer = &sequences[currSeq];
+	landingFrame = seqPointer->props.landFrame;
 	GotoFrame(0);
 }
 
@@ -129,9 +130,9 @@ glm::mat4 Actor::GetSpriteTransform()
 	int y = framePointer->frameProp.spriteOffset[1];
 	if(hitstop && shaking)
 		x -= 2*(hitstop%2);
-	glm::mat4 transform = glm::scale(glm::mat4(1.f), glm::vec3(side,1,0))*framePointer->transform *
+	glm::mat4 transform = glm::scale(glm::mat4(1.f), glm::vec3(side,1,0))*framePointer->transform*
 		glm::translate(glm::mat4(1.f), glm::vec3(x, -y, 0));
-	return glm::translate(glm::mat4(1.f), glm::vec3(root.x, root.y, 0))*transform;
+	return glm::translate(glm::mat4(1.f), glm::vec3(root.x, root.y, 0))*transform*customTransform;
 }
 
 void Actor::SendHitboxData(HitboxRenderer &hr)
@@ -178,6 +179,11 @@ void Actor::SeqFun()
 
 bool Actor::Update()
 {
+	pastRoot = root;
+	if(attachPoint)
+	{
+		root += attachPoint->pastRoot - attachPoint->root;
+	}
 	if(frozen)
 		return true;
 	if (frameDuration == 0)
@@ -223,7 +229,7 @@ bool Actor::Update()
 	if (flags & floorCheck && root.y + vel.y < floorPos) //Check collision with floor
 	{
 		root.y = floorPos;
-		GotoFrame(seqPointer->props.landFrame);
+		GotoFrame(landingFrame);
 	}
 
 	SeqFun();
@@ -321,17 +327,19 @@ bool Actor::ThrowCheck(Actor& enemy, int frontRange, int upRange, int downRange)
 	if(upRange - downRange > 0) //Air throw
 	{ 
 		FixedPoint yDif = enemy.root.y - root.y;
+		int xDif = (enemy.root.x.value - root.x.value)*side;
 		return (
 			enemy.framePointer->frameProp.state == state::air &&
-			((enemy.root.x.value - root.x.value)*side < front.value) &&
+			(xDif < front.value && xDif > 0) &&
 			(yDif < up && yDif > downRange)
 		);
 	}
 	else //Ground throw
 	{
+		int xDif = (enemy.root.x.value - root.x.value)*side;
 		return (
 			enemy.framePointer->frameProp.state != state::air &&
-			(enemy.root.x.value - root.x.value)*side < front.value
+			(xDif < front.value && xDif > 0)
 		);
 	}
 }
@@ -380,6 +388,12 @@ void Actor::DeclareActorLua(sol::state &lua)
 
 		"SetVector", &Actor::SetVectorFromTable,
 		"ThrowCheck", &Actor::ThrowCheck,
+		"Attach", [](Actor &actor, Actor &toAttach){actor.attachPoint = &toAttach;},
+		"Detach", [](Actor &actor){actor.attachPoint = nullptr;},
+		"RotateZ", [](Actor &actor, float amount){actor.customTransform = glm::rotate<float>(glm::mat4(1), glm::radians(amount), glm::vec3(0,0,1));},
+		"RotateZP", [](Actor &actor, float amount, float x, float y){
+			actor.customTransform = glm::translate(glm::rotate<float>(glm::translate(glm::mat4(1), glm::vec3(x,y,0)), glm::radians(amount), glm::vec3(0,0,1)), glm::vec3(-x,-y,0));},
+		"ResetTransform", [](Actor &actor){actor.customTransform = glm::mat4(1);},
 
 		"SpawnChild", &Actor::SpawnChild,
 		"KillSelf", &Actor::KillSelf,
@@ -395,7 +409,9 @@ void Actor::DeclareActorLua(sol::state &lua)
 		"comboType", sol::readonly(&Actor::comboType),
 		"userData", &Actor::userData,
 		"flags", &Actor::flags,
-		"frozen", &Actor::frozen
+		"frozen", &Actor::frozen,
+		"landingFrame", &Actor::landingFrame,
+		"hitStop", &Actor::hitstop
 	);
 
 	auto table = lua["_hit"].get_or_create<sol::table>();

@@ -55,6 +55,7 @@ inputs = {
 		{input = "5R56", buf = 8, ref = 46, flag = f.repeatable | f.wipeBuffer, cond = C_heightRestriction},
 		{input = "~4ab", buf = 1, ref = 47, flag = f.repeatable | f.interrupts | f.noCombo, cond = C_heightRestriction},
 		{input = "~6ab", buf = 1, ref = 46, flag = f.repeatable | f.interrupts, cond = C_heightRestriction},
+		{input = "~d", buf = 2, ref = 271, flag = f.interruptible},
 		{input = "~c", buf = 2, ref = 9, flag = f.interruptible},
 		{input = "~b", buf = 2, ref = 8, flag = f.interruptible},
 		{input = "~a", buf = 2, ref = 7, flag = f.interruptible | f.repeatable},

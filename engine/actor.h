@@ -62,10 +62,12 @@ protected:
 	std::list<Actor> children;
 	std::list<Actor>::iterator myPos;
 	Actor* parent = nullptr;
+	Actor* attachPoint = nullptr;
 	HitDef attack;
 	//sol::state &lua;
 
 	Point2d<FixedPoint> root; //Character (x,y) position in game. Every box position is relative to this.
+	Point2d<FixedPoint> pastRoot;
 	Point2d<FixedPoint> vel;
 	Point2d<FixedPoint> accel;
 	Sequence *seqPointer;
@@ -75,6 +77,7 @@ protected:
 
 	int currSeq = 0; //The active sequence.
 	int currFrame = 0;
+	int landingFrame = 0;
 	int frameDuration; //counter for changing frames
 	int loopCounter = 0;
 	int totalSubframeCount = 0;
@@ -94,6 +97,7 @@ protected:
 	int comboType = none; 
 	uint32_t flags = 0;
 	sol::table userData;
+	glm::mat4 customTransform = glm::mat4(1);
 
 public:
 	Actor(std::vector<Sequence> &sequences, sol::state &lua);

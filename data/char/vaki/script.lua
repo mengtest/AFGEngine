@@ -120,6 +120,19 @@ function C_notHeldFromJump()
 	return true
 end
 
+function Actor:GroundLevel()
+	local x,y = self:GetPos()
+	if(y < 32<<16) then
+		y = 32<<16
+	end
+	self:SetPos(x,y)
+end
+
+function Actor:SetPosRelTo(actor, x, y)
+	local ax,ay = actor:GetPos()
+	self:SetPos(ax+(x<<16)*actor:GetSide(), ay+(y<<16))
+end
+
 function A_spawnPosRel(actor, seq, x, y, flags, side)
 	x = x or 0
 	y = y or 0
@@ -134,7 +147,6 @@ function A_spawnPosRel(actor, seq, x, y, flags, side)
 	ball.flags = flags
 	return ball
 end
-
 --Standing only
 function turnAround()
 	g.TurnAround(15)

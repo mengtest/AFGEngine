@@ -84,6 +84,9 @@ uniforms("Common", 1)
 	uniforms.Bind(defaultS.program);
 
 	projection = glm::ortho<float>(0, internalWidth, 0, internalHeight, -32768, 32767);
+	/* projection = glm::perspective<float>(90, (float)internalWidth/(float)internalHeight, 1, 32767);
+	projection = glm::rotate(projection, 0.3f, glm::vec3(0.f,1.f,0.f));
+	projection = glm::translate(projection, glm::vec3(-internalWidth/2.f,-internalHeight/2.f,-200)); */
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 }
