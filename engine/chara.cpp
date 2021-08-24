@@ -11,7 +11,11 @@
 
 bool Character::isColliding;
 
-Character::Character(FixedPoint xPos, float side, std::string charFile, BattleScene& scene, sol::state &lua) :
+/* Player::Player(int side, std::string charFile, BattleScene& scene):
+characterObject(FixedPoint(50*side), side, charFile, scene, lua)
+{} */
+
+Character::Character(FixedPoint xPos, int side, std::string charFile, BattleScene& scene, sol::state &lua) :
 Actor(sequences, lua),
 touchedWall(0),
 scene(scene)
@@ -310,7 +314,7 @@ bool Character::Update()
 	}
 	if(frozen)
 		return true;
-	if(gotHit)
+	if(gotHit) //Chara
 	{
 		GotoSequence(hurtSeq);
 		hurtSeq = -1;
@@ -343,7 +347,7 @@ bool Character::Update()
 		}
 		else if(jump == jump::seq)
 		{
-			mustTurnAround = false;
+			mustTurnAround = false; //chara
 			if(framePointer->frameProp.relativeJump)
 				GotoSequence(currSeq+framePointer->frameProp.jumpTo);
 			else
@@ -352,7 +356,7 @@ bool Character::Update()
 		else
 		{
 			currFrame += 1;	
-			GotoFrame(currFrame);
+			GotoFrame(currFrame); //can't die
 		}
 	}
 

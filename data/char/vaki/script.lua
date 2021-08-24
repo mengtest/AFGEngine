@@ -244,7 +244,6 @@ function s5a (actor)
 	if(actor.totalSubframeCount == 0) then
 		local hitdef = actor.hitDef
 		weakHit(hitdef)
-		hitdef:SetVectors(s.crouch, v.slam, v.croBlock3)
 		hitdef.hitStop = histopTbl.weak
 		hitdef.blockStun = 14
 		hitdef.damage = 300
@@ -457,9 +456,10 @@ function sChargedTsuki(actor)
 end
 
 
---[[ 
+--[[
 function _update()
-	print(player.totalSubframeCount)
+	rot = rot+10
+	player:RotateZP(rot,90,0)
 end
 --]]
 

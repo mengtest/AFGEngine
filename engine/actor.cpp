@@ -182,7 +182,7 @@ bool Actor::Update()
 	pastRoot = root;
 	if(attachPoint)
 	{
-		root += attachPoint->pastRoot - attachPoint->root;
+		root += attachPoint->root - attachPoint->pastRoot;
 	}
 	if(frozen)
 		return true;
@@ -240,6 +240,20 @@ bool Actor::Update()
 	}
 	else
 		shaking = false;
+
+	if(friction) //Pushback can't accelerate. Only slow down.
+	{
+		if(vel.x.value < 0 && accel.x.value < 0)
+		{
+			vel.x.value = 0;
+			accel.x.value = 0;
+		}
+		else if(friction && (vel.x.value > 0 && accel.x.value > 0))
+		{
+			vel.x.value = 0;
+			accel.x.value = 0;
+		}
+	}
 	
 	Translate(vel);
 	vel += accel;

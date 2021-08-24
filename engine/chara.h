@@ -29,7 +29,7 @@ private:
 	//inr damageTaken;
 	int hurtSeq = -1;
 	bool gotHit = false;
-	bool friction = false;
+
 	bool blockFlag = false;
 	int hitFlags = 0; //When getting hit
 
@@ -54,7 +54,7 @@ private:
 
 
 public:
-	Character(FixedPoint posX, float side, std::string charFile, BattleScene& scene, sol::state &lua);
+	Character(FixedPoint posX, int side, std::string charFile, BattleScene& scene, sol::state &lua);
 	bool Update();
 
 	float getHealthRatio();
@@ -77,4 +77,13 @@ private:
 	bool TurnAround(int sequence = -1);
 };
 
+/* class Player
+{
+	Character characterObject;
+	sol::state lua;
+
+public:
+	Player(int side, std::string charFile, BattleScene& scene);
+};
+ */
 #endif // CHARACTER_H_INCLUDED

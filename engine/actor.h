@@ -57,7 +57,6 @@ class Actor{
 	std::vector<Sequence> &sequences;
 
 protected:
-	sol::state *luaM;
 	sol::state &lua;
 	std::list<Actor> children;
 	std::list<Actor>::iterator myPos;
@@ -85,6 +84,7 @@ protected:
 	int hitstop = 0; //hitstop counter
 
 	int hitCount = 0;
+	bool friction = false;
 	bool frozen = false;
 	bool hittable = false;
 	bool shaking = false; //Shakes on hitstop.
