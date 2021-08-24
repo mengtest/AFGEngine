@@ -1,13 +1,12 @@
 
 #vscode
-.vscode/
+#.vscode/
 *.code-workspace
 
 #Original image data
 /data/char/vaki/effect/
 /data/char/vaki/vaki/
 /data/images/src/
-pack.bat
 
 #clangd
 .cache/
