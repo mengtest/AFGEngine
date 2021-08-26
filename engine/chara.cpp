@@ -9,13 +9,7 @@
 #include "chara.h"
 #include "raw_input.h" //Used only by Character::ResolveHit
 
-bool Character::isColliding;
-
-/* Player::Player(int side, std::string charFile, BattleScene& scene):
-characterObject(FixedPoint(50*side), side, charFile, scene, lua)
-{} */
-
-Character::Character(FixedPoint xPos, int side, std::string charFile, BattleScene& scene, sol::state &lua) :
+Character::Character(FixedPoint xPos, int side, std::string charFile, BattleScene& scene, sol::state &lua, std::vector<Sequence> &sequences) :
 Actor(sequences, lua),
 touchedWall(0),
 scene(scene)
@@ -24,128 +18,8 @@ scene(scene)
 	root.y = floorPos;
 	SetSide(side);
 	hittable = true;
-
-	//loads character from a file and fills sequences/frames and all that yadda.
 	userData = lua.create_table();
-	if(!ScriptSetup())
-		abort();
-	cmd.LoadFromLua("data/char/vaki/moves.lua", lua);
-	LoadSequences(sequences, charFile, lua); //Sequences refer to script.
-
-	GotoSequence(0);
-	GotoFrame(0);
-
-	
-
-	sol::protected_function init = lua["_init"];
-	if(init.get_type() == sol::type::function)
-		init();
-
-	
-
 	return;
-}
-
-Point2d<FixedPoint> Character::getXYCoords()
-{
-	return root;
-}
-
-void Character::setTarget(Character *t)
-{
-	target = t;
-}
-
-void Character::Collision(Character *playerOne, Character *playerTwo)
-{
-	isColliding = false;
-
-	Rect2d<FixedPoint> colBlue = playerOne->framePointer->colbox;
-	Rect2d<FixedPoint> colRed = playerTwo->framePointer->colbox;
-
-	if (playerOne->GetSide() < 0)
-		colBlue = colBlue.FlipHorizontal();
-	if (playerTwo->GetSide() < 0)
-		colRed = colRed.FlipHorizontal();
-
-	colBlue = colBlue.Translate(playerOne->root);
-	colRed = colRed.Translate(playerTwo->root);
-
-	isColliding = colBlue.Intersects(colRed);
-
-	if (isColliding)
-	{
-		const FixedPoint magic(480); //Stage width or large number?
-
-		FixedPoint getAway(0,5);
-		FixedPoint getAway1, getAway2;
-
-		if (playerOne->touchedWall != 0 || playerTwo->touchedWall != 0)
-			getAway = 1;
-
-		if (playerOne->root.x + playerOne->touchedWall * magic < playerTwo->root.x + playerTwo->touchedWall * magic)
-		{
-			getAway = getAway * (colBlue.topRight.x - colRed.bottomLeft.x);
-
-			getAway1 = -getAway;
-			getAway2 = getAway;
-		}
-		else
-		{
-			getAway = getAway * (colRed.topRight.x - colBlue.bottomLeft.x);
-
-			getAway1 = getAway;
-			getAway2 = -getAway;
-		}
-
-		playerOne->Translate(getAway1, 0);
-		playerTwo->Translate(getAway2, 0);
-	}
-
-	return;
-}
-
-void Character::HitCollision(Character &bluePlayer, Character &redPlayer, int blueKey, int redKey)
-{
-	std::vector<Actor*> blueList, redList;
-	//Idea: getEvil/GoodChildren maybe? lol
-	bluePlayer.GetAllChildren(blueList); 
-	redPlayer.GetAllChildren(redList); 
-	for(auto blue : blueList)
-	{
-		for(auto red : redList)
-		{
-			Actor* mutual[][2] = {{red,blue},{blue,red}};
-			const int keys[2] = {redKey, blueKey};
-			for(int i = 0; i < 2; i++)
-			{
-				Actor* const red = mutual[i][0];
-				Actor* const blue = mutual[i][1];
-				auto result = Actor::HitCollision(*red, *blue);
-				if (result.first)
-				{
-					blue->comboType = red->ResolveHit(keys[i], blue);
-					if(blue->comboType == blocked)
-					{
-						if(blue->attack.blockStop >= 0)
-							blue->hitstop = blue->attack.blockStop;
-						else
-							blue->hitstop = blue->attack.hitStop;
-					}
-					else if(blue->comboType == hurt)
-					{
-						blue->hitstop = blue->attack.hitStop;
-						if(blue->hitstop >0)
-						{
-							int amount = blue->hitstop*2;
-							bluePlayer.scene.pg.PushNormalHit(amount, result.second.x, result.second.y);
-						}
-					}
-					blue->hitCount--;
-				}
-			}
-		}
-	}
 }
 
 void Character::BoundaryCollision()
@@ -267,14 +141,6 @@ void Character::Translate(FixedPoint x, FixedPoint y)
 	BoundaryCollision();
 }
 
-
-float Character::getHealthRatio()
-{
-	if (health < 0)
-		health = 10000;
-	return health * (1.f / 10000.f);
-}
-
 void Character::GotoSequence(int seq)
 {
 	if (seq < 0)
@@ -380,16 +246,6 @@ bool Character::Update()
 	mustTurnAround = ((framePointer->frameProp.state == state::stand || framePointer->frameProp.state == state::crouch) &&
 		(root.x < target->root.x && side == -1 || root.x > target->root.x && side == 1));
 
-	if(hasUpdateFunction)
-	{
-		auto result = updateFunction();
-		if(!result.valid())
-		{
-			sol::error err = result;
-			std::cerr << err.what() << "\n";
-		}
-	}
-
 	SeqFun();
 
 	if (hitstop > 0)
@@ -458,12 +314,8 @@ bool Character::TurnAround(int sequence)
 	return false;
 }
 
-void Character::Input(input_deque &keyPresses)
-{
-	lastKey[0] = keyPresses[0];
-	lastKey[1] = keyPresses[1];
-	cmd.Charge(keyPresses);
-	
+void Character::Input(input_deque &keyPresses, CommandInputs &cmd)
+{	
 	int inputSide = GetSide();
 	if(mustTurnAround)
 		inputSide = -inputSide;
@@ -527,12 +379,30 @@ void Character::Input(input_deque &keyPresses)
 	}	
 }
 
-bool Character::ScriptSetup()
+Player::Player(int side, std::string charFile, BattleScene& scene):
+scene(scene),
+keyBufOrig(max_input_size, 0),
+keyBufDelayed(max_input_size, 0),
+charObj(FixedPoint(50*side), side, charFile, scene, lua, sequences)
+{
+
+	if(!ScriptSetup())
+		abort();
+	cmd.LoadFromLua("data/char/vaki/moves.lua", lua);
+	LoadSequences(sequences, charFile, lua); //Sequences refer to script.
+
+	charObj.GotoSequence(0);
+	charObj.GotoFrame(0);
+	
+	sol::protected_function init = lua["_init"];
+	if(init.get_type() == sol::type::function)
+		init();
+}
+
+bool Player::ScriptSetup()
 {
 	lua.open_libraries(sol::lib::base);
-
 	Actor::DeclareActorLua(lua);
-	
 
 	auto constant = lua["constant"].get_or_create<sol::table>();
 	constant["multiplier"] = speedMultiplier;
@@ -545,16 +415,18 @@ bool Character::ScriptSetup()
 
 	auto global = lua["global"].get_or_create<sol::table>();
 	global.set_function("DamageTarget", [this](int amount){target->health -= amount;});
-	global.set_function("ParticlesNormalRel", [this](int amount, float x, float y){scene.pg.PushNormalHit(amount, (float)root.x+x*side, float(root.y)+y);});
-	global.set_function("GetTarget", [this]()->Actor&{return *target;});
-	global.set_function("GetBlockTime", [this](){return blockTime;});
-	global.set_function("SetBlockTime", [this](int time){blockTime=time;});
-	global.set_function("TurnAround", &Character::TurnAround, this);
+	global.set_function("ParticlesNormalRel", [this](int amount, float x, float y){
+		scene.pg.PushNormalHit(amount, (float)charObj.root.x+x*charObj.side, float(charObj.root.y)+y);
+	});
+	global.set_function("GetTarget", [this]()->Actor&{return *charObj.target;});
+	global.set_function("GetBlockTime", [this](){return charObj.blockTime;});
+	global.set_function("SetBlockTime", [this](int time){charObj.blockTime=time;});
+	global.set_function("TurnAround", &Character::TurnAround, &charObj);
 	global.set_function("GetInput", [this]() -> unsigned int{return this->lastKey[0];});
 	global.set_function("GetInputPrev", [this]() -> unsigned int{return this->lastKey[1];});
 	global.set_function("GetInputRelative", [this]() -> unsigned int{
 		int lastkey = lastKey[0];
-		if(GetSide() > 0)
+		if(charObj.GetSide() > 0)
 			return lastkey;
 		else{
 			int right = lastkey & key::buf::RIGHT;
@@ -573,6 +445,176 @@ bool Character::ScriptSetup()
 
 	updateFunction = lua["_update"];
 	hasUpdateFunction = updateFunction.get_type() == sol::type::function;
-	lua["player"] = (Actor*)this;
+	lua["player"] = (Actor*)&charObj;
 	return true;
+}
+
+void Player::SetTarget(Player &t)
+{
+	target = &t.charObj;
+	charObj.target = target;
+}
+
+void Player::Update(HitboxRenderer &hr)
+{
+	if(hasUpdateFunction)
+	{
+		auto result = updateFunction();
+		if(!result.valid())
+		{
+			sol::error err = result;
+			std::cerr << err.what() << "\n";
+		}
+	}
+
+	updateList.clear();
+	charObj.GetAllChildren(updateList);
+	/* for(auto actor: updateList)
+	{
+		actor->Update();
+		if(actor->Update())
+			actor->SendHitboxData(hr); 
+	} */
+	for(auto it = updateList.begin(); it != updateList.end();)
+	{
+		if((*it)->Update())
+		{
+			//(*it)->SendHitboxData(hr);
+			++it;
+		}
+		else
+		{
+			it = updateList.erase(it); 
+		}
+	}
+}
+
+void Player::ProcessInput()
+{
+	lastKey[0] = keyBufDelayed[0];
+	lastKey[1] = keyBufDelayed[1];
+	cmd.Charge(keyBufDelayed);
+	charObj.Input(keyBufDelayed, cmd);
+}
+
+Point2d<FixedPoint> Player::GetXYCoords()
+{
+	return charObj.root;
+}
+
+
+float Player::GetHealthRatio()
+{
+	if (charObj.health < 0)
+		charObj.health = 10000;
+	return charObj.health * (1.f / 10000.f);
+}
+
+void Player::SetDelay(int _delay)
+{
+	if(_delay >= 0)
+		delay = _delay;
+}
+
+void Player::SendInput(int key)
+{
+	keyBufOrig.pop_back();
+	keyBufOrig.push_front(key);
+	keyBufDelayed.pop_back();
+	keyBufDelayed.push_front(keyBufOrig[delay]);
+}
+
+void Player::HitCollision(Player &bluePlayer, Player &redPlayer)
+{
+	std::vector<Actor*> blueList, redList;
+	int blueKey = bluePlayer.keyBufDelayed.front();
+	int redKey = redPlayer.keyBufDelayed.front();
+	//Idea: getEvil/GoodChildren maybe? lol
+	bluePlayer.charObj.GetAllChildren(blueList); 
+	redPlayer.charObj.GetAllChildren(redList); 
+	for(auto blue : blueList)
+	{
+		for(auto red : redList)
+		{
+			Actor* mutual[][2] = {{red,blue},{blue,red}};
+			const int keys[2] = {redKey, blueKey};
+			for(int i = 0; i < 2; i++)
+			{
+				Actor* const red = mutual[i][0];
+				Actor* const blue = mutual[i][1];
+				auto result = Actor::HitCollision(*red, *blue);
+				if (result.first)
+				{
+					blue->comboType = red->ResolveHit(keys[i], blue);
+					if(blue->comboType == Actor::blocked)
+					{
+						if(blue->attack.blockStop >= 0)
+							blue->hitstop = blue->attack.blockStop;
+						else
+							blue->hitstop = blue->attack.hitStop;
+					}
+					else if(blue->comboType == Actor::hurt)
+					{
+						blue->hitstop = blue->attack.hitStop;
+						if(blue->hitstop >0)
+						{
+							int amount = blue->hitstop*2;
+							bluePlayer.scene.pg.PushNormalHit(amount, result.second.x, result.second.y);
+						}
+					}
+					blue->hitCount--;
+				}
+			}
+		}
+	}
+}
+
+void Player::Collision(Player& blue, Player& red)
+{
+	bool isColliding = false;
+	Character *playerOne = &blue.charObj, *playerTwo = &red.charObj;
+
+	Rect2d<FixedPoint> colBlue = playerOne->framePointer->colbox;
+	Rect2d<FixedPoint> colRed = playerTwo->framePointer->colbox;
+
+	if (playerOne->GetSide() < 0)
+		colBlue = colBlue.FlipHorizontal();
+	if (playerTwo->GetSide() < 0)
+		colRed = colRed.FlipHorizontal();
+
+	colBlue = colBlue.Translate(playerOne->root);
+	colRed = colRed.Translate(playerTwo->root);
+
+	isColliding = colBlue.Intersects(colRed);
+
+	if (isColliding)
+	{
+		const FixedPoint magic(480); //Stage width or large number?
+
+		FixedPoint getAway(0,5);
+		FixedPoint getAway1, getAway2;
+
+		if (playerOne->touchedWall != 0 || playerTwo->touchedWall != 0)
+			getAway = 1;
+
+		if (playerOne->root.x + playerOne->touchedWall * magic < playerTwo->root.x + playerTwo->touchedWall * magic)
+		{
+			getAway = getAway * (colBlue.topRight.x - colRed.bottomLeft.x);
+
+			getAway1 = -getAway;
+			getAway2 = getAway;
+		}
+		else
+		{
+			getAway = getAway * (colRed.topRight.x - colBlue.bottomLeft.x);
+
+			getAway1 = getAway;
+			getAway2 = -getAway;
+		}
+
+		playerOne->Translate(getAway1, 0);
+		playerTwo->Translate(getAway2, 0);
+	}
+
+	return;
 }

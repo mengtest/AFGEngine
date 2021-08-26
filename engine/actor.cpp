@@ -138,14 +138,7 @@ glm::mat4 Actor::GetSpriteTransform()
 void Actor::SendHitboxData(HitboxRenderer &hr)
 {
 	static std::vector<float> vertices;
-	auto col = framePointer->colbox;
-	if(side == -1)
-		col = col.FlipHorizontal();
-	col = col.Translate(root);
-	vertices = {col.bottomLeft.x, col.bottomLeft.y, col.topRight.x, col.topRight.y};
-	hr.GenerateHitboxVertices(vertices, HitboxRenderer::gray);
-
-	Frame::boxes_t *selector[] = {&framePointer->greenboxes, &framePointer->redboxes};
+	Frame::boxes_t *selector[] = {&framePointer->redboxes, &framePointer->greenboxes};
 	for(int i = 0; i < 2; ++i)
 	{
 		vertices.resize(selector[i]->size()*4);
@@ -160,8 +153,15 @@ void Actor::SendHitboxData(HitboxRenderer &hr)
 			vertices[bi*4 + 2] = box.topRight.x;
 			vertices[bi*4 + 3] = box.topRight.y;
 		}
-		hr.GenerateHitboxVertices(vertices, i+1);
+		hr.GenerateHitboxVertices(vertices, 2-i);
 	}
+
+	auto col = framePointer->colbox;
+	if(side == -1)
+		col = col.FlipHorizontal();
+	col = col.Translate(root);
+	vertices = {col.bottomLeft.x, col.bottomLeft.y, col.topRight.x, col.topRight.y};
+	hr.GenerateHitboxVertices(vertices, HitboxRenderer::gray);
 }
 
 void Actor::SeqFun()

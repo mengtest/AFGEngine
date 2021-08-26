@@ -89,6 +89,9 @@ uniforms("Common", 1)
 	projection = glm::translate(projection, glm::vec3(-internalWidth/2.f,-internalHeight/2.f,-200)); */
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+	glClearColor(1, 1, 1, 1.f); 
+	glClearDepth(1);
 }
 
 BattleScene::~BattleScene()
@@ -124,9 +127,8 @@ void BattleScene::PlayLoop()
 		VaoTexOnly.Load();
 	}
 
-	sol::state state1, state2;
-	Character player(-50, 1, "data/char/vaki/vaki.char", *this, state1);
-	Character player2(50, -1, "data/char/vaki/vaki.char", *this, state2);
+	Player player(1, "data/char/vaki/vaki.char", *this);
+	Player player2(-1, "data/char/vaki/vaki.char", *this);
 	
 	//For rendering purposes only.
 	std::vector<float> hitboxData;
@@ -141,17 +143,10 @@ void BattleScene::PlayLoop()
 	uniforms.Bind(gfx.rectS.program);
 	uniforms.Bind(gfx.particleS.program);
 	
-	player.setTarget(&player2);
-	player2.setTarget(&player);
-
-	input_deque keyBufDelayed[2] = {input_deque(32, 0), input_deque(32, 0)};
-	input_deque keyBuf[2]= {input_deque(32, 0), input_deque(32, 0)};
-
+	player.SetTarget(player2);
+	player2.SetTarget(player);
 
 	VaoTexOnly.Bind();
-	glClearColor(1, 1, 1, 1.f); 
-	std::vector<Actor*> drawList;
-	std::vector<Actor*> updateList;
 
 	std::vector<Particle> particles;
 
@@ -171,45 +166,32 @@ void BattleScene::PlayLoop()
 		//if(glfwJoystickPresent(GLFW_JOYSTICK_1))
 		//	GameLoopJoy();
 		
-		for(int i = 0; i < 2; ++i)
-		{
-			keyBuf[i].pop_back();
-			keyBuf[i].push_front(keySend[i]);
-			keyBufDelayed[i].pop_back();
-			keyBufDelayed[i].push_front(keyBuf[i][inputDelay]);
-		}
+		player.SendInput(keySend[0]);
+		player2.SendInput(keySend[1]);
 
-		Character::HitCollision(player, player2, keyBufDelayed[0].front(), keyBufDelayed[1].front());
-		player.Input(keyBufDelayed[0]);
-		player2.Input(keyBufDelayed[1]);
+		Player::HitCollision(player, player2);
+		player.ProcessInput();
+		player2.ProcessInput();
 
-		updateList.clear();
-		player.GetAllChildren(updateList);
-		player2.GetAllChildren(updateList);
-
-		for(auto actor: updateList)
-		{
-			actor->Update();
-			/* if(actor->Update())
-				actor->SendHitboxData(hr); */
-		}
+		player.Update(hr);
+		player2.Update(hr);
 		
-		Character::Collision(&player, &player2);
+		Player::Collision(player, player2);
 
-		auto &&pos = player.getXYCoords();
+		//auto &&pos = player.getXYCoords();
 		//pg.PushNormalHit(5, 256, 128);
 		pg.Update();
 		pg.FillParticleVector(particles);
 
-		barHandler[B_P1Life].Resize(player.getHealthRatio(), 1);
-		barHandler[B_P2Life].Resize(player2.getHealthRatio(), 1);
+		barHandler[B_P1Life].Resize(player.GetHealthRatio(), 1);
+		barHandler[B_P2Life].Resize(player2.GetHealthRatio(), 1);
 		VaoTexOnly.UpdateBuffer(hudId, GetHudData().data(), GetHudData().size()*sizeof(float));
 		
 		//Start rendering
-		glClear(GL_COLOR_BUFFER_BIT);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		
 		//Should calculations be performed earlier? Watchout for this (Why?)
-		glm::mat4 viewMatrix = view.Calculate(player.getXYCoords(), player2.getXYCoords());
+		glm::mat4 viewMatrix = view.Calculate(player.GetXYCoords(), player2.GetXYCoords());
 		SetModelView(viewMatrix);
 
 		//Draw stage quad
@@ -220,19 +202,15 @@ void BattleScene::PlayLoop()
   		gfx.Begin();
 		
  		gfx.SetPaletteSlot(1);
-		drawList.clear();
-		player2.GetAllChildren(drawList);
 
-		for(auto actor : drawList)
+		for(auto actor : player2.updateList)
 		{
 			SetModelView(viewMatrix*actor->GetSpriteTransform());
 			gfx.Draw(actor->GetSpriteIndex());
 		}
 		
 		gfx.SetPaletteSlot(0);
-		drawList.clear();
-		player.GetAllChildren(drawList);
-		for(auto actor : drawList)
+		for(auto actor : player.updateList)
 		{
 			SetModelView(viewMatrix*actor->GetSpriteTransform());
 			gfx.Draw(actor->GetSpriteIndex());
@@ -255,8 +233,8 @@ void BattleScene::PlayLoop()
 		VaoTexOnly.Draw(hudId); 
 
 		timerString.seekp(0);
-		timerString << "SFP: " << mainWindow->GetSpf() << " FPS: " << 1/mainWindow->GetSpf()<<"      Entities:"<<updateList.size()<<"  "
-			<< "Particles:"<<particles.size()<<"  ";
+		timerString << "SFP: " << mainWindow->GetSpf() << " FPS: " << 1/mainWindow->GetSpf()<<"      Entities:"<<player.updateList.size()<<" - "
+			<<player2.updateList.size()<< "   Particles:"<<particles.size()<<"  ";
 
 		glBindTexture(GL_TEXTURE_2D, activeTextures[T_FONT].id);
 		int count = DrawText(timerString.str(), textVertData, 2, 10);

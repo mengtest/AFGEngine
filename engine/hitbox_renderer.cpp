@@ -16,18 +16,21 @@ quadsToDraw(0)
 	//Bit dangerous to have this here but I don't think it'll be used anywhere else.
 	glEnable(GL_PRIMITIVE_RESTART);
 	glPrimitiveRestartIndex(0xFFFF);
+	zOrder = 0;
 }
 
 void HitboxRenderer::Draw()
 {
 	if(quadsToDraw > 0)
 	{
+		glEnable(GL_DEPTH_TEST);
 		sSimple.Use();
 		vGeometry.Bind();
-		glUniform1f(lAlphaS, 0.5f);
+		glUniform1f(lAlphaS, 1.0f);
 		glDrawElements(GL_LINE_LOOP, quadsToDraw, GL_UNSIGNED_SHORT, nullptr); //No offset this time
-		glUniform1f(lAlphaS, 0.25f);
+		glUniform1f(lAlphaS, 0.4f);
 		glDrawElements(GL_TRIANGLE_FAN, quadsToDraw, GL_UNSIGNED_SHORT, nullptr);
+		glDisable(GL_DEPTH_TEST);
 	}
 }
 
@@ -42,8 +45,8 @@ void HitboxRenderer::GenerateHitboxVertices(const std::vector<float> &hitboxes, 
 	
 	//r, g, b, z order
 	constexpr float colors[][3]={
-		{1, 1, 1},		//gray
-		{0.2, 1, 0.2},	//green
+		{1.0, 1.0, 1.0},		//gray
+		{0.0, 1, 0.0},	//green
 		{1, 0.2, 0.2}	//red
 	};
 
@@ -69,7 +72,7 @@ void HitboxRenderer::GenerateHitboxVertices(const std::vector<float> &hitboxes, 
 			//X, Y, Z, R, G, B
 			clientQuads[dataI+j+0] = hitboxes[i+0] + (hitboxes[i+2]-hitboxes[i+0])*tX[j/6];
 			clientQuads[dataI+j+1] = hitboxes[i+1] + (hitboxes[i+3]-hitboxes[i+1])*tY[j/6];
-			clientQuads[dataI+j+2] = zOrder;
+			clientQuads[dataI+j+2] = 10000-zOrder;
 			clientQuads[dataI+j+3] = color[0];
 			clientQuads[dataI+j+4] = color[1];
 			clientQuads[dataI+j+5] = color[2];

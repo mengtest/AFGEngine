@@ -54,6 +54,7 @@ struct HitDef
 
 class Actor{
 	friend class Character;
+	friend class Player;
 	std::vector<Sequence> &sequences;
 
 protected:

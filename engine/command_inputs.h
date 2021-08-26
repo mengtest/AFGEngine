@@ -9,6 +9,7 @@
 #include <sol/sol.hpp>
 
 typedef std::deque<uint32_t> input_deque;  //"Buffer" containing processed input.
+constexpr size_t max_input_size = 32;
 
 struct MotionData
 {

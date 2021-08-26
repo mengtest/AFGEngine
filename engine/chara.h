@@ -18,11 +18,9 @@
 class Character : public Actor
 {
 private:
+	friend class Player;
+	Character *target = nullptr;
 	//sol::state lua;
-	sol::protected_function updateFunction;
-	bool hasUpdateFunction = false;
-
-	std::vector<Sequence> sequences;
 
 	int health = 10000;
 	//int hitsTaken;
@@ -37,39 +35,25 @@ private:
 	int blockTime = 0;
 	int pushTimer = 0; //Counts down the pushback time.
 
-	CommandInputs cmd;
-	unsigned int lastKey[2]{};
-
 	BattleScene& scene;
-	Character* target;
-
+	
 	bool interrumpible = false;
 	bool mustTurnAround = false;
 
-
-	static bool isColliding;
 	//FixedPoint getAway; //Amount to move after collision
 	FixedPoint touchedWall; //left wall: -1, right wall = 1, no wall = 0;
 	MotionData lastCommand;
 
 
 public:
-	Character(FixedPoint posX, int side, std::string charFile, BattleScene& scene, sol::state &lua);
+	Character(FixedPoint posX, int side, std::string charFile, BattleScene& scene, sol::state &lua, std::vector<Sequence> &sequences);
 	bool Update();
-
-	float getHealthRatio();
-	Point2d<FixedPoint> getXYCoords();
-
-	void setTarget(Character* target);
-
+	
 	void BoundaryCollision(); //Collision against stage
-	static void Collision(Character* blue, Character* red); //Detects and resolves collision between characters and/or the camera.
-	static void HitCollision(Character &blue, Character &red, int blueKey, int redKey); //Checks hit/hurt box collision and sets flags accordingly.
-
-	void Input(input_deque &keyPresses);
+	void Input(input_deque &keyPresses, CommandInputs &cmd);
 
 private:
-	bool ScriptSetup();
+	
 	void Translate(Point2d<FixedPoint> amount);
 	void Translate(FixedPoint x, FixedPoint y);
 	void GotoSequence(int seq);
@@ -77,13 +61,40 @@ private:
 	bool TurnAround(int sequence = -1);
 };
 
-/* class Player
+class Player
 {
-	Character characterObject;
+private:
 	sol::state lua;
+	sol::protected_function updateFunction;
+	bool hasUpdateFunction = false;
 
+	std::vector<Sequence> sequences;
+	BattleScene& scene;
+	Character charObj;
+	Character* target;
+
+	int delay = 0;
+	input_deque keyBufOrig;
+	input_deque keyBufDelayed;
+	unsigned int lastKey[2]{};
+	CommandInputs cmd;
+
+	bool ScriptSetup();
+	
 public:
+	std::vector<Actor*> updateList;
+
 	Player(int side, std::string charFile, BattleScene& scene);
+	void SetTarget(Player &target);
+	void Update(HitboxRenderer &hr);
+	void ProcessInput();
+	Point2d<FixedPoint> GetXYCoords();
+	float GetHealthRatio();
+	void SetDelay(int delay);
+	void SendInput(int key);
+
+	static void HitCollision(Player &blue, Player &red); //Checks hit/hurt box collision and sets flags accordingly.
+	static void Collision(Player &blue, Player &red); //Detects and resolves collision between characters and/or the camera.
 };
- */
+
 #endif // CHARACTER_H_INCLUDED
