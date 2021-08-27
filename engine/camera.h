@@ -18,6 +18,7 @@ class Camera
 {
 public: //As always, this is access only.
 	Point2d<FixedPoint> center;
+	Point2d<FixedPoint> centerTarget;
 	FixedPoint scale;
 
 private:

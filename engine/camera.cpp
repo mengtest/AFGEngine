@@ -52,35 +52,37 @@ glm::mat4 Camera::Calculate(Point2d<FixedPoint> p1, Point2d<FixedPoint> p2)
 	dif.x.value >>= 1;
 	dif.y.value >>= 1;
 
+	centerTarget = p1 + dif;
+	centerTarget.y -= 64;
+ 	if(centerTarget.y < 0)
+		centerTarget.y = 0; 
 
-
-	center = p1 + dif;
-	center.y -= 64;
-
- 	if(center.y < 0)
-		center.y = 0; 
+	center.x += (centerTarget.x - center.x)*0.32;
+	center.y += (centerTarget.y - center.y)*0.45;
+	
 	if(GetWallPos(camera::leftWall) <= -stageWidth)
 		center.x = -stageWidth + widthBoundary*scale/FixedPoint(2);
 	else if(GetWallPos(camera::rightWall) >= stageWidth)
 		center.x = stageWidth - widthBoundary*scale/FixedPoint(2);
-
+	
+	float centerYShake = center.y;
 	if(shakeTime > 0)
 	{
-		center.y.value += 3*abs((shakeTime % 4) - 1)<<15;
+		centerYShake += 3*abs((shakeTime % 4) - 1);
 		--shakeTime;
 	}
-
-	if(center.y > 450-internalHeight)
+	
+	if(centerYShake > 450-internalHeight)
 	{
-		center.y = 450-internalHeight;
-		center.y.value -= abs((shakeTime % 4) - 1)<<17; //Shake backwards
+		centerYShake = 450-internalHeight;
+		centerYShake -= abs((shakeTime % 4) - 1); //Shake backwards
 	}
 	
 	glm::mat4 view(1);
 
 	view = glm::translate(view, glm::vec3(internalWidth/2.f, 0.f, 0.f));
 	view = glm::scale(view, glm::vec3(1.f/(float)scale, 1.f/(float)scale, 1.f));
-	view = glm::translate(view, glm::vec3(-center.x, -center.y, 0.f));
+	view = glm::translate(view, glm::vec3(-center.x, -centerYShake, 0.f));
 	return view;
 }
 

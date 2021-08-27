@@ -177,15 +177,8 @@ void Actor::SeqFun()
 	}
 }
 
-bool Actor::Update()
+bool Actor::AdvanceFrame()
 {
-	pastRoot = root;
-	if(attachPoint)
-	{
-		root += attachPoint->root - attachPoint->pastRoot;
-	}
-	if(frozen)
-		return true;
 	if (frameDuration == 0)
 	{
 		int jump = framePointer->frameProp.jumpType;
@@ -225,6 +218,21 @@ bool Actor::Update()
 				return false;
 		}
 	}
+	return true;
+}
+
+bool Actor::Update()
+{
+	pastRoot = root;
+	if(attachPoint)
+	{
+		root += attachPoint->root - attachPoint->pastRoot;
+	}
+	if(frozen)
+		return true;
+	
+	if(!AdvanceFrame()) //Died
+		return false;
 
 	if (flags & floorCheck && root.y + vel.y < floorPos) //Check collision with floor
 	{

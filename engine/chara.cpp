@@ -146,12 +146,6 @@ void Character::GotoSequence(int seq)
 	if (seq < 0)
 		return;
 	
-	if(mustTurnAround)
-	{
-		mustTurnAround = false;
-		side = -side;
-	}
-	
 	interrumpible = false;
 	comboType = none;
 	currSeq = seq;
@@ -171,6 +165,17 @@ void Character::GotoSequence(int seq)
 	}
 }
 
+void Character::GotoSequenceMayTurn(int seq)
+{
+	if(mustTurnAround)
+	{
+		mustTurnAround = false;
+		side = -side;
+	}
+
+	GotoSequence(seq);
+}
+
 bool Character::Update()
 {
 	pastRoot = root;
@@ -186,45 +191,8 @@ bool Character::Update()
 		hurtSeq = -1;
 		gotHit = false;
 	}
-	else if (frameDuration == 0)
-	{
-		int jump = framePointer->frameProp.jumpType;
-		if(jump == jump::frame)
-		{
-			if(framePointer->frameProp.relativeJump)
-				currFrame += framePointer->frameProp.jumpTo;
-			else
-				currFrame = framePointer->frameProp.jumpTo;
-			GotoFrame(currFrame);
-		}
-		else if(jump == jump::loop)
-		{
-			if(loopCounter > 1)
-			{
-				if(framePointer->frameProp.relativeJump)
-					currFrame += framePointer->frameProp.jumpTo;
-				else
-					currFrame = framePointer->frameProp.jumpTo;
-				loopCounter--;
-			}
-			else
-				currFrame++;
-			GotoFrame(currFrame);
-		}
-		else if(jump == jump::seq)
-		{
-			mustTurnAround = false; //chara
-			if(framePointer->frameProp.relativeJump)
-				GotoSequence(currSeq+framePointer->frameProp.jumpTo);
-			else
-				GotoSequence(framePointer->frameProp.jumpTo);
-		}
-		else
-		{
-			currFrame += 1;	
-			GotoFrame(currFrame); //can't die
-		}
-	}
+	if(!AdvanceFrame()) //Died
+		return false;
 
 	if (root.y < floorPos && !hitstop) //Check collision with floor
 	{
@@ -370,7 +338,7 @@ void Character::Input(input_deque &keyPresses, CommandInputs &cmd)
 
 	if(command.seqRef != -1)
 	{
-		GotoSequence(command.seqRef);
+		GotoSequenceMayTurn(command.seqRef);
 		if(command.flags & CommandInputs::wipeBuffer) 
 			keyPresses.front() |= key::buf::CUT;
 

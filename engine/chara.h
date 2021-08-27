@@ -57,6 +57,7 @@ private:
 	void Translate(Point2d<FixedPoint> amount);
 	void Translate(FixedPoint x, FixedPoint y);
 	void GotoSequence(int seq);
+	void GotoSequenceMayTurn(int seq);
 	int ResolveHit(int keypress, Actor *hitter);
 	bool TurnAround(int sequence = -1);
 };
