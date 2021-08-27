@@ -101,7 +101,6 @@ void Render::Draw()
 	vGeometry.Draw(geoParts[LINES], GL_LINES);
 
 	//Sprite
-	gfx.Begin();
 	constexpr float tau = glm::pi<float>()*2.f;
 	view = glm::mat4(1.f);
 	view = glm::scale(view, glm::vec3(scale, scale, 1.f));
@@ -111,9 +110,12 @@ void Render::Draw()
 	view = glm::rotate(view, rotY*tau, glm::vec3(0.0, 1.f, 0.f));
 	view = glm::rotate(view, rotX*tau, glm::vec3(1.0, 0.f, 0.f));
 	view = glm::translate(view, glm::vec3(offsetX, offsetY,0.f)); 
+	glDisable(GL_PRIMITIVE_RESTART);
 	SetModelView(std::move(view));
+	gfx.Begin();
 	gfx.Draw(spriteId);
 	gfx.End();
+	glEnable(GL_PRIMITIVE_RESTART);
 
 	//Boxes
 	sSimple.Use();

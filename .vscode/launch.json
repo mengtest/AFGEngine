@@ -26,6 +26,28 @@
 			"cwd": "${workspaceFolder}",
 			"environment": [],
 			"console": "newExternalWindow"
+		},
+		{
+			"name": "PackImage",
+			"type": "cppvsdbg",
+			"request": "launch",
+			"program": "${workspaceFolder}/build/bin/PackImage.exe",
+			"args": ["data/char/vaki/vaki", "128,32", "-b", "--8bpp"],
+			"stopAtEntry": false,
+			"cwd": "${workspaceFolder}",
+			"environment": [],
+			"console": "newExternalWindow"
+		},
+		{
+			"name": "Frametool",
+			"type": "cppvsdbg",
+			"request": "launch",
+			"program": "${workspaceFolder}/build/bin/Frametool.exe",
+			"args": [],
+			"stopAtEntry": false,
+			"cwd": "${workspaceFolder}",
+			"environment": [],
+			"console": "newExternalWindow"
 		}
 	]
 }

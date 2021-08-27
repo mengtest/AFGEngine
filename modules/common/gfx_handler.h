@@ -14,7 +14,8 @@ class GfxHandler{
 private:
 	struct VertexData4
 	{
-		unsigned short x,y,s,t;
+		short x,y;
+		unsigned short s,t;
 	};
 
 	struct spriteIdMeta

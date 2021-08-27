@@ -14,7 +14,6 @@ quadsToDraw(0)
 	vGeometry.Load();
 
 	//Bit dangerous to have this here but I don't think it'll be used anywhere else.
-	glEnable(GL_PRIMITIVE_RESTART);
 	glPrimitiveRestartIndex(0xFFFF);
 	zOrder = 0;
 }
@@ -23,6 +22,7 @@ void HitboxRenderer::Draw()
 {
 	if(quadsToDraw > 0)
 	{
+		glEnable(GL_PRIMITIVE_RESTART);
 		glEnable(GL_DEPTH_TEST);
 		sSimple.Use();
 		vGeometry.Bind();
@@ -31,6 +31,7 @@ void HitboxRenderer::Draw()
 		glUniform1f(lAlphaS, 0.4f);
 		glDrawElements(GL_TRIANGLE_FAN, quadsToDraw, GL_UNSIGNED_SHORT, nullptr);
 		glDisable(GL_DEPTH_TEST);
+		glDisable(GL_PRIMITIVE_RESTART);
 	}
 }
 

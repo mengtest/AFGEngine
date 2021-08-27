@@ -79,18 +79,18 @@ void GfxHandler::LoadToVao(std::filesystem::path file, int mapId, int textureInd
 	int size = sizeof(VertexData4);
 
 	vertexFile.read((char *)(tempVDContainer[vdStart].get()), nChunks*6*size);
-	unsigned int chunkCount = 0;
+	int chunkCount = 0;
 	for(int i = 0; i < nSprites; i++)
 	{
 		uint16_t virtualId;
 		vertexFile.read((char*)&virtualId, sizeof(virtualId));
 
-		int trueId = vertices.Prepare(size*6*chunksPerSprite[i], &(tempVDContainer[vdStart].get()[6*chunkCount]));
+		int trueId = vertices.Prepare(size*6*((int)chunksPerSprite[i]), tempVDContainer[vdStart].get()+6*chunkCount);
 		chunkCount += chunksPerSprite[i];
 
 		idMapList[mapId].insert({virtualId, {trueId, textureIndex}});
 	}
-
+	
 	delete[] chunksPerSprite;
 }
 

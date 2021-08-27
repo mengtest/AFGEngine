@@ -240,7 +240,9 @@ int main(int argc, char **argv)
 
 		//Fill each channel of the atlas with image data.
 		for(auto &im: images8bpp)
+		{
 			atlas.CopyToAtlas(im);
+		}
 		
 		std::cout << "Writing file... ";
 		std::string pngO = filenameOut+"8.png";
@@ -422,11 +424,17 @@ void WriteVertexData(std::string filename, int nChunks, std::list<ImageMeta> &me
 
 	auto chunksPerSprite = new uint16_t[nSprites];
 	VertexData4* data = new VertexData4[nChunks*6];
+	int chunkCheck = 0;
 	
 	int dataI = 0;
 	int spriteI = 0;
 	for(auto &meta: metas)
 	{
+/* 		if(nameMap.at(meta.name) == 500)
+		{
+			std::cout<<"bug";
+		} */
+
 		int x = xOffset;
 		int y = yOffset;
 		if(centerH)
@@ -435,6 +443,7 @@ void WriteVertexData(std::string filename, int nChunks, std::list<ImageMeta> &me
 			y += meta.data->height>>1;
 		//nameMap.insert({meta.name, spriteI});
 		chunksPerSprite[spriteI] = meta.chunks.size();
+		//memset(data+dataI, 0, sizeof(VertexData4)*6*chunksPerSprite[spriteI]);
 		for(auto &chunk: meta.chunks)
 		{
 			for(int i = 0; i < 6; i++)
@@ -448,9 +457,13 @@ void WriteVertexData(std::string filename, int nChunks, std::list<ImageMeta> &me
 				data[dataI+i].t = (float)(chunk.tex.y + chunkSize*tY[i])*UINT16_MAX/height; */
 			}
 			dataI += 6;
+			++chunkCheck;
 		}
 		spriteI++;
 	}
+
+	assert(chunkCheck==nChunks);
+	assert(spriteI==nSprites);
 
 	std::ofstream vertexFile(filename, std::ios_base::binary);
 	vertexFile.write((char*)&nSprites, sizeof(int));
