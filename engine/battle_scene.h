@@ -13,7 +13,7 @@ class BattleScene
 {
 public:
 	ParticleGroup pg;
-	Camera view{1.05};
+	Camera view{1.55};
 	int timer;
 
 	BattleScene();

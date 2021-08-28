@@ -10,15 +10,20 @@
 #include <fixed_point.h>
 
 const FixedPoint stageWidth(300);
+const FixedPoint stageHeight(225);
 
 Camera::Camera(float _maxScale) :
 scale(1.f),
 widthBoundary(internalWidth),
-limitRatio(FixedPoint(6)/FixedPoint(7)),
-maxScale(_maxScale)
+heightBoundary(internalHeight),
+limitRatioX(FixedPoint(6)/FixedPoint(7)),
+limitRatioY(FixedPoint(2)/FixedPoint(3))
 {
-	if(maxScale*(internalWidth/2)>stageWidth)
-		maxScale = (stageWidth*2)/internalWidth;
+	if(_maxScale*(internalWidth/2.f)>(float)stageWidth)
+		maxScale = (stageWidth*2.f)/(float)internalWidth;
+	else
+		maxScale = _maxScale;
+	//No support for tall stages.
 }
 
 Camera::Camera() : Camera(1.1f)
@@ -35,29 +40,58 @@ void Camera::SetShakeTime(int time)
 glm::mat4 Camera::Calculate(Point2d<FixedPoint> p1, Point2d<FixedPoint> p2)
 {
 	Point2d<FixedPoint> dif = p2 - p1;
-
+	const FixedPoint distToScroll(120,0);
 	//Zooms out when the distance between points is larger than the screen's h-ratio.
-	if(dif.x.abs() > FixedPoint(widthBoundary*limitRatio)) 
+	
+	scale = 1.f;
+	FixedPoint scaleX, scaleY;
+	if(dif.x.abs() > FixedPoint(widthBoundary*limitRatioX)) 
 	{
-		scale = dif.x.abs()/(widthBoundary*limitRatio);
-		if(scale > maxScale)
-			scale = maxScale;
-		//std::cout <<(float)(scale*internalWidth)<<"\n";
+		scaleX = dif.x.abs()/(widthBoundary*limitRatioX);
+		
+		std::cout <<(float)(scaleX)<<" X\n";
 	}
-	else
+	if(dif.y.abs() > FixedPoint(heightBoundary*limitRatioY))
+	{
+		scaleY = FixedPoint(0.75)+dif.y.abs()/(FixedPoint(4)*heightBoundary*limitRatioY);
+		/* if(scale > maxScale.x)
+			scale = maxScale.x; */
+		std::cout <<(float)(scaleY)<<" Y\n";
+	}
+	auto biggerScale = std::max(scaleX, scaleY);
+	if(biggerScale > scale)
+		scale = biggerScale;
+	if(scale > maxScale)
+		scale = maxScale;
+	
+/* 	else
 	{
 		scale = 1.f;
-	}
+	}  */
 	
 	dif.x.value >>= 1;
 	dif.y.value >>= 1;
+	auto rightmost = std::max(p1.x, p2.x);
+	auto leftmost = std::min(p1.x, p2.x);
+	
+	if(rightmost > distToScroll + centerTarget.x)
+	{
+		if(leftmost < -distToScroll + centerTarget.x)
+			centerTarget.x.value = p1.x.value + (dif.x.value);
+		else
+		centerTarget.x = rightmost-distToScroll;
 
-	centerTarget = p1 + dif;
+	}
+	else if(leftmost < -distToScroll + centerTarget.x)
+		centerTarget.x = leftmost+distToScroll;
+
+
+	centerTarget.y = p1.y + dif.y;
 	centerTarget.y -= 64;
  	if(centerTarget.y < 0)
 		centerTarget.y = 0; 
 
-	center.x += (centerTarget.x - center.x)*0.32;
+	center.x += (centerTarget.x - center.x)*0.33;
 	center.y += (centerTarget.y - center.y)*0.45;
 	
 	if(GetWallPos(camera::leftWall) <= -stageWidth)
@@ -72,9 +106,9 @@ glm::mat4 Camera::Calculate(Point2d<FixedPoint> p1, Point2d<FixedPoint> p2)
 		--shakeTime;
 	}
 	
-	if(centerYShake > 450-internalHeight)
+	if(centerYShake > 450-(internalHeight)*(float)scale)
 	{
-		centerYShake = 450-internalHeight;
+		centerYShake = 450-(internalHeight)*(float)scale;
 		centerYShake -= abs((shakeTime % 4) - 1); //Shake backwards
 	}
 	
