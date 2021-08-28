@@ -34,8 +34,10 @@ private:
 public:
 	Camera();
 	Camera(float maxScale);
+	Camera& operator=(const Camera& c);
 
 	glm::mat4 Calculate(Point2d<FixedPoint>, Point2d<FixedPoint> p2);
+	
 
 	FixedPoint GetWallPos(int which);
 	void SetShakeTime(int time);

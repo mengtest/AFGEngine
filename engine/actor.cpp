@@ -1,9 +1,10 @@
 #include "actor.h"
 #include <glm/ext/matrix_transform.hpp>
 
-Actor::Actor(std::vector<Sequence> &sequences, sol::state &lua) :
+Actor::Actor(std::vector<Sequence> &sequences, sol::state &lua, std::vector<Actor> &actorList) :
 lua(lua),
-sequences(sequences)
+sequences(sequences),
+actorList(actorList)
 {
 	//userData = lua.create_table();
 }
@@ -25,7 +26,7 @@ void Actor::GotoSequence(int seq)
 	hitCount = 0;
 	attack.Clear();
 
-	seqPointer = &sequences[currSeq];
+	seqPointer = &sequences.get()[currSeq];
 	landingFrame = seqPointer->props.landFrame;
 	GotoFrame(0);
 }
@@ -34,10 +35,7 @@ bool Actor::GotoFrame(int frame)
 {
 	//OOB frame
 	if(frame >= seqPointer->frames.size() || frame < 0)
-	{
-		KillSelf();
-		return false;
-	}
+		return false; //Kill self
 
 	subframeCount = 0;
 	currFrame = frame;
@@ -308,30 +306,10 @@ std::pair<bool, Point2d<FixedPoint>> Actor::HitCollision(const Actor& hurt, cons
 
 Actor& Actor::SpawnChild(int sequence)
 {
-	Actor child(sequences, lua);
-	child.parent = this;
+	Actor child(sequences, lua, actorList);
 	child.GotoSequence(sequence);
-	children.push_back(std::move(child));
-	children.back().myPos = --children.end();
-	return children.back();
-}
-
-void Actor::KillSelf()
-{
-	if(parent)
-	{
-		parent->children.erase(myPos);
-	}
-}
-
-void Actor::GetAllChildren(std::vector<Actor*> &list, bool includeSelf)
-{
-	for(auto &child : children)
-	{
-		child.GetAllChildren(list);
-	}
-	if(includeSelf)
-		list.push_back(this);
+	actorList.get().push_back(std::move(child));
+	return actorList.get().back();
 }
 
 int Actor::ResolveHit(int keypress, Actor *hitter)
@@ -373,7 +351,7 @@ int Actor::SetVectorFromTable(const sol::table &table, int side)
 	vel.y.value = vt.ySpeed*speedMultiplier;
 	accel.x.value = vt.xAccel*speedMultiplier*side;
 	accel.y.value = vt.yAccel*speedMultiplier;
-	return lua["_seqTable"][vt.sequenceName].get_or(-1);
+	return lua.get()["_seqTable"][vt.sequenceName].get_or(-1);
 }
 
 
@@ -418,8 +396,6 @@ void Actor::DeclareActorLua(sol::state &lua)
 		"ResetTransform", [](Actor &actor){actor.customTransform = glm::mat4(1);},
 
 		"SpawnChild", &Actor::SpawnChild,
-		"KillSelf", &Actor::KillSelf,
-		"ChildCount", [](Actor &actor){return actor.children.size();},
 
 		"currentFrame", sol::readonly(&Actor::currFrame),
 		"currentSequence", sol::readonly(&Actor::currSeq),

@@ -26,86 +26,6 @@ void SetupKeys(int offset)
 	keyfile.close();
 }
 
-void GameLoopKeyHandle(SDL_KeyboardEvent &e)
-{
-	if(e.repeat)
-		return;
-	
-	SDL_Scancode scancode = e.keysym.scancode; 
-
-	bool action = e.type == SDL_KEYDOWN;
-	for(int i = 0; i < buttonsN; ++i)
-	{
-		if(scancode == modifiableSCKeys[i])
-		{
-			if(action)
-				keySend[0] |= 1 << i;
-			else
-				keySend[0] &= ~(1 << i);
-		}
-	}
-	for(int i = 0; i < buttonsN; ++i)
-	{
-		if(scancode == modifiableSCKeys[i+buttonsN])
-		{
-			if(action)
-				keySend[1] |= 1 << i;
-			else
-				keySend[1] &= ~(1 << i);
-		}
-	}
-
-
-	//unmodifiable keys.
-	if(!action)
-		return;
-
-	switch (scancode){
-	case SDL_SCANCODE_F1: //Set custom keys for player one
-		SetupKeys(0);
-		break;
-	case SDL_SCANCODE_F2: //and player two too
-		SetupKeys(buttonsN);
-		break;
-	case SDL_SCANCODE_F3: //Set joy buttons
-		{
-			/* TODO
-			int buttonN = 0;
-			glfwGetJoystickButtons(GLFW_JOYSTICK_1, &buttonN);
-			int i = 0;
-			int *used = new int[buttonN];
-			while(i < 4)
-			{
-				const unsigned char *buttons = glfwGetJoystickButtons(GLFW_JOYSTICK_1, &buttonN);
-				for(int buttonItr = 0; buttonItr < buttonN; ++buttonItr)
-				{
-					if(buttons[buttonItr] == GLFW_PRESS)
-					{
-						if(used[buttonItr] == 1)
-							continue;
-						used[buttonItr] = 1;
-						modifiableJoyKeys[i] = buttonItr;
-						++i;
-						break;
-					}
-				}
-			}
-			delete[] used;
-			std::ofstream keyfile("joyconf.bin", std::ofstream::out | std::ofstream::binary);
-			keyfile.write((const char*)modifiableJoyKeys, sizeof(int)*4);
-			keyfile.close();
-			*/
-		}
-		break;
-	case SDL_SCANCODE_F5: //Switches between different framerates
-			mainWindow->ChangeFramerate();
-		break;
-	case SDL_SCANCODE_ESCAPE:
-			mainWindow->wantsToClose = true;
-		break;
-	}
-}
-
 void GameLoopJoy()
 {
 	/* TODO
@@ -154,7 +74,7 @@ void GameLoopJoy()
 	*/
 }
 
-void EventLoop()
+void EventLoop(std::function<void(SDL_KeyboardEvent &e)> f)
 {
 	SDL_Event event;
 	while(SDL_PollEvent(&event))
@@ -174,7 +94,7 @@ void EventLoop()
 				break;
 			case SDL_KEYDOWN:
 			case SDL_KEYUP:
-				GameLoopKeyHandle(event.key);
+				f(event.key);
 				break;
 		}
 	}

@@ -32,6 +32,16 @@ limitRatioY(FixedPoint(2)/FixedPoint(3))
 	//No support for tall stages.
 }
 
+Camera& Camera::operator=(const Camera& c)
+{
+	center = c.center;
+	centerTarget = c.centerTarget;
+	scale = c.scale;
+	scaleTimer = c.scaleTimer;
+	shakeTime = c.shakeTime;
+	return *this;
+}
+
 Camera::Camera() : Camera(1.1f)
 {
 

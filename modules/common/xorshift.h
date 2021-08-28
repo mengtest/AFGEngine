@@ -8,6 +8,5 @@ struct XorShift32{
 	int32_t Get();
 };
 
-extern XorShift32 xorShift32;
 
 #endif /* XORSHIFT_H_GUARD */

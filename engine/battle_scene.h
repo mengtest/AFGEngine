@@ -1,23 +1,46 @@
 #ifndef BATTLE_SCENE_H_GUARD
 #define BATTLE_SCENE_H_GUARD
+
+#include "battle_interface.h"
+#include "chara.h"
 #include "camera.h"
 #include "texture.h"
 #include "hud.h"
+#include "xorshift.h"
 #include <particle.h>
 #include <shader.h>
 #include <ubo.h>
 #include <glm/mat4x4.hpp>
+#include <SDL_events.h>
 
+struct SaveState
+{
+	XorShift32 rng;
+	ParticleGroup pg;
+	Camera view;
+	PlayerStateCopy p1, p2;
+
+	SaveState():pg(rng){}
+};
 
 class BattleScene
 {
-public:
+private:
+	XorShift32 rng;
 	ParticleGroup pg;
 	Camera view{1.55};
 	int timer;
 
+	BattleInterface interface;
+	Player player, player2;
+
+	SaveState state;
+
+public:
 	BattleScene();
 	~BattleScene();
+	void SaveState();
+	void LoadState();
 
 	void PlayLoop();
 
@@ -32,6 +55,7 @@ private:
 
 	void SetModelView(glm::mat4 &view);
 	void SetModelView(glm::mat4 &&view);
+	void KeyHandle(SDL_KeyboardEvent &e);
 };
 
 #endif /* BATTLE_SCENE_H_GUARD */

@@ -57,6 +57,9 @@ unsigned int LoadPaletteTEMP()
 }
 
 BattleScene::BattleScene():
+interface{rng, pg, view},
+player(interface), player2(interface),
+pg(rng),
 uniforms("Common", 1)
 {
 	texture_options opt; opt.linearFilter = true;
@@ -127,8 +130,8 @@ void BattleScene::PlayLoop()
 		VaoTexOnly.Load();
 	}
 
-	Player player(1, "data/char/vaki/vaki.char", *this);
-	Player player2(-1, "data/char/vaki/vaki.char", *this);
+	player.Load(1, "data/char/vaki/vaki.char");
+	player2.Load(-1, "data/char/vaki/vaki.char");
 	
 	//For rendering purposes only.
 	std::vector<float> hitboxData;
@@ -151,6 +154,8 @@ void BattleScene::PlayLoop()
 	std::vector<Particle> particles;
 
 	defaultS.Use();
+
+	auto f = std::bind(&BattleScene::KeyHandle, this, std::placeholders::_1);
 	int32_t gameTicks = 0;
 	bool gameOver = false;
 	while(!gameOver && !mainWindow->wantsToClose)
@@ -160,7 +165,7 @@ void BattleScene::PlayLoop()
 			std::cerr << "GL Error: 0x" << std::hex << err << "\n";
 		}
 		
-		EventLoop();
+		EventLoop(f);
 		
 		// TODO
 		//if(glfwJoystickPresent(GLFW_JOYSTICK_1))
@@ -255,4 +260,110 @@ void BattleScene::SetModelView(glm::mat4& view)
 void BattleScene::SetModelView(glm::mat4&& view)
 {
 	uniforms.SetData(glm::value_ptr(projection*view));
+}
+
+void BattleScene::SaveState()
+{
+	state.rng = rng;
+	state.pg = pg;
+	state.p1 = player.GetStateCopy();
+	state.p2 = player2.GetStateCopy();
+	state.view = view;
+}
+
+void BattleScene::LoadState()
+{
+	rng = state.rng;
+	pg = state.pg;
+	player.SetState(state.p1);
+	player2.SetState(state.p2);
+	view = state.view;
+}
+
+void BattleScene::KeyHandle(SDL_KeyboardEvent &e)
+{
+	if(e.repeat)
+		return;
+	
+	SDL_Scancode scancode = e.keysym.scancode; 
+
+	bool action = e.type == SDL_KEYDOWN;
+	for(int i = 0; i < buttonsN; ++i)
+	{
+		if(scancode == modifiableSCKeys[i])
+		{
+			if(action)
+				keySend[0] |= 1 << i;
+			else
+				keySend[0] &= ~(1 << i);
+		}
+	}
+	for(int i = 0; i < buttonsN; ++i)
+	{
+		if(scancode == modifiableSCKeys[i+buttonsN])
+		{
+			if(action)
+				keySend[1] |= 1 << i;
+			else
+				keySend[1] &= ~(1 << i);
+		}
+	}
+
+
+	//unmodifiable keys.
+	if(!action)
+		return;
+
+	switch (scancode){
+	case SDL_SCANCODE_F9: //Set custom keys for player one
+		SetupKeys(0);
+		break;
+	case SDL_SCANCODE_F10: //and player two too
+		SetupKeys(buttonsN);
+		break;
+	case SDL_SCANCODE_F11: //Set joy buttons
+		{
+			/* TODO
+			int buttonN = 0;
+			glfwGetJoystickButtons(GLFW_JOYSTICK_1, &buttonN);
+			int i = 0;
+			int *used = new int[buttonN];
+			while(i < 4)
+			{
+				const unsigned char *buttons = glfwGetJoystickButtons(GLFW_JOYSTICK_1, &buttonN);
+				for(int buttonItr = 0; buttonItr < buttonN; ++buttonItr)
+				{
+					if(buttons[buttonItr] == GLFW_PRESS)
+					{
+						if(used[buttonItr] == 1)
+							continue;
+						used[buttonItr] = 1;
+						modifiableJoyKeys[i] = buttonItr;
+						++i;
+						break;
+					}
+				}
+			}
+			delete[] used;
+			std::ofstream keyfile("joyconf.bin", std::ofstream::out | std::ofstream::binary);
+			keyfile.write((const char*)modifiableJoyKeys, sizeof(int)*4);
+			keyfile.close();
+			*/
+		}
+		break;
+	case SDL_SCANCODE_F5: //Switches between different framerates
+		mainWindow->ChangeFramerate();
+		break;
+	case SDL_SCANCODE_F1: 
+		SaveState();
+		break;
+	case SDL_SCANCODE_F2:
+		LoadState();
+		break;
+	case SDL_SCANCODE_ESCAPE:
+			mainWindow->wantsToClose = true;
+		break;
+	default:
+		return;
+	}
 }

@@ -1,5 +1,7 @@
 #ifndef RAW_INPUT_H_INCLUDED
 #define RAW_INPUT_H_INCLUDED
+
+#include <functional>
 #include <stdint.h>
 #include <SDL.h>
 
@@ -48,7 +50,8 @@ void GameLoopJoy(); //Called directly to poll Joy stick/pad status.
 //Callbacks that are called when polling anyway.
 void GameLoopKeyHandle(SDL_KeyboardEvent &e); //In-game input processing.
 void SetupKeys(int offset); //Sets up and uses the callback to configure keys.
-void EventLoop();
+void EventLoop(std::function<void(SDL_KeyboardEvent &e)> f);
+//void EventLoop(std::function<void(SDL_KeyboardEvent &e)> f, void *obj);
 
 
 #endif // RAW_INPUT_H_INCLUDED

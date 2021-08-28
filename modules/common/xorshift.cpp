@@ -1,7 +1,5 @@
 #include "xorshift.h"
 
-XorShift32 xorShift32;
-
 /* The state word must be initialized to non-zero */
 uint32_t XorShift32::GetU()
 {

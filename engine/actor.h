@@ -55,13 +55,12 @@ struct HitDef
 class Actor{
 	friend class Character;
 	friend class Player;
-	std::vector<Sequence> &sequences;
+	std::reference_wrapper<std::vector<Sequence>> sequences;
 
 protected:
-	sol::state &lua;
-	std::list<Actor> children;
-	std::list<Actor>::iterator myPos;
-	Actor* parent = nullptr;
+	std::reference_wrapper<std::vector<Actor>> actorList;
+	std::reference_wrapper<sol::state> lua;
+
 	Actor* attachPoint = nullptr;
 	HitDef attack;
 	//sol::state &lua;
@@ -101,7 +100,7 @@ protected:
 	glm::mat4 customTransform = glm::mat4(1);
 
 public:
-	Actor(std::vector<Sequence> &sequences, sol::state &lua);
+	Actor(std::vector<Sequence> &sequences, sol::state &lua, std::vector<Actor> &actorList);
 	~Actor();
 
 	virtual bool Update();
@@ -114,7 +113,6 @@ public:
 	int GetSide();
 
 	Actor& SpawnChild(int sequence = 0);
-	void KillSelf();
 
 	Frame *GetCurrentFrame();
 	int GetSpriteIndex();
@@ -123,8 +121,6 @@ public:
 	//If collided and where
 	static std::pair<bool, Point2d<FixedPoint>> HitCollision(const Actor& hurt, const Actor& hit);
 	static void DeclareActorLua(sol::state &lua);
-
-	void GetAllChildren(std::vector<Actor*> &list, bool includeSelf = true);
 
 	void SendHitboxData(HitboxRenderer &hr);
 

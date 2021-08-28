@@ -1,12 +1,12 @@
 #ifndef CHARACTER_H_INCLUDED
 #define CHARACTER_H_INCLUDED
 
+#include "battle_interface.h"
 #include "framedata.h"
 #include "camera.h"
 #include "command_inputs.h"
 #include "fixed_point.h"
 #include "actor.h"
-#include "battle_scene.h"
 #include <geometry.h>
 
 #include <deque>
@@ -35,7 +35,7 @@ private:
 	int blockTime = 0;
 	int pushTimer = 0; //Counts down the pushback time.
 
-	BattleScene& scene;
+	std::reference_wrapper<BattleInterface> scene;
 	
 	bool interrumpible = false;
 	bool mustTurnAround = false;
@@ -46,7 +46,7 @@ private:
 
 
 public:
-	Character(FixedPoint posX, int side, std::string charFile, BattleScene& scene, sol::state &lua, std::vector<Sequence> &sequences);
+	Character(FixedPoint posX, int side, BattleInterface& scene, sol::state &lua, std::vector<Sequence> &sequences, std::vector<Actor> &actorList);
 	bool Update();
 	
 	void BoundaryCollision(); //Collision against stage
@@ -62,6 +62,18 @@ private:
 	bool TurnAround(int sequence = -1);
 };
 
+
+struct PlayerStateCopy
+{
+	sol::global_table lua_state;
+	std::unique_ptr<Character> charObj;
+	std::vector<Actor> children;
+	Character* target;
+	input_deque keyBufOrig;
+	input_deque keyBufDelayed;
+	unsigned int lastKey[2]{};
+};
+
 class Player
 {
 private:
@@ -70,8 +82,8 @@ private:
 	bool hasUpdateFunction = false;
 
 	std::vector<Sequence> sequences;
-	BattleScene& scene;
-	Character charObj;
+	BattleInterface& scene;
+	Character* charObj = nullptr;
 	Character* target;
 
 	int delay = 0;
@@ -84,8 +96,14 @@ private:
 	
 public:
 	std::vector<Actor*> updateList;
+	std::vector<Actor> children;
+	Player(BattleInterface& scene);
+	~Player();
+	Player(int side, std::string charFile, BattleInterface& scene);
+	void Load(int side, std::string charFile);
+	void SetState(PlayerStateCopy &state);
+	PlayerStateCopy GetStateCopy();
 
-	Player(int side, std::string charFile, BattleScene& scene);
 	void SetTarget(Player &target);
 	void Update(HitboxRenderer &hr);
 	void ProcessInput();
@@ -97,5 +115,7 @@ public:
 	static void HitCollision(Player &blue, Player &red); //Checks hit/hurt box collision and sets flags accordingly.
 	static void Collision(Player &blue, Player &red); //Detects and resolves collision between characters and/or the camera.
 };
+
+
 
 #endif // CHARACTER_H_INCLUDED

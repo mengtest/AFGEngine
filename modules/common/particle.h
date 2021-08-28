@@ -2,6 +2,7 @@
 #define PARTICLE_H_GUARD
 
 #include <vector>
+#include "xorshift.h"
 
 struct Particle{
 	float pos[2];
@@ -25,6 +26,9 @@ private:
 
 public:
 	
+	ParticleGroup(XorShift32& rng);
+	ParticleGroup& operator=(const ParticleGroup &p);
+	XorShift32 &rng;
 	void Update();
 	void FillParticleVector(std::vector<Particle> &v);
 	void PushNormalHit(int amount, float x, float y);

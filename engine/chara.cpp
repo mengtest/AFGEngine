@@ -9,8 +9,8 @@
 #include "chara.h"
 #include "raw_input.h" //Used only by Character::ResolveHit
 
-Character::Character(FixedPoint xPos, int side, std::string charFile, BattleScene& scene, sol::state &lua, std::vector<Sequence> &sequences) :
-Actor(sequences, lua),
+Character::Character(FixedPoint xPos, int side, BattleInterface& scene, sol::state &lua, std::vector<Sequence> &sequences, std::vector<Actor> &actorList) :
+Actor(sequences, lua, actorList),
 touchedWall(0),
 scene(scene)
 {
@@ -24,7 +24,7 @@ scene(scene)
 
 void Character::BoundaryCollision()
 {
-	Camera &currView = scene.view;
+	Camera &currView = scene.get().view;
 	const FixedPoint wallOffset(10);
 	touchedWall = 0;
 
@@ -93,7 +93,7 @@ int Character::ResolveHit(int keypress, Actor *hitter) //key processing really s
 	if(hitData->vectorTables.count(state) > 0)
 	{
 		auto &vt = hitData->vectorTables[state][blocked];
-		int seq = lua["_seqTable"][vt.sequenceName].get_or(-1);
+		int seq = lua.get()["_seqTable"][vt.sequenceName].get_or(-1);
 		if(seq > 0)
 		{
 			vel.x.value = vt.xSpeed*speedMultiplier*hitter->side;
@@ -103,7 +103,7 @@ int Character::ResolveHit(int keypress, Actor *hitter) //key processing really s
 			pushTimer = vt.maxPushBackTime;	
 			friction = true;
 			hitFlags = hitData->attackFlags;
-			sol::optional<sol::table> t = lua["_vectors"][vt.bounceTable];
+			sol::optional<sol::table> t = lua.get()["_vectors"][vt.bounceTable];
 			if(t)
 			{
 				bounceVector = hitData->getVectorTableFromTable(t.value());
@@ -122,7 +122,7 @@ int Character::ResolveHit(int keypress, Actor *hitter) //key processing really s
 		return hitType::blocked;
 	else
 	{
-		scene.view.SetShakeTime(hitData->shakeTime);
+		scene.get().view.SetShakeTime(hitData->shakeTime);
 		health -= hitData->damage;
 		return hitType::hurt;
 	}
@@ -154,7 +154,7 @@ void Character::GotoSequence(int seq)
 	attack.Clear();
 	hitCount = 0;
 
-	seqPointer = &sequences[currSeq];
+	seqPointer = &sequences.get()[currSeq];
 	landingFrame = seqPointer->props.landFrame;
 	GotoFrame(0);
 	if(framePointer->frameProp.flags & flag::canMove)
@@ -205,7 +205,7 @@ bool Character::Update()
 			accel.x.value = bounceVector.xAccel*speedMultiplier;
 			accel.y.value = bounceVector.yAccel*speedMultiplier;
 			pushTimer = bounceVector.maxPushBackTime;
-			GotoSequence(lua["_seqTable"][bounceVector.sequenceName].get_or(-1));
+			GotoSequence(lua.get()["_seqTable"][bounceVector.sequenceName].get_or(-1));
 		}
 		else
 			GotoFrame(landingFrame);
@@ -347,24 +347,72 @@ void Character::Input(input_deque &keyPresses, CommandInputs &cmd)
 	}	
 }
 
-Player::Player(int side, std::string charFile, BattleScene& scene):
+Player::Player(BattleInterface& scene):
 scene(scene),
 keyBufOrig(max_input_size, 0),
-keyBufDelayed(max_input_size, 0),
-charObj(FixedPoint(50*side), side, charFile, scene, lua, sequences)
+keyBufDelayed(max_input_size, 0)
 {
+	updateList.push_back((Actor*)this);
+}
 
+Player::~Player()
+{
+	delete charObj;
+}
+
+Player::Player(int side, std::string charFile, BattleInterface& scene):
+scene(scene),
+keyBufOrig(max_input_size, 0),
+keyBufDelayed(max_input_size, 0)
+{
+	Load(side, charFile);
+}
+
+void Player::Load(int side, std::string charFile)
+{
+	charObj = new Character(FixedPoint(50*side), side, scene, lua, sequences, children);
+	
 	if(!ScriptSetup())
 		abort();
 	cmd.LoadFromLua("data/char/vaki/moves.lua", lua);
 	LoadSequences(sequences, charFile, lua); //Sequences refer to script.
 
-	charObj.GotoSequence(0);
-	charObj.GotoFrame(0);
+	charObj->GotoSequence(0);
+	charObj->GotoFrame(0);
 	
 	sol::protected_function init = lua["_init"];
 	if(init.get_type() == sol::type::function)
 		init();
+}
+
+void Player::SetState(PlayerStateCopy &state)
+{
+	lua.globals() = state.lua_state;
+	*charObj = *state.charObj;
+	children = state.children;
+	target = state.target;
+	keyBufOrig = state.keyBufOrig;
+	keyBufDelayed = state.keyBufDelayed;
+	lastKey[0] = state.lastKey[0];
+	lastKey[1] = state.lastKey[1];
+	
+}
+
+PlayerStateCopy Player::GetStateCopy()
+{
+ 	Character *p = new Character(0, 0, scene, lua, sequences, children);
+	*p = *charObj;
+	PlayerStateCopy copy{
+		lua.globals(),
+		nullptr,
+		children,
+		target,
+		keyBufOrig,
+		keyBufDelayed,
+		{lastKey[0], lastKey[1]}
+	};
+	copy.charObj.reset(p); 
+	return copy;
 }
 
 bool Player::ScriptSetup()
@@ -384,17 +432,17 @@ bool Player::ScriptSetup()
 	auto global = lua["global"].get_or_create<sol::table>();
 	global.set_function("DamageTarget", [this](int amount){target->health -= amount;});
 	global.set_function("ParticlesNormalRel", [this](int amount, float x, float y){
-		scene.pg.PushNormalHit(amount, (float)charObj.root.x+x*charObj.side, float(charObj.root.y)+y);
+		scene.pg.PushNormalHit(amount, (float)charObj->root.x+x*charObj->side, float(charObj->root.y)+y);
 	});
-	global.set_function("GetTarget", [this]()->Actor&{return *charObj.target;});
-	global.set_function("GetBlockTime", [this](){return charObj.blockTime;});
-	global.set_function("SetBlockTime", [this](int time){charObj.blockTime=time;});
-	global.set_function("TurnAround", &Character::TurnAround, &charObj);
+	global.set_function("GetTarget", [this]()->Actor&{return *charObj->target;});
+	global.set_function("GetBlockTime", [this](){return charObj->blockTime;});
+	global.set_function("SetBlockTime", [this](int time){charObj->blockTime=time;});
+	global.set_function("TurnAround", &Character::TurnAround, charObj);
 	global.set_function("GetInput", [this]() -> unsigned int{return this->lastKey[0];});
 	global.set_function("GetInputPrev", [this]() -> unsigned int{return this->lastKey[1];});
 	global.set_function("GetInputRelative", [this]() -> unsigned int{
 		int lastkey = lastKey[0];
-		if(charObj.GetSide() > 0)
+		if(charObj->GetSide() > 0)
 			return lastkey;
 		else{
 			int right = lastkey & key::buf::RIGHT;
@@ -413,14 +461,14 @@ bool Player::ScriptSetup()
 
 	updateFunction = lua["_update"];
 	hasUpdateFunction = updateFunction.get_type() == sol::type::function;
-	lua["player"] = (Actor*)&charObj;
+	lua["player"] = (Actor*)charObj;
 	return true;
 }
 
 void Player::SetTarget(Player &t)
 {
-	target = &t.charObj;
-	charObj.target = target;
+	target = t.charObj;
+	charObj->target = target;
 }
 
 void Player::Update(HitboxRenderer &hr)
@@ -435,26 +483,26 @@ void Player::Update(HitboxRenderer &hr)
 		}
 	}
 
-	updateList.clear();
-	charObj.GetAllChildren(updateList);
-	/* for(auto actor: updateList)
+	charObj->Update();
+	for(auto it = children.begin(); it != children.end();)
 	{
-		actor->Update();
-		if(actor->Update())
-			actor->SendHitboxData(hr); 
-	} */
-	for(auto it = updateList.begin(); it != updateList.end();)
-	{
-		if((*it)->Update())
+		if((*it).Update())
 		{
 			//(*it)->SendHitboxData(hr);
 			++it;
 		}
 		else
 		{
-			it = updateList.erase(it); 
+			it = children.erase(it); 
 		}
 	}
+
+	updateList.clear();
+	updateList.push_back(charObj);
+	for(auto &actor: children)
+	{
+		updateList.push_back(&actor);
+	} 
 }
 
 void Player::ProcessInput()
@@ -462,20 +510,20 @@ void Player::ProcessInput()
 	lastKey[0] = keyBufDelayed[0];
 	lastKey[1] = keyBufDelayed[1];
 	cmd.Charge(keyBufDelayed);
-	charObj.Input(keyBufDelayed, cmd);
+	charObj->Input(keyBufDelayed, cmd);
 }
 
 Point2d<FixedPoint> Player::GetXYCoords()
 {
-	return charObj.root;
+	return charObj->root;
 }
 
 
 float Player::GetHealthRatio()
 {
-	if (charObj.health < 0)
-		charObj.health = 10000;
-	return charObj.health * (1.f / 10000.f);
+	if (charObj->health < 0)
+		charObj->health = 10000;
+	return charObj->health * (1.f / 10000.f);
 }
 
 void Player::SetDelay(int _delay)
@@ -494,12 +542,10 @@ void Player::SendInput(int key)
 
 void Player::HitCollision(Player &bluePlayer, Player &redPlayer)
 {
-	std::vector<Actor*> blueList, redList;
+	std::vector<Actor*> &blueList = bluePlayer.updateList;
+	std::vector<Actor*> &redList = redPlayer.updateList;
 	int blueKey = bluePlayer.keyBufDelayed.front();
 	int redKey = redPlayer.keyBufDelayed.front();
-	//Idea: getEvil/GoodChildren maybe? lol
-	bluePlayer.charObj.GetAllChildren(blueList); 
-	redPlayer.charObj.GetAllChildren(redList); 
 	for(auto blue : blueList)
 	{
 		for(auto red : redList)
@@ -540,7 +586,7 @@ void Player::HitCollision(Player &bluePlayer, Player &redPlayer)
 void Player::Collision(Player& blue, Player& red)
 {
 	bool isColliding = false;
-	Character *playerOne = &blue.charObj, *playerTwo = &red.charObj;
+	Character *playerOne = blue.charObj, *playerTwo = red.charObj;
 
 	Rect2d<FixedPoint> colBlue = playerOne->framePointer->colbox;
 	Rect2d<FixedPoint> colRed = playerTwo->framePointer->colbox;

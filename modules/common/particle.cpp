@@ -4,6 +4,16 @@
 
 constexpr float pi = 3.1415926535897931;
 
+ParticleGroup::ParticleGroup(XorShift32 &rng):
+rng(rng)
+{}
+
+ParticleGroup& ParticleGroup::operator=(const ParticleGroup &p)
+{
+	particles = p.particles;
+	return *this;
+}
+
 void ParticleGroup::Update()
 {
 
@@ -50,7 +60,7 @@ void ParticleGroup::PushNormalHit(int amount, float x, float y)
 	{
 		auto &p = particles[start];
 		p = {};
-		float angle = 2*pi*(float)(xorShift32.GetU())/max32u;
+		float angle = 2*pi*(float)(rng.GetU())/max32u;
 		p.p.sin = sin(angle);
 		p.p.cos = cos(angle);
 		p.p.pos[0] = x;
@@ -71,11 +81,11 @@ void ParticleGroup::PushNormalHit(int amount, float x, float y)
 		p.p.pos[1] = y;
 		p.p.scale[0] = 0.25;
 		p.p.scale[1] = 0.25;
-		p.vel[0] = maxSpeed*(float)(xorShift32.Get())/max32;
-		p.vel[1] = maxSpeed*(float)(xorShift32.Get())/max32;	
+		p.vel[0] = maxSpeed*(float)(rng.Get())/max32;
+		p.vel[1] = maxSpeed*(float)(rng.Get())/max32;	
 		p.acc[0] = p.vel[0]*deceleration;
 		p.acc[1] = p.vel[1]*deceleration - 0.1;
-		p.growRate[0] = 0.97f - 0.05*(float)(xorShift32.GetU())/max32u;
+		p.growRate[0] = 0.97f - 0.05*(float)(rng.GetU())/max32u;
 		p.growRate[1] = p.growRate[0];
 		p.remainingTicks = 20;
 	}
@@ -110,8 +120,8 @@ void ParticleGroup::PushSlash(int amount, float x, float y)
 		p.p.pos[1] = y;
 		p.p.scale[0] = scale*8;
 		p.p.scale[1] = scale*0.25;
-		p.vel[0] = maxSpeed*(float)(xorShift32.Get())/max32;
-		p.vel[1] = maxSpeed*(float)(xorShift32.Get())/max32;
+		p.vel[0] = maxSpeed*(float)(rng.Get())/max32;
+		p.vel[1] = maxSpeed*(float)(rng.Get())/max32;
 
 		float sqvx = p.vel[0]*p.vel[0];
 		float sqvy = p.vel[1]*p.vel[1];
@@ -119,7 +129,7 @@ void ParticleGroup::PushSlash(int amount, float x, float y)
 		p.p.sin = p.vel[0] /20;
 		p.acc[0] = p.vel[0]*deceleration;
 		p.acc[1] = p.vel[1]*deceleration + 0.05;
-		p.growRate[0] = 0.95f - 0.05*(float)(xorShift32.GetU())/max32u;
+		p.growRate[0] = 0.95f - 0.05*(float)(rng.GetU())/max32u;
 		p.growRate[1] = p.growRate[0];
 		p.remainingTicks = 20;
 	}
