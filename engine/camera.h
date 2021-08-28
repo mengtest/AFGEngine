@@ -27,6 +27,8 @@ private:
 	const FixedPoint limitRatioX; //The max distance relative to 1 game screen between characters before the camera zooms out.
 	const FixedPoint limitRatioY;
 	FixedPoint maxScale; //Max zoom out.
+
+	int scaleTimer = 0;
 	int shakeTime = 0;
 
 public:

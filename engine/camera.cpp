@@ -6,8 +6,14 @@
 #include <glm/vec3.hpp>
 
 #include <cmath>
+#include <algorithm>
 #include <iostream>
 #include <fixed_point.h>
+
+FixedPoint interpolate(FixedPoint x, FixedPoint min, FixedPoint max, FixedPoint length) {
+	x = x/length;
+	return (max-min)*x*x*x * (FixedPoint(3) - FixedPoint(2) * x) + min;
+}
 
 const FixedPoint stageWidth(300);
 const FixedPoint stageHeight(225);
@@ -40,35 +46,40 @@ void Camera::SetShakeTime(int time)
 glm::mat4 Camera::Calculate(Point2d<FixedPoint> p1, Point2d<FixedPoint> p2)
 {
 	Point2d<FixedPoint> dif = p2 - p1;
-	const FixedPoint distToScroll(120,0);
+	const FixedPoint distToScroll(100,0);
 	//Zooms out when the distance between points is larger than the screen's h-ratio.
 	
-	scale = 1.f;
+	FixedPoint targetScale = 1.f;
 	FixedPoint scaleX, scaleY;
 	if(dif.x.abs() > FixedPoint(widthBoundary*limitRatioX)) 
 	{
 		scaleX = dif.x.abs()/(widthBoundary*limitRatioX);
-		
-		std::cout <<(float)(scaleX)<<" X\n";
 	}
 	if(dif.y.abs() > FixedPoint(heightBoundary*limitRatioY))
 	{
 		scaleY = FixedPoint(0.75)+dif.y.abs()/(FixedPoint(4)*heightBoundary*limitRatioY);
-		/* if(scale > maxScale.x)
-			scale = maxScale.x; */
-		std::cout <<(float)(scaleY)<<" Y\n";
 	}
 	auto biggerScale = std::max(scaleX, scaleY);
-	if(biggerScale > scale)
-		scale = biggerScale;
-	if(scale > maxScale)
-		scale = maxScale;
-	
-/* 	else
+	if(biggerScale > targetScale)
+		targetScale = biggerScale;
+	if(targetScale > maxScale)
+		targetScale = maxScale;
+			
+	if(targetScale < scale)
 	{
-		scale = 1.f;
-	}  */
+		if(scaleTimer <= 0)
+		{
+			scale = interpolate(FixedPoint(scaleTimer+300),targetScale,scale,300);
+		}
+		--scaleTimer; 
+	}
+	else
+	{
+		scale = targetScale;
+		scaleTimer = 40;
+	}
 	
+
 	dif.x.value >>= 1;
 	dif.y.value >>= 1;
 	auto rightmost = std::max(p1.x, p2.x);
@@ -91,8 +102,8 @@ glm::mat4 Camera::Calculate(Point2d<FixedPoint> p1, Point2d<FixedPoint> p2)
  	if(centerTarget.y < 0)
 		centerTarget.y = 0; 
 
-	center.x += (centerTarget.x - center.x)*0.33;
-	center.y += (centerTarget.y - center.y)*0.45;
+	center.x += (centerTarget.x - center.x)*0.35;
+	center.y += (centerTarget.y - center.y)*0.25;
 	
 	if(GetWallPos(camera::leftWall) <= -stageWidth)
 		center.x = -stageWidth + widthBoundary*scale/FixedPoint(2);
