@@ -69,14 +69,14 @@ glm::mat4 Camera::Calculate(Point2d<FixedPoint> p1, Point2d<FixedPoint> p2)
 	{
 		if(scaleTimer <= 0)
 		{
-			scale = interpolate(FixedPoint(scaleTimer+300),targetScale,scale,300);
+			scale = interpolate(FixedPoint(scaleTimer+512),targetScale,scale,512);
 		}
 		--scaleTimer; 
 	}
 	else
 	{
 		scale = targetScale;
-		scaleTimer = 40;
+		scaleTimer = 20;
 	}
 	
 
