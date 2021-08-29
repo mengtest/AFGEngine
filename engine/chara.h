@@ -65,7 +65,7 @@ private:
 
 struct PlayerStateCopy
 {
-	sol::global_table lua_state;
+	sol::table luaState;
 	std::unique_ptr<Character> charObj;
 	std::vector<Actor> children;
 	Character* target;

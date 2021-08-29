@@ -96,7 +96,7 @@ protected:
 	//comboType is set to unresolved if it connects, and then to hurt/blocked by the target. Resets when sequence changes. Used for cancelling purposes.
 	int comboType = none; 
 	uint32_t flags = 0;
-	sol::table userData;
+	std::unordered_map<std::string, sol::object> userData;
 	glm::mat4 customTransform = glm::mat4(1);
 
 public:

@@ -18,7 +18,7 @@ scene(scene)
 	root.y = floorPos;
 	SetSide(side);
 	hittable = true;
-	userData = lua.create_table();
+	//userData = lua.create_table();
 	return;
 }
 
@@ -370,7 +370,7 @@ keyBufDelayed(max_input_size, 0)
 
 void Player::Load(int side, std::string charFile)
 {
-	charObj = new Character(FixedPoint(50*side), side, scene, lua, sequences, children);
+	charObj = new Character(FixedPoint(50*-side), side, scene, lua, sequences, children);
 	
 	if(!ScriptSetup())
 		abort();
@@ -387,7 +387,11 @@ void Player::Load(int side, std::string charFile)
 
 void Player::SetState(PlayerStateCopy &state)
 {
-	lua.globals() = state.lua_state;
+	lua["G"] = state.luaState;
+/* 	for(auto &e : state.luaState)
+	{
+		lua[e.first] = e.second;
+	} */
 	*charObj = *state.charObj;
 	children = state.children;
 	target = state.target;
@@ -398,12 +402,44 @@ void Player::SetState(PlayerStateCopy &state)
 	
 }
 
+sol::object DeepCopy(sol::object obj, sol::table seen, sol::state &lua)
+{
+	auto type = obj.get_type();
+	if(type == sol::type::nil)
+		return sol::nil;
+	
+	if(!seen.valid())
+	{
+		seen = lua.create_table();
+	}
+	else if(seen[obj].get_type() != sol::type::nil && seen[obj].get_type() != sol::type::none)
+	{
+		auto test = seen[obj].get_type();
+		return seen[obj];
+	}
+	
+	if(type == sol::type::table)
+	{
+		seen[obj] = lua.create_table();
+		auto st = seen[obj];
+		for(auto &o : obj.as<sol::table>())
+		{
+			auto first = DeepCopy(o.first, seen, lua);
+			auto second = DeepCopy(o.second, seen, lua);
+			seen[obj][first] = second;
+		}
+		return seen[obj];
+	}
+	else
+		return obj;
+}
+
 PlayerStateCopy Player::GetStateCopy()
 {
  	Character *p = new Character(0, 0, scene, lua, sequences, children);
 	*p = *charObj;
 	PlayerStateCopy copy{
-		lua.globals(),
+		lua.create_table(),
 		nullptr,
 		children,
 		target,
@@ -411,7 +447,13 @@ PlayerStateCopy Player::GetStateCopy()
 		keyBufDelayed,
 		{lastKey[0], lastKey[1]}
 	};
-	copy.charObj.reset(p); 
+	copy.charObj.reset(p);
+	//copy.luaState.create();
+	copy.luaState = DeepCopy(lua["G"], sol::nil, lua);
+	
+
+	
+	std::cout <<std::endl;
 	return copy;
 }
 
@@ -450,6 +492,8 @@ bool Player::ScriptSetup()
 			return (lastkey & ~0xC) | ((!!right) << key::LEFT) | ((!!left) << key::RIGHT);
 		}
 	});
+
+	lua.create_named_table("G");
 	auto result = lua.script_file("data/char/vaki/script.lua");
 	if(!result.valid()){
 		sol::error err = result;
@@ -462,6 +506,7 @@ bool Player::ScriptSetup()
 	updateFunction = lua["_update"];
 	hasUpdateFunction = updateFunction.get_type() == sol::type::function;
 	lua["player"] = (Actor*)charObj;
+	
 	return true;
 }
 
