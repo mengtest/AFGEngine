@@ -91,7 +91,8 @@ protected:
 	enum hitType {
 		none,
 		hurt,
-		blocked
+		blocked,
+		counter,
 	};
 	//comboType is set to unresolved if it connects, and then to hurt/blocked by the target. Resets when sequence changes. Used for cancelling purposes.
 	int comboType = none; 

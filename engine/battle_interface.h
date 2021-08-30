@@ -4,11 +4,12 @@
 #include "xorshift.h"
 #include "particle.h"
 #include "camera.h"
+#include <unordered_map>
 
 struct BattleInterface
 {
 	XorShift32 &rng;
-	ParticleGroup &pg;
+	std::unordered_map<int, ParticleGroup> &particles;
 	Camera &view;
 };
 

@@ -16,18 +16,18 @@
 struct SaveState
 {
 	XorShift32 rng;
-	ParticleGroup pg;
+	std::unordered_map<int, ParticleGroup> particleGroups;
 	Camera view;
 	PlayerStateCopy p1, p2;
 
-	SaveState():pg(rng){}
+	//SaveState():{}
 };
 
 class BattleScene
 {
 private:
 	XorShift32 rng;
-	ParticleGroup pg;
+	std::unordered_map<int, ParticleGroup> particleGroups;
 	Camera view{1.55};
 	int timer;
 

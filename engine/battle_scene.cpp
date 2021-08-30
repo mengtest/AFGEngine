@@ -57,9 +57,8 @@ unsigned int LoadPaletteTEMP()
 }
 
 BattleScene::BattleScene():
-interface{rng, pg, view},
+interface{rng, particleGroups, view},
 player(interface), player2(interface),
-pg(rng),
 uniforms("Common", 1)
 {
 	texture_options opt; opt.linearFilter = true;
@@ -152,6 +151,8 @@ void BattleScene::PlayLoop()
 	VaoTexOnly.Bind();
 
 	std::vector<Particle> particles;
+	for(int i = ParticleGroup::START; i < ParticleGroup::END; ++i)
+		particleGroups.insert({i, {rng, i}});
 
 	defaultS.Use();
 
@@ -185,8 +186,7 @@ void BattleScene::PlayLoop()
 
 		//auto &&pos = player.getXYCoords();
 		//pg.PushNormalHit(5, 256, 128);
-		pg.Update();
-		pg.FillParticleVector(particles);
+
 
 		barHandler[B_P1Life].Resize(player.GetHealthRatio(), 1);
 		barHandler[B_P2Life].Resize(player2.GetHealthRatio(), 1);
@@ -222,7 +222,12 @@ void BattleScene::PlayLoop()
 		} 
 		glBlendFunc(GL_SRC_ALPHA, GL_ONE);
 		SetModelView(viewMatrix);
-		gfx.DrawParticles(particles, 2000);
+		for(auto &pg : particleGroups)
+		{
+			pg.second.Update();
+			pg.second.FillParticleVector(particles);
+			gfx.DrawParticles(particles, pg.first);
+		}
 		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 		gfx.End();
 
@@ -265,7 +270,7 @@ void BattleScene::SetModelView(glm::mat4&& view)
 void BattleScene::SaveState()
 {
 	state.rng = rng;
-	state.pg = pg;
+	state.particleGroups = particleGroups;
 	state.p1 = player.GetStateCopy();
 	state.p2 = player2.GetStateCopy();
 	state.view = view;
@@ -274,7 +279,7 @@ void BattleScene::SaveState()
 void BattleScene::LoadState()
 {
 	rng = state.rng;
-	pg = state.pg;
+	particleGroups = state.particleGroups;
 	player.SetState(state.p1);
 	player2.SetState(state.p2);
 	view = state.view;

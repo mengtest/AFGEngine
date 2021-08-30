@@ -377,7 +377,12 @@ function sgthrow(actor)
 	frame = actor.currentFrame
 	if(frame == 3 and actor.subframeCount == 0) then
 		if(actor:ThrowCheck(g.GetTarget(), 50, 0 ,0)) then
+			
 			actor.userData.t = g.GetTarget()
+			if((g.GetInputRelative() & key.left) ~= 0) then
+				actor:SetSide(-actor:GetSide())
+				g.GetTarget():SetSide(-g.GetTarget():GetSide())
+			end
 			actor:GotoFrame(13)
 		end
 	end

@@ -209,6 +209,9 @@ void MainPane::DrawFrame(Frame &frame)
 	ImGui::InputFloat2("Offset", frame.frameProp.spriteOffset);
 	ImGui::Combo("State", &frame.frameProp.state, states, IM_ARRAYSIZE(states));
 
+	ImGui::InputScalar("Counterhit", ImGuiDataType_S16, &frame.frameProp.chType,
+		NULL, NULL, NULL, 0);
+
 	unsigned int flagIndex = -1;
 	BitField("Set 1", &frame.frameProp.flags, &flagIndex);
 	switch (flagIndex)
