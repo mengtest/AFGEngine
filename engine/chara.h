@@ -97,6 +97,7 @@ private:
 public:
 	std::vector<Actor*> updateList;
 	std::vector<Actor> children;
+	std::vector<Actor> newChildren;
 	Player(BattleInterface& scene);
 	~Player();
 	Player(int side, std::string charFile, BattleInterface& scene);

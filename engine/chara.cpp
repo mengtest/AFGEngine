@@ -375,7 +375,7 @@ keyBufDelayed(max_input_size, 0)
 
 void Player::Load(int side, std::string charFile)
 {
-	charObj = new Character(FixedPoint(50*-side), side, scene, lua, sequences, children);
+	charObj = new Character(FixedPoint(50*-side), side, scene, lua, sequences, newChildren);
 	
 	if(!ScriptSetup())
 		abort();
@@ -543,9 +543,23 @@ void Player::Update(HitboxRenderer &hr)
 		}
 		else
 		{
-			it = children.erase(it); 
+			it = children.erase(it);
 		}
 	}
+
+	for(auto it = newChildren.begin(); it != newChildren.end();)
+	{
+		if((*it).Update())
+		{
+			children.push_back(std::move(*it));
+			++it;
+		}
+		else
+		{
+			it = newChildren.erase(it);
+		}
+	}
+	newChildren.clear();
 
 	updateList.clear();
 	updateList.push_back(charObj);
