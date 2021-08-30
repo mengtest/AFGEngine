@@ -126,7 +126,7 @@ int Character::ResolveHit(int keypress, Actor *hitter) //key processing really s
 		health -= hitData->damage;
 		if(framePointer->frameProp.chType > 0)
 		{
-			hitstop *= 2;
+			hitstop = hitstop*2 + 2 + 5*(framePointer->frameProp.state == state::air);
 			return hitType::counter;
 		}
 		return hitType::hurt;
@@ -609,8 +609,9 @@ void Player::HitCollision(Player &bluePlayer, Player &redPlayer)
 				auto result = Actor::HitCollision(*red, *blue);
 				if (result.first)
 				{
-					blue->hitstop = blue->attack.hitStop;
-					int particleAmount = blue->hitstop*2;
+					if(blue->attack.hitStop > blue->hitstop)
+						blue->hitstop = blue->attack.hitStop;
+					int particleAmount = blue->hitstop;
 					blue->comboType = red->ResolveHit(keys[i], blue);
 					if(blue->comboType == Actor::blocked)
 					{
@@ -619,11 +620,11 @@ void Player::HitCollision(Player &bluePlayer, Player &redPlayer)
 					}
 					else if(blue->comboType == Actor::hurt && particleAmount > 0)
 					{
-						bluePlayer.scene.particles[ParticleGroup::redSpark].PushNormalHit(particleAmount, result.second.x, result.second.y);
+						bluePlayer.scene.particles[ParticleGroup::redSpark].PushNormalHit(particleAmount*2, result.second.x, result.second.y);
 					}
 					else if(blue->comboType == Actor::counter && particleAmount > 0)
 					{
-						bluePlayer.scene.particles[ParticleGroup::stars].PushCounterHit(particleAmount, result.second.x, result.second.y);
+						bluePlayer.scene.particles[ParticleGroup::stars].PushCounterHit(particleAmount*2, result.second.x, result.second.y);
 					}
 					blue->hitCount--;
 				}
