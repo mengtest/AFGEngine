@@ -187,6 +187,7 @@ void GfxHandler::SetPaletteSlot(int palette)
 	paletteSlot = palette;
 	glUniform1i(paletteSlotL, paletteSlot);
 	boundProgram = 1;
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA); //TODO: Don't check for alpha here
 }
 
 int GfxHandler::GetVirtualId(int id, int defId)

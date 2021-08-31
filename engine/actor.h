@@ -106,7 +106,7 @@ public:
 
 	virtual bool Update();
 	bool AdvanceFrame();
-	void GotoSequence(int seq);
+	virtual void GotoSequence(int seq);
 	bool GotoFrame(int frame);
 	void Translate(Point2d<FixedPoint> amount);
 	void Translate(FixedPoint x, FixedPoint y);

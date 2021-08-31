@@ -278,6 +278,8 @@ void BattleScene::SaveState()
 
 void BattleScene::LoadState()
 {
+	if(!state.p1.charObj) //There are no saves.
+		return;
 	rng = state.rng;
 	particleGroups = state.particleGroups;
 	player.SetState(state.p1);

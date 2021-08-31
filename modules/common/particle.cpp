@@ -143,7 +143,7 @@ void ParticleGroup::PushNormalHit(int amount, float x, float y)
 void ParticleGroup::PushCounterHit(int amount, float x, float y)
 {
 	constexpr float deceleration = 0.05;
-	constexpr float maxSpeed = 8;
+	constexpr float maxSpeed = 10;
 	//float scale = fmax(amount/20.f, 0.5);
 	int start = particles.size();
 	particles.resize(start+amount);
@@ -176,7 +176,7 @@ void ParticleGroup::PushCounterHit(int amount, float x, float y)
 		p.rotSin = sin(angle);
 		p.rotCos = cos(angle);
 		p.vel[0] = maxSpeed*(float)(rng->Get())/max32;
-		p.vel[1] = 1*maxSpeed*(float)(rng->GetU())/max32+2.f;
+		p.vel[1] = 1*maxSpeed*(float)(rng->GetU())/max32u+2.f;
 		p.acc[0] = p.vel[0]*deceleration;
 		p.acc[1] = p.vel[1]*deceleration - 0.5;
 		p.growRate[0] = 0.01f - 0.005*(float)(rng->GetU())/max32u;

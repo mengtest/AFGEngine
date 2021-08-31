@@ -195,6 +195,8 @@ bool Character::Update()
 		GotoSequence(hurtSeq);
 		hurtSeq = -1;
 		gotHit = false;
+		if (root.y < floorPos) //Fixes a problem when you get hit under the floor.
+			root.y.value = floorPos.value;
 	}
 	if(!AdvanceFrame()) //Died
 		return false;
@@ -241,7 +243,7 @@ bool Character::Update()
 		accel.x.value = 0;
 	}
 
-	if (touchedWall != 0 && (pushTimer > 0))
+	if (touchedWall != 0 && (pushTimer > 0)) //Push opponent away
 	{
 		target->root.x -= vel.x;
 	}
@@ -562,11 +564,12 @@ void Player::Update(HitboxRenderer &hr)
 	newChildren.clear();
 
 	updateList.clear();
-	updateList.push_back(charObj);
-	for(auto &actor: children)
+	updateList.resize(children.size()+1);
+	updateList[children.size()] = charObj;
+	for(int i = children.size()-1, b = 0; i >= 0; --i, ++b)
 	{
-		updateList.push_back(&actor);
-	} 
+		updateList[i] = &children[b];
+	}
 }
 
 void Player::ProcessInput()
@@ -625,7 +628,7 @@ void Player::HitCollision(Player &bluePlayer, Player &redPlayer)
 				{
 					if(blue->attack.hitStop > blue->hitstop)
 						blue->hitstop = blue->attack.hitStop;
-					int particleAmount = blue->hitstop;
+					int particleAmount = blue->hitstop*2;
 					blue->comboType = red->ResolveHit(keys[i], blue);
 					if(blue->comboType == Actor::blocked)
 					{
@@ -634,11 +637,11 @@ void Player::HitCollision(Player &bluePlayer, Player &redPlayer)
 					}
 					else if(blue->comboType == Actor::hurt && particleAmount > 0)
 					{
-						bluePlayer.scene.particles[ParticleGroup::redSpark].PushNormalHit(particleAmount*2, result.second.x, result.second.y);
+						bluePlayer.scene.particles[ParticleGroup::redSpark].PushNormalHit(particleAmount, result.second.x, result.second.y);
 					}
 					else if(blue->comboType == Actor::counter && particleAmount > 0)
 					{
-						bluePlayer.scene.particles[ParticleGroup::stars].PushCounterHit(particleAmount*2, result.second.x, result.second.y);
+						bluePlayer.scene.particles[ParticleGroup::stars].PushCounterHit(particleAmount, result.second.x, result.second.y);
 					}
 					blue->hitCount--;
 				}
