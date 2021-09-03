@@ -2,6 +2,7 @@
 #include "battle_scene.h"
 #include "raw_input.h"
 #include "window.h"
+#include "game_state.h"
 #include <fstream>
 
 int gameState = GS_MENU;
@@ -26,17 +27,27 @@ int main(int argc, char** argv)
 
 	while(!mainWindow->wantsToClose)
 	{
-		switch (gameState)
-		{
-			case GS_MENU:
-			//break; Not implemented so have a fallthru.
-			case GS_CHARSELECT:
-			//break;
-			case GS_PLAY: {
-				BattleScene bs;
-				bs.PlayLoop();
-				break;
+		try{
+			switch (gameState)
+			{
+				case GS_MENU:
+				//break; Not implemented so have a fallthru.
+				case GS_CHARSELECT:
+				//break;
+				case GS_WIN:
+				//break;
+				case GS_PLAY: {
+					BattleScene bs;
+					gameState = bs.PlayLoop();
+					break;
+				}
 			}
+		}
+		catch(std::exception e)
+		{
+			std::cerr << e.what() << " The program can't continue. Press enter to quit.";
+			std::cin.get();
+			return 0;
 		}
 	}
 

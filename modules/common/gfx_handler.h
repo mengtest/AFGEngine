@@ -9,6 +9,7 @@
 #include <unordered_map>
 #include <filesystem>
 #include <memory>
+#include <sol/sol.hpp>
 
 class GfxHandler{
 private:
@@ -59,6 +60,8 @@ public:
 
 	//Returns the id that identifies the def file
 	int LoadGfxFromDef(std::filesystem::path defFile);
+	int LoadGfxFromLua(sol::state &lua, std::filesystem::path workingDir);
+	static void LoadLuaDefinitions(sol::state &lua);
 	void LoadingDone();
 
 	void SetPaletteSlot(int palette);

@@ -120,7 +120,7 @@ glm::mat4 Camera::Calculate(Point2d<FixedPoint> p1, Point2d<FixedPoint> p2)
 	else if(GetWallPos(camera::rightWall) >= stageWidth)
 		center.x = stageWidth - widthBoundary*scale/FixedPoint(2);
 	
-	float centerYShake = center.y;
+	centerYShake = center.y;
 	if(shakeTime > 0)
 	{
 		centerYShake += 3*abs((shakeTime % 4) - 1);
@@ -138,6 +138,7 @@ glm::mat4 Camera::Calculate(Point2d<FixedPoint> p1, Point2d<FixedPoint> p2)
 	view = glm::translate(view, glm::vec3(internalWidth/2.f, 0.f, 0.f));
 	view = glm::scale(view, glm::vec3(1.f/(float)scale, 1.f/(float)scale, 1.f));
 	view = glm::translate(view, glm::vec3(-center.x, -centerYShake, 0.f));
+	
 	return view;
 }
 
@@ -151,4 +152,9 @@ FixedPoint Camera::GetWallPos(int which)
 		return center.x + widthBoundary*scale/FixedPoint(2);
 	}
 	return 0;
+}
+
+centerScale Camera::GetCameraCenterScale()
+{
+	return {center.x, centerYShake, scale};
 }

@@ -12,4 +12,4 @@ target_sources(Common PRIVATE
 )
 
 target_link_libraries(Common PUBLIC Image lz4_static glad::glad)
-target_link_libraries(Common PRIVATE sol2::sol2)
+target_link_libraries(Common PUBLIC sol2::sol2)

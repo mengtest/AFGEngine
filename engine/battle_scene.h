@@ -42,7 +42,7 @@ public:
 	void SaveState();
 	void LoadState();
 
-	void PlayLoop();
+	int PlayLoop();
 
 private:
 	std::vector<Texture> activeTextures;

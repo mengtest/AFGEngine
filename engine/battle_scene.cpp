@@ -4,6 +4,8 @@
 #include "raw_input.h"
 #include "window.h"
 #include "hitbox_renderer.h"
+#include "game_state.h"
+#include "stage.h"
 #include <gfx_handler.h>
 #include <vao.h>
 #include <fstream>
@@ -15,15 +17,12 @@
 
 enum //TODO: Remove
 {
-	T_STAGELAYER1, //multiple layers on different textures? No, idiot.
 	T_HUD,
-	T_FONT,
-	T_CHAR
+	T_FONT
 };
 
 //TODO: Load from lua
 const char *texNames[] ={
-	"data/images/background.lzs3",
 	"data/images/hud.lzs3",
 	"data/images/font.lzs3"
 };
@@ -62,21 +61,16 @@ player(interface), player2(interface),
 uniforms("Common", 1)
 {
 	texture_options opt; opt.linearFilter = true;
-	activeTextures.reserve(3);
-	for(int i = 0; i < 3; ++i)
+	activeTextures.reserve(2);
+	for(int i = 0; i < 2; ++i)
 	{
 		Texture texture;
 		texture_options opt;
-
-		if(i<3)
-			opt.linearFilter = true;
-
+		opt.linearFilter = true;
 		texture.LoadLzs3(texNames[i], opt);
 		activeTextures.push_back(std::move(texture));
 	}
 	paletteId = LoadPaletteTEMP();
-
-	
 
 	defaultS.LoadShader("data/def.vert", "data/def.frag");
 	defaultS.Use();	
@@ -101,7 +95,7 @@ BattleScene::~BattleScene()
 	glDeleteTextures(1, &paletteId);
 }
 
-void BattleScene::PlayLoop()
+int BattleScene::PlayLoop()
 {
 	//TODO: Get rid of this garbage hud code. It can and will cause problems.
 	std::vector<Bar> barHandler;
@@ -116,15 +110,7 @@ void BattleScene::PlayLoop()
 	textVertData.resize(24*80);
 	Vao VaoTexOnly(Vao::F2F2, GL_DYNAMIC_DRAW);
 	{
-		float stageVertices[] = {
-			-300, 0, 	0, 0,
-			300, 0,  	1, 0,
-			300, 450,  	1, 1,
-			-300, 450,	0, 1
-		};
-		
 		hudId = VaoTexOnly.Prepare(GetHudData().size()*sizeof(float), nullptr);
-		stageId = VaoTexOnly.Prepare(sizeof(stageVertices), stageVertices);
 		textId = VaoTexOnly.Prepare(sizeof(float)*textVertData.size(), nullptr);
 		VaoTexOnly.Load();
 	}
@@ -137,7 +123,9 @@ void BattleScene::PlayLoop()
 	HitboxRenderer hr;
 
 	GfxHandler gfx;
-	gfx.LoadGfxFromDef("data/char/vaki/def.lua");
+	int playerGfx = gfx.LoadGfxFromDef("data/char/vaki/def.lua");
+	//std::function<void(glm::mat4&)> setView = std::bind(static_cast<void(BattleScene::*)(glm::mat4&)>(&BattleScene::SetModelView), this, std::placeholders::_1);
+	Stage stage(gfx, "data/bg/bg.lua", [&](glm::mat4& a){SetModelView(a);});
 	gfx.LoadingDone();
 
 	uniforms.Bind(hr.sSimple.program);
@@ -197,17 +185,17 @@ void BattleScene::PlayLoop()
 		
 		//Should calculations be performed earlier? Watchout for this (Why?)
 		glm::mat4 viewMatrix = view.Calculate(player.GetXYCoords(), player2.GetXYCoords());
-		SetModelView(viewMatrix);
+		//SetModelView(viewMatrix);
+
+		gfx.Begin();
 
 		//Draw stage quad
-		glBindTexture(GL_TEXTURE_2D, activeTextures[T_STAGELAYER1].id);
-		VaoTexOnly.Draw(stageId, GL_TRIANGLE_FAN);
-
-		//Draw characters
-  		gfx.Begin();
+		auto center = view.GetCameraCenterScale();
+		stage.Draw(viewMatrix, center);
 		
- 		gfx.SetPaletteSlot(1);
+		gfx.SetPaletteSlot(1);
 
+		//Draw actors
 		for(auto actor : player2.updateList)
 		{
 			SetModelView(viewMatrix*actor->GetSpriteTransform());
@@ -255,6 +243,7 @@ void BattleScene::PlayLoop()
 		mainWindow->SwapBuffers();
 		mainWindow->SleepUntilNextFrame();
 	}
+	return GS_WIN;
 }
 
 void BattleScene::SetModelView(glm::mat4& view)

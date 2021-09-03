@@ -14,6 +14,11 @@ namespace camera
 	};
 }
 
+struct centerScale
+{
+	float x, y, scale;
+};
+
 class Camera
 {
 public: //As always, this is access only.
@@ -27,7 +32,7 @@ private:
 	const FixedPoint limitRatioX; //The max distance relative to 1 game screen between characters before the camera zooms out.
 	const FixedPoint limitRatioY;
 	FixedPoint maxScale; //Max zoom out.
-
+	float centerYShake;
 	int scaleTimer = 0;
 	int shakeTime = 0;
 
@@ -37,6 +42,7 @@ public:
 	Camera& operator=(const Camera& c);
 
 	glm::mat4 Calculate(Point2d<FixedPoint>, Point2d<FixedPoint> p2);
+	centerScale GetCameraCenterScale();
 	
 
 	FixedPoint GetWallPos(int which);

@@ -23,16 +23,28 @@ GfxHandler::~GfxHandler()
 	glDeleteBuffers(1, &particleBuffer);
 }
 
+void GfxHandler::LoadLuaDefinitions(sol::state &lua)
+{
+	lua["lzs3"] = 1;
+}
+
 int GfxHandler::LoadGfxFromDef(std::filesystem::path defFile)
 {
 	auto folder = defFile.parent_path();
 	sol::state lua;
-	lua["lzs3"] = 1;
+	LoadLuaDefinitions(lua);
 	auto result = lua.script_file(defFile.string());
 	if(!result.valid()){
 		sol::error err = result;
+		std::cerr << "When loading " << defFile <<"\n";
 		std::cerr << err.what() << std::endl;
+		throw std::runtime_error("Lua syntax error.");
 	}
+	return LoadGfxFromLua(lua, folder);
+}
+
+int GfxHandler::LoadGfxFromLua(sol::state &lua, std::filesystem::path workingDir)
+{
 	sol::table graphics = lua["graphics"];
 
 	int mapId = idMapList.size();
@@ -52,12 +64,12 @@ int GfxHandler::LoadGfxFromDef(std::filesystem::path defFile)
 			opt.linearFilter = true;
 		
 		if(type == 1)
-			texture.LoadLzs3(folder/imageFile, opt);
+			texture.LoadLzs3(workingDir/imageFile, opt);
 		else
-			texture.LoadPng(folder/imageFile, opt);
+			texture.LoadPng(workingDir/imageFile, opt);
 
 		textures.push_back(std::move(texture));
-		LoadToVao(folder/vertexFile, mapId, textures.size()-1);
+		LoadToVao(workingDir/vertexFile, mapId, textures.size()-1);
 	}
 	return mapId;
 }
@@ -144,7 +156,7 @@ void GfxHandler::Draw(int id, int defId)
 			}
 			else
 			{
-				glBlendFunc(GL_SRC_ALPHA, GL_ONE);
+				//glBlendFunc(GL_SRC_ALPHA, GL_ONE);
 				rectS.Use();
 			}
 		}
