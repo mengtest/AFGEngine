@@ -16,7 +16,8 @@ struct MotionData
 	std::string motionStr; //Without the button press.
 	sol::protected_function condition; //Without the button press.
 	bool hasCondition = false;
-	int bufLen = 0;
+	int startBuf = 0;
+	int addBuf = 0;
 	int seqRef = -1;
 	int flags = 0;
 	int priority = 0x7FFFFFFF; //Less is higher priority
@@ -27,12 +28,22 @@ class CommandInputs
 	std::unordered_map<std::string, std::vector<MotionData>> motions;
 
 public:
+	struct CancelInfo
+	{
+		int subFrameCount;
+		uint32_t actorFlags;
+		bool canNormalCancel;
+		bool canSpecialCancel;
+		bool canInterrupt;
+		int currentSequence;
+	};
+
 	CommandInputs();
 
 	void LoadFromLua(std::filesystem::path defFile, sol::state &lua);
 
 	//Returns sequence number and flags.
-	MotionData ProcessInput(const input_deque &keyPresses, const char*motionType, int side);
+	MotionData ProcessInput(const input_deque &keyPresses, const char*motionType, int side, CancelInfo info);
 	void Charge(const input_deque &keyPresses);
 
 private:
@@ -56,7 +67,7 @@ public:
 		repeatable = 0x2,
 		wipeBuffer = 0x4,
 		interrupts = 0x8, //Will interrupt any move marked as interrumpible.
-		interrumpible = 0x10,
+		interruptible = 0x10,
 		noCombo = 0x20
 	};
 

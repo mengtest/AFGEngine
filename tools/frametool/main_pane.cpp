@@ -193,6 +193,14 @@ void MainPane::DrawFrame(Frame &frame)
 		"Custom"
 	};
 
+	const char* const comboType[] = {
+		"Never",
+		"Always",
+		"Any hit",
+		"Hurt only",
+		"Block only"
+	};
+
 	ImGui::InputInt("Sprite id", &frame.frameProp.spriteIndex);
 	ImGui::InputInt("Duration", &frame.frameProp.duration);
 	ImGui::InputInt("Jump to", &frame.frameProp.jumpTo);
@@ -205,6 +213,13 @@ void MainPane::DrawFrame(Frame &frame)
 	ImGui::InputInt2("Acc", frame.frameProp.accel);
 	ImGui::Combo("X:", &frame.frameProp.movementType[0], movType, IM_ARRAYSIZE(movType));
 	ImGui::Combo("Y:", &frame.frameProp.movementType[1], movType, IM_ARRAYSIZE(movType));
+
+	int selectedNCancel = frame.frameProp.cancelType[0];
+	if(ImGui::Combo("Normal cancel", &selectedNCancel, comboType, IM_ARRAYSIZE(comboType)))
+		frame.frameProp.cancelType[0] = selectedNCancel;
+	int selectedSCancel = frame.frameProp.cancelType[1];
+	if(ImGui::Combo("Special cancel", &selectedSCancel, comboType, IM_ARRAYSIZE(comboType)))
+		frame.frameProp.cancelType[1] = selectedSCancel;
 
 	ImGui::InputFloat2("Offset", frame.frameProp.spriteOffset);
 	ImGui::Combo("State", &frame.frameProp.state, states, IM_ARRAYSIZE(states));

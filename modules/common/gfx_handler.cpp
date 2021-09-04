@@ -21,6 +21,7 @@ vertices(Vao::F2F2_short, GL_STATIC_DRAW)
 	indexedMulColorL = indexedS.GetLoc("mulColor");
 	rectS.Use();
 	rectMulColorL = rectS.GetLoc("mulColor");
+	SetMulColor(1, 1, 1, 1); //TODO: Fix this
 }
 
 GfxHandler::~GfxHandler()

@@ -53,7 +53,8 @@ void CommandInputs::LoadFromLua(std::filesystem::path defFile, sol::state &lua)
 			sol::table arr = val.second;
 			MotionData md;
 			md.motionStr = arr["input"];
-			md.bufLen = arr["buf"];
+			md.startBuf = arr["sBuf"].get_or(2);
+			md.addBuf = arr["aBuf"].get_or(8);
 			md.seqRef = arr["ref"];
 			md.flags = arr["flag"].get_or(0);
 			md.condition = arr["cond"];
@@ -95,12 +96,37 @@ int CommandInputs::GetCharge(dir which, int frame, int side)
 		return chargeBuffer[which][frame];
 }
 
-MotionData CommandInputs::ProcessInput(const input_deque &keyPresses, const char* motionType, int side)
+MotionData CommandInputs::ProcessInput(const input_deque &keyPresses, const char* motionType, int side, CancelInfo info)
 {
 	for(const auto &md : motions[motionType])
 	{
-		if(MotionInput(md, keyPresses, side))
-			return md;
+		//If can cancel and the next move is comboable into.
+		bool canDo = (info.canNormalCancel | info.canSpecialCancel) & !(md.flags & (CommandInputs::neutralMove | CommandInputs::noCombo));
+		//If can't cancel, but you can move
+		canDo |= (info.actorFlags & flag::canMove);
+		//If you can't move either, but you can interrupt.
+		canDo |= (info.canInterrupt & !!(md.flags & CommandInputs::interrupts) & info.subFrameCount <= md.startBuf);
+		//Don't transition walk if the next move is marked as neutral.
+		canDo &= !(!!(md.flags & CommandInputs::neutralMove) & !!(info.actorFlags & flag::dontWalk)); 
+		//The sequence can't go to itself unless the move is flagged as repeteable.
+		canDo &= !!(md.flags & CommandInputs::repeatable) | (info.currentSequence != md.seqRef);
+		//Only then bother to check if you actually inputted the move
+		if(canDo && MotionInput(md, keyPresses, side))
+		{
+			if(md.hasCondition)
+			{
+				auto result = md.condition();
+				if(!result.valid())
+				{
+					sol::error err = result;
+					std::cerr << err.what() << "\n";
+				}
+				else if(result.get<bool>())
+					return md;
+			}
+			else
+				return md;
+		}
 	}
 	return {}; //No matches
 }
@@ -123,7 +149,7 @@ bool CommandInputs::MotionInput(const MotionData& md, const input_deque &keyPres
 	}
 
 	int c = motion.size() - 1;  //Reads last character and goes backwards until 0.
-	int frameCounter = md.bufLen;
+	int frameCounter = md.startBuf;
 	int lastKey = 0;
 	int heldButton = 0;
 	bool correct = false;
@@ -316,7 +342,7 @@ motionBufferProcessing:
 		if(lastC != c)
 		{
 			lastKey = key;
-			frameCounter = md.bufLen+1;
+			frameCounter = md.addBuf+1;
 			correct = true;
 			goto motionBufferProcessing;
 		}
@@ -324,7 +350,7 @@ motionBufferProcessing:
 		if(correct && lastKey != key) //Give extra buffer frames if they stopped holding the input
 		{
 			correct = false;
-			frameCounter = md.bufLen+1;
+			frameCounter = md.addBuf+1;
 		}
 		
 		--frameCounter;

@@ -298,10 +298,39 @@ void Character::Input(input_deque &keyPresses, CommandInputs &cmd)
 	MotionData command;
 	auto &prop = framePointer->frameProp;
 	auto flags = prop.flags;
+	
+	bool cancellable[2]; //Normal, special
+	for(int i = 0; i < 2; ++i)
+	{
+		switch(prop.cancelType[i]){ //TODO: Generate flags instead?
+			case 1: //Always
+				cancellable[i] = true;
+				break;
+			case 2: //Any hit
+				cancellable[i] = comboType != none;
+				break;
+			case 3: //Hurt only
+				cancellable[i] = comboType == hurt;
+				break;
+			case 4: //Block only
+				cancellable[i] = comboType == blocked;
+				break;
+			default: //Never
+				cancellable[i] = false;
+		}
+	}
+
+	CommandInputs::CancelInfo info{
+		totalSubframeCount, flags,
+		cancellable[0], cancellable[1],
+		interrumpible,
+		currSeq
+	};
+
 	if(framePointer->frameProp.state == state::air)
-		command = cmd.ProcessInput(keyPresses, "air", inputSide);
+		command = cmd.ProcessInput(keyPresses, "air", inputSide, info);
 	else
-		command = cmd.ProcessInput(keyPresses, "ground", inputSide);
+		command = cmd.ProcessInput(keyPresses, "ground", inputSide, info);
 
 	if(hitstop)
 	{ 
@@ -316,40 +345,15 @@ void Character::Input(input_deque &keyPresses, CommandInputs &cmd)
 			command = lastCommand;
 		lastCommand = {};
 	}
-	
-	if(prop.cancelType[0] > 0 && comboType != none && !(command.flags & (CommandInputs::neutralMove | CommandInputs::noCombo)))
-		goto canDo;
-	if(!(flags & flag::canMove) && (!interrumpible || !(command.flags & CommandInputs::interrupts) || totalSubframeCount > command.bufLen))
-		return;
-	canDo:
 
-	//Don't transition to the seq if the command is marked as a neutral move (walking).
-	if(command.flags & CommandInputs::neutralMove && flags & flag::dontWalk)
-		return;
-
-	//The sequence can't go to itself unless it's flagged as such
-	if(!(command.flags & CommandInputs::repeatable) && currSeq == command.seqRef) 
-		return;
-	
-	if(command.hasCondition)
-	{
-		auto result = command.condition();
-		if(!result.valid())
-		{
-			sol::error err = result;
-			std::cerr << err.what() << "\n";
-		}
-		else if(!result.get<bool>())
-			return;
-	}
-
+	//Finally perform the move, if there's any.
 	if(command.seqRef != -1)
 	{
 		GotoSequenceMayTurn(command.seqRef);
 		if(command.flags & CommandInputs::wipeBuffer) 
 			keyPresses.front() |= key::buf::CUT;
 
-		if(command.flags & CommandInputs::interrumpible) 
+		if(command.flags & CommandInputs::interruptible) 
 			interrumpible = true;
 	}	
 }

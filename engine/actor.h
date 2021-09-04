@@ -107,7 +107,7 @@ protected:
 		blocked,
 		counter,
 	};
-	//comboType is set to unresolved if it connects, and then to hurt/blocked by the target. Resets when sequence changes. Used for cancelling purposes.
+	//comboType is set to hurt/blocked by the target. Resets when sequence changes. Used for cancelling purposes.
 	int comboType = none; 
 	uint32_t flags = 0;
 	std::unordered_map<std::string, sol::object> userData;

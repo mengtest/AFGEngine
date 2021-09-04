@@ -112,27 +112,29 @@ void Stage::Draw(glm::mat4 &view, centerScale camera)
 			glm::vec3(TexureScaling*parallaxFactor, TexureScaling*parallaxFactor, 1.f)
 		), glm::vec3(layer.x, layer.y, 0.f));
 		auto layerView = scaledView * parallaxedView;
+		for(auto &e : layer.elements)
+		{
+			if(e.movementType & horizontal)
+			{
+				e.x += e.speedX;
+				if(e.x > e.centerX)
+					e.speedX -= e.accelX;
+				else //if(e.speedY > -e.maxY)
+					e.speedX += e.accelX;
+			}
+			if(e.movementType & vertical)
+			{
+				e.y += e.speedY;
+				if(e.y > e.centerY)
+					e.speedY -= e.accelY;
+				else //if(e.speedY > -e.maxY)
+					e.speedY += e.accelY;
+			}
+		}
 		auto drawElements = [&]()
 		{
 			for(auto &e : layer.elements)
 			{
-				if(e.movementType & horizontal)
-				{
-					e.x += e.speedX;
-					if(e.x > e.centerX)
-						e.speedX -= e.accelX;
-					else //if(e.speedY > -e.maxY)
-						e.speedX += e.accelX;
-				}
-				if(e.movementType & vertical)
-				{
-					e.y += e.speedY;
-					if(e.y > e.centerY)
-						e.speedY -= e.accelY;
-					else //if(e.speedY > -e.maxY)
-						e.speedY += e.accelY;
-				}
-				
 				auto elementView = layerView * glm::translate(glm::mat4(1.f), glm::vec3(e.x, e.y, 0.f));
 				setView(elementView);
 				gfx->Draw(e.drawId, defId);
