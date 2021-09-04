@@ -190,8 +190,8 @@ int BattleScene::PlayLoop()
 		//pg.PushNormalHit(5, 256, 128);
 
 
-		barHandler[B_P1Life].Resize(players[0]->GetHealthRatio(), 1);
-		barHandler[B_P2Life].Resize(players[1]->GetHealthRatio(), 1);
+		barHandler[B_P1Life].Resize(player.GetHealthRatio(), 1);
+		barHandler[B_P2Life].Resize(player2.GetHealthRatio(), 1);
 		VaoTexOnly.UpdateBuffer(hudId, GetHudData().data(), GetHudData().size()*sizeof(float));
 		
 		//Start rendering
