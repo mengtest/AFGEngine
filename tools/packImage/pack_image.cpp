@@ -380,9 +380,14 @@ int32_t xDst, int32_t yDst, int32_t xSrc, int32_t ySrc, int32_t chunkSize)
 		abort();
 	}
 
+	int rightFill = 0;
 	int chunkXSize = src.width - xSrc;
 	if(chunkXSize > chunkSize)
+	{
 		chunkXSize = chunkSize;
+	}
+	else
+		rightFill = 1;
 	
 	int chunkYSize = src.height - ySrc;
 	if(chunkYSize > chunkSize)
@@ -395,8 +400,10 @@ int32_t xDst, int32_t yDst, int32_t xSrc, int32_t ySrc, int32_t chunkSize)
 		ySrc = 0;
 		
 	}
+	int leftFill = 0;
 	if(xSrc < 0)
 	{
+		leftFill = xSrc;
 		chunkXSize += xSrc;
 		xDst -= xSrc;
 		xSrc = 0;
@@ -411,6 +418,16 @@ int32_t xDst, int32_t yDst, int32_t xSrc, int32_t ySrc, int32_t chunkSize)
 			src.data + (ySrc+row)*src.width*mul + xSrc*mul,
 			chunkXSize*mul
 		);
+		if(leftFill)
+			memcpy(
+			dst.data + (yDst+row)*dst.width*mul + (xDst+leftFill)*mul,
+			src.data + (ySrc+row)*src.width*mul + xSrc*mul,
+			mul);
+		if(rightFill)
+			memcpy(
+			dst.data + (yDst+row)*dst.width*mul + (xDst+chunkXSize)*mul, 
+			src.data + (ySrc+row)*src.width*mul + (xSrc+chunkXSize-1)*mul,
+			mul);
 	}
 
 	return true; 

@@ -27,6 +27,7 @@ class Stage
 		float scale;
 		float xParallax;
 		float yParallax;
+		float xScroll;
 		std::vector <element> elements;
 	};
 

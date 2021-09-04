@@ -35,6 +35,7 @@ setView(setViewFun)
 			layer l{};
 			sol::table layerT = layerEntry.second;
 			l.scale = layerT["scale"].get_or(1.f);
+			l.xScroll = layerT["xScroll"].get_or(0.f);
 			l.xParallax = layerT["xParallax"].get_or(0.f);
 			l.yParallax = layerT["yParallax"].get_or(l.xParallax);
 			l.x = layerT["x"].get_or(0.f);
@@ -106,32 +107,49 @@ void Stage::Draw(glm::mat4 &view, centerScale camera)
 				glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 		}
 
-		auto layerView = scaledView * glm::scale(
-			glm::translate(glm::mat4(1.f),glm::vec3(layer.x+(camera.x*2+wRange)*(1.f-layer.xParallax), layer.y+(camera.y*2)*(1.f-layer.yParallax), 0.f)),
+		auto parallaxedView = glm::translate(glm::scale(
+			glm::translate(glm::mat4(1.f),glm::vec3((camera.x*2+wRange)*(1.f-layer.xParallax), (camera.y*2)*(1.f-layer.yParallax), 0.f)),
 			glm::vec3(TexureScaling*parallaxFactor, TexureScaling*parallaxFactor, 1.f)
-		);
-		for(auto &e : layer.elements)
+		), glm::vec3(layer.x, layer.y, 0.f));
+		auto layerView = scaledView * parallaxedView;
+		auto drawElements = [&]()
 		{
-			if(e.movementType & horizontal)
+			for(auto &e : layer.elements)
 			{
-				e.x += e.speedX;
-				if(e.x > e.centerX)
-					e.speedX -= e.accelX;
-				else //if(e.speedY > -e.maxY)
-					e.speedX += e.accelX;
+				if(e.movementType & horizontal)
+				{
+					e.x += e.speedX;
+					if(e.x > e.centerX)
+						e.speedX -= e.accelX;
+					else //if(e.speedY > -e.maxY)
+						e.speedX += e.accelX;
+				}
+				if(e.movementType & vertical)
+				{
+					e.y += e.speedY;
+					if(e.y > e.centerY)
+						e.speedY -= e.accelY;
+					else //if(e.speedY > -e.maxY)
+						e.speedY += e.accelY;
+				}
+				
+				auto elementView = layerView * glm::translate(glm::mat4(1.f), glm::vec3(e.x, e.y, 0.f));
+				setView(elementView);
+				gfx->Draw(e.drawId, defId);
 			}
-			if(e.movementType & vertical)
-			{
-				e.y += e.speedY;
-				if(e.y > e.centerY)
-					e.speedY -= e.accelY;
-				else //if(e.speedY > -e.maxY)
-					e.speedY += e.accelY;
-			}
+		};
+		drawElements();
+		if(layer.xScroll != 0)
+		{
+			float w = (float)(width)/globalScale;
+			layer.x += layer.xScroll;
+			if(layer.x > w)
+				layer.x -= w;
+			else if(layer.x < 0)
+				layer.x += w;
 			
-			auto elementView = layerView * glm::translate(glm::mat4(1.f), glm::vec3(e.x, e.y, 0.f));
-			setView(elementView);
-			gfx->Draw(e.drawId, defId);
-		}	
+			layerView = scaledView * glm::translate(parallaxedView, glm::vec3(-w,0,0));
+			drawElements();
+		}
 	}
 }

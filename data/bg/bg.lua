@@ -7,6 +7,7 @@ stage = {
 			y = 160,
 			xParallax = 0.3,
 			yParallax = 0.7,
+			xScroll = 0.5,
 			elements = {
 				{id = 2}
 			}
@@ -14,14 +15,14 @@ stage = {
 		{
 			y = 0,
 			xParallax = 0.8,
-			yParallax = 0.9,
+			yParallax = 0.8,
 			elements = {
 				{id = 1}
 			}
 		},
 		{
 			xParallax = 0.9,
-			yParallax = 0.95,
+			yParallax = 0.9,
 			mode = additive,
 			elements = {
 				{	id = 4; x = 456, y = 225;
