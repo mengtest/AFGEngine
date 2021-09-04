@@ -37,7 +37,9 @@ private:
 	
 	int boundTexture = -1;
 	int boundProgram = -1;
-	int paletteSlot = 0;
+	int indexedMulColorL;
+	int rectMulColorL;
+	int paletteSlot = -1;
 	int paletteSlotL;
 	
 	bool loaded = false;
@@ -64,13 +66,13 @@ public:
 	static void LoadLuaDefinitions(sol::state &lua);
 	void LoadingDone();
 
-	void SetPaletteSlot(int palette);
-	void Draw(int id, int defId = 0);
+	void Draw(int id, int defId = 0, int paletteSlot = 0);
 	void DrawParticles(std::vector<Particle> &data, int id, int defId = 0);
 	void Begin();
 	void End();
 
 	bool isLoaded(){return loaded;}
+	void SetMulColor(float r, float g, float b, float a = 1.f);
 
 	int GetVirtualId(int id, int defId = 0); //Avoid using this
 };

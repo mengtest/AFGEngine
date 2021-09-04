@@ -4,6 +4,7 @@ in vec2 texCoord;
 uniform sampler2D tex0;
 uniform sampler2D palette;
 uniform int paletteSlot;
+uniform vec4 mulColor;
 
 out vec4 fragColor;
 
@@ -35,5 +36,7 @@ vec4 BilinearSmoothstepSample (vec2 P)
 
 void main(void)
 {
-	fragColor = BilinearSmoothstepSample(texCoord);
+	fragColor = BilinearSmoothstepSample(texCoord)*mulColor;
+	fragColor.g *= 1.1;
+	fragColor.b *= 0.8;
 }

@@ -11,11 +11,16 @@ vertices(Vao::F2F2_short, GL_STATIC_DRAW)
 	rectS.LoadShader("data/def.vert", "data/defRect.frag");
 	indexedS.LoadShader("data/def.vert", "data/palette.frag");
 	particleS.LoadShader("data/particle.vert", "data/defRect.frag");
+	particleS.Use();
+	glUniform4f(particleS.GetLoc("mulColor"),1,1,1,1); 
 	indexedS.Use();
 	//Set texture unit indexes
 	glUniform1i(indexedS.GetLoc("tex0"), 0 ); 
 	glUniform1i(indexedS.GetLoc("palette"), 1 );
 	paletteSlotL = indexedS.GetLoc("paletteSlot");
+	indexedMulColorL = indexedS.GetLoc("mulColor");
+	rectS.Use();
+	rectMulColorL = rectS.GetLoc("mulColor");
 }
 
 GfxHandler::~GfxHandler()
@@ -131,10 +136,11 @@ void GfxHandler::End()
 {
 	boundTexture = -1;
 	boundProgram = -1;
-	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	paletteSlot = -1;
+	//glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 }
 
-void GfxHandler::Draw(int id, int defId)
+void GfxHandler::Draw(int id, int defId, int _paletteSlot)
 {
 	auto search = idMapList[defId].find(id);
 	if (search != idMapList[defId].end())
@@ -152,13 +158,16 @@ void GfxHandler::Draw(int id, int defId)
 			if(nextProgram == 1)
 			{
 				indexedS.Use();
-				glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 			}
 			else
 			{
-				//glBlendFunc(GL_SRC_ALPHA, GL_ONE);
 				rectS.Use();
 			}
+		}
+		if(nextProgram == 1 && paletteSlot != _paletteSlot)
+		{
+			paletteSlot = _paletteSlot;
+			glUniform1i(paletteSlotL, paletteSlot);
 		}
 		vertices.Draw(meta.trueId);
 	}
@@ -193,13 +202,13 @@ void GfxHandler::DrawParticles(std::vector<Particle> &data, int id, int defId)
 	}
 }
 
-void GfxHandler::SetPaletteSlot(int palette)
+void GfxHandler::SetMulColor(float r, float g, float b, float a)
 {
+	rectS.Use();
+	glUniform4f(rectMulColorL, r,g,b,a);
 	indexedS.Use();
-	paletteSlot = palette;
-	glUniform1i(paletteSlotL, paletteSlot);
-	boundProgram = 1;
-	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA); //TODO: Don't check for alpha here
+	glUniform4f(indexedMulColorL, r,g,b,a);
+	boundProgram = -1;
 }
 
 int GfxHandler::GetVirtualId(int id, int defId)

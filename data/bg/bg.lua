@@ -14,9 +14,28 @@ stage = {
 		{
 			y = 0,
 			xParallax = 0.8,
-			yParallax = 0.8,
+			yParallax = 0.9,
 			elements = {
 				{id = 1}
+			}
+		},
+		{
+			xParallax = 0.9,
+			yParallax = 0.95,
+			mode = additive,
+			elements = {
+				{	id = 4; x = 456, y = 225;
+					movement = {type = vertical; centerY=225; speedY = 1, accelY = 0.01;}
+				},
+				{	id = 5, x = 120, y = 280,
+					movement = {type = vertical | horizontal; centerX = 200, centerY=265; accelX = 0.001, accelY = 0.01;}
+				},
+				{	id = 6, x = 800, y = 320,
+					movement = {type = vertical | horizontal; centerX = 770, centerY=295; accelX = 0.001, accelY = 0.01;}
+				},
+				{	id = 7, x = 1000, y = 440,
+					movement = {type = vertical; centerY=350; accelY = 0.01;}
+				}
 			}
 		},
  		{ --Uppermost layer.

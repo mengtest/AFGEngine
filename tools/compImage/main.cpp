@@ -5,6 +5,7 @@
 #include <memory>
 #include <fstream>
 #include <filesystem>
+#include <cmath>
 
 int main(int argc, char **argv)
 {
@@ -29,6 +30,7 @@ int main(int argc, char **argv)
 		"3 - Best / very slow",
 		{'q', "quality"}, 1);
 	args::Flag weightAlpha(parser, "weight", "Weight colour by alpha. Has no effect on low quality compression.", {'w',"weight"});
+	args::ValueFlag<float> alphaCorrect(parser, "float", "Exponentiate alpha to this power. Useful to get rid of funny borders.", {'a',"alpha"});
 	try
 	{
 		parser.ParseCLI(argc, argv);
@@ -107,6 +109,16 @@ int main(int argc, char **argv)
 
 	//Compress image
 	ImageData img(filepath.string().c_str());
+
+	if(alphaCorrect && img.bytesPerPixel == 4)
+	{
+		float exponent = alphaCorrect.Get();
+		for(int i = 0; i < img.height*img.width*4; i+=4)
+		{
+			auto& alpha = img.data[i+3];
+			alpha = pow((float)alpha/255.f, exponent) * 255.f;
+		}
+	}
 
 	int flags = format | fit | extra;
 	int size = GetStorageRequirements( img.width, img.height, flags );

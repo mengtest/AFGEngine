@@ -45,7 +45,7 @@ void Character::BoundaryCollision()
 }
 
 
-int Character::ResolveHit(int keypress, Actor *hitter) //key processing really shouldn't be here.
+int Character::ResolveHit(int keypress, Actor *hitter)
 {
 	HitDef *hitData = &hitter->attack;
 	keypress = SanitizeKey(keypress);
@@ -359,7 +359,7 @@ scene(scene),
 keyBufOrig(max_input_size, 0),
 keyBufDelayed(max_input_size, 0)
 {
-	updateList.push_back((Actor*)this);
+	//updateList.push_back((Actor*)this);
 }
 
 Player::~Player()
@@ -367,17 +367,18 @@ Player::~Player()
 	delete charObj;
 }
 
-Player::Player(int side, std::string charFile, BattleInterface& scene):
+Player::Player(int side, std::string charFile, BattleInterface& scene, int paletteSlot):
 scene(scene),
 keyBufOrig(max_input_size, 0),
 keyBufDelayed(max_input_size, 0)
 {
-	Load(side, charFile);
+	Load(side, charFile, paletteSlot);
 }
 
-void Player::Load(int side, std::string charFile)
+void Player::Load(int side, std::string charFile, int paletteSlot)
 {
 	charObj = new Character(FixedPoint(50*-side), side, scene, lua, sequences, newChildren);
+	charObj->paletteIndex = paletteSlot;
 	
 	if(!ScriptSetup())
 		abort();
@@ -484,6 +485,13 @@ bool Player::ScriptSetup()
 		scene.particles[ParticleGroup::redSpark].PushNormalHit(amount, (float)charObj->root.x+x*charObj->side, float(charObj->root.y)+y);
 	});
 	global.set_function("GetTarget", [this]()->Actor&{return *charObj->target;});
+	global.set_function("SetPriority", [this](int p){
+		if(p>0){
+			priority = 1; pTarget->priority=0;
+		}else{
+			priority = 0; pTarget->priority=1;
+		}
+	});
 	global.set_function("GetBlockTime", [this](){return charObj->blockTime;});
 	global.set_function("SetBlockTime", [this](int time){charObj->blockTime=time;});
 	global.set_function("TurnAround", &Character::TurnAround, charObj);
@@ -519,6 +527,7 @@ bool Player::ScriptSetup()
 
 void Player::SetTarget(Player &t)
 {
+	pTarget = &t;
 	target = t.charObj;
 	charObj->target = target;
 }
@@ -562,14 +571,18 @@ void Player::Update(HitboxRenderer &hr)
 		}
 	}
 	newChildren.clear();
+}
 
-	updateList.clear();
-	updateList.resize(children.size()+1);
-	updateList[children.size()] = charObj;
-	for(int i = children.size()-1, b = 0; i >= 0; --i, ++b)
+int Player::FillDrawList(DrawList &dl)
+{
+	for(int i = children.size()-1; i >= 0; --i)
 	{
-		updateList[i] = &children[b];
+		dl.v[dl.middle] = &children[i];
+		++dl.middle;
 	}
+	dl.v[dl.middle] = charObj;
+	dl.middle += 1;
+	return dl.middle-1;
 }
 
 void Player::ProcessInput()
@@ -609,10 +622,18 @@ void Player::SendInput(int key)
 
 void Player::HitCollision(Player &bluePlayer, Player &redPlayer)
 {
-	std::vector<Actor*> &blueList = bluePlayer.updateList;
-	std::vector<Actor*> &redList = redPlayer.updateList;
+	std::vector<Actor*> blueList; blueList.resize(bluePlayer.children.size()+1);
+	blueList[0] = bluePlayer.charObj;
+	for(int i = 1; i < blueList.size(); ++i)
+		blueList[i] = &bluePlayer.children[i-1];
+	std::vector<Actor*> redList; redList.resize(redPlayer.children.size()+1);
+	redList[0] = redPlayer.charObj;
+	for(int i = 1; i < redList.size(); ++i)
+		redList[i] = &redPlayer.children[i-1];
+
 	int blueKey = bluePlayer.keyBufDelayed.front();
 	int redKey = redPlayer.keyBufDelayed.front();
+	Player *player[][2] = {{&redPlayer, &bluePlayer},{&bluePlayer, &redPlayer}};
 	for(auto blue : blueList)
 	{
 		for(auto red : redList)
@@ -630,6 +651,11 @@ void Player::HitCollision(Player &bluePlayer, Player &redPlayer)
 						blue->hitstop = blue->attack.hitStop;
 					int particleAmount = blue->hitstop*2;
 					blue->comboType = red->ResolveHit(keys[i], blue);
+					if(blue->comboType != Actor::none) //Set hitting player on top.
+					{
+						player[i][0]->priority = 0;
+						player[i][1]->priority = 1;
+					}
 					if(blue->comboType == Actor::blocked)
 					{
 						if(blue->attack.blockStop >= 0)

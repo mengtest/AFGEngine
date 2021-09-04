@@ -115,8 +115,8 @@ int BattleScene::PlayLoop()
 		VaoTexOnly.Load();
 	}
 
-	player.Load(1, "data/char/vaki/vaki.char");
-	player2.Load(-1, "data/char/vaki/vaki.char");
+	player.Load(1, "data/char/vaki/vaki.char", 0);
+	player2.Load(-1, "data/char/vaki/vaki.char", 1);
 	
 	//For rendering purposes only.
 	std::vector<float> hitboxData;
@@ -135,10 +135,14 @@ int BattleScene::PlayLoop()
 	
 	player.SetTarget(player2);
 	player2.SetTarget(player);
+	player.priority = 1;
+
+	Player* players[2];
 
 	VaoTexOnly.Bind();
 
 	std::vector<Particle> particles;
+	Player::DrawList drawList;
 	for(int i = ParticleGroup::START; i < ParticleGroup::END; ++i)
 		particleGroups.insert({i, {rng, i}});
 
@@ -147,6 +151,7 @@ int BattleScene::PlayLoop()
 	auto f = std::bind(&BattleScene::KeyHandle, this, std::placeholders::_1);
 	int32_t gameTicks = 0;
 	bool gameOver = false;
+	
 	while(!gameOver && !mainWindow->wantsToClose)
 	{
 		if(int err = glGetError())
@@ -163,28 +168,37 @@ int BattleScene::PlayLoop()
 		player.SendInput(keySend[0]);
 		player2.SendInput(keySend[1]);
 
-		Player::HitCollision(player, player2);
-		player.ProcessInput();
-		player2.ProcessInput();
+		if(player.priority >= player2.priority){
+			players[0] = &player;
+			players[1] = &player2;
+		}else{
+			players[0] = &player2;
+			players[1] = &player;
+		}
 
-		player.Update(hr);
-		player2.Update(hr);
+		Player::HitCollision(player, player2);
+		players[0]->ProcessInput();
+		players[1]->ProcessInput();
+
+		players[0]->Update(hr);
+		players[1]->Update(hr);
 		
 		Player::Collision(player, player2);
+		drawList.Init(player, player2);
 
-		//auto &&pos = player.getXYCoords();
+		//auto &&pos = players[1]->getXYCoords();
 		//pg.PushNormalHit(5, 256, 128);
 
 
-		barHandler[B_P1Life].Resize(player.GetHealthRatio(), 1);
-		barHandler[B_P2Life].Resize(player2.GetHealthRatio(), 1);
+		barHandler[B_P1Life].Resize(players[0]->GetHealthRatio(), 1);
+		barHandler[B_P2Life].Resize(players[1]->GetHealthRatio(), 1);
 		VaoTexOnly.UpdateBuffer(hudId, GetHudData().data(), GetHudData().size()*sizeof(float));
 		
 		//Start rendering
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		
 		//Should calculations be performed earlier? Watchout for this (Why?)
-		glm::mat4 viewMatrix = view.Calculate(player.GetXYCoords(), player2.GetXYCoords());
+		glm::mat4 viewMatrix = view.Calculate(players[0]->GetXYCoords(), players[1]->GetXYCoords());
 		//SetModelView(viewMatrix);
 
 		gfx.Begin();
@@ -192,22 +206,40 @@ int BattleScene::PlayLoop()
 		//Draw stage quad
 		auto center = view.GetCameraCenterScale();
 		stage.Draw(viewMatrix, center);
-		
-		gfx.SetPaletteSlot(1);
 
-		//Draw actors
-		for(auto actor : player2.updateList)
+		int p1Pos = players[1]->FillDrawList(drawList);
+		int p2Pos = players[0]->FillDrawList(drawList);
+
+		auto draw = [this,&gfx](Actor *actor, glm::mat4 &viewMatrix)
 		{
 			SetModelView(viewMatrix*actor->GetSpriteTransform());
-			gfx.Draw(actor->GetSpriteIndex());
+			auto options = actor->GetRenderOptions();
+			switch(options.blendingMode) //Maybe should go inside draw.
+			{
+				case RenderOptions::normal:
+					glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+					break;
+				case RenderOptions::additive:
+					glBlendFunc(GL_SRC_ALPHA, GL_ONE);
+					break;
+			};
+			gfx.Draw(actor->GetSpriteIndex(), 0, options.paletteIndex);
+		};
+
+		auto invertedView = glm::translate(glm::scale(viewMatrix, glm::vec3(1,-1,1)), glm::vec3(0,-64,0));
+
+		//Draw player reflection?
+		gfx.SetMulColor(1, 1, 1, 0.2);
+		draw(drawList.v[p1Pos], invertedView);
+		draw(drawList.v[p2Pos], invertedView);
+		gfx.SetMulColor(1, 1, 1, 1);
+	
+		//Draw all actors
+		for(auto actor : drawList.v)
+		{
+			draw(actor,viewMatrix);
 		}
-		
-		gfx.SetPaletteSlot(0);
-		for(auto actor : player.updateList)
-		{
-			SetModelView(viewMatrix*actor->GetSpriteTransform());
-			gfx.Draw(actor->GetSpriteIndex());
-		} 
+
 		glBlendFunc(GL_SRC_ALPHA, GL_ONE);
 		SetModelView(viewMatrix);
 		for(auto &pg : particleGroups)
@@ -231,8 +263,8 @@ int BattleScene::PlayLoop()
 		VaoTexOnly.Draw(hudId); 
 
 		timerString.seekp(0);
-		timerString << "SFP: " << mainWindow->GetSpf() << " FPS: " << 1/mainWindow->GetSpf()<<"      Entities:"<<player.updateList.size()<<" - "
-			<<player2.updateList.size()<< "   Particles:"<<particles.size()<<"  ";
+		timerString << "SFP: " << mainWindow->GetSpf() << " FPS: " << 1/mainWindow->GetSpf()<<"      Entities:"<<drawList.v.size()<<
+			"   Particles:"<<particles.size()<<"  ";
 
 		glBindTexture(GL_TEXTURE_2D, activeTextures[T_FONT].id);
 		int count = DrawText(timerString.str(), textVertData, 2, 10);

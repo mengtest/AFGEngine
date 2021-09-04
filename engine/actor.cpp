@@ -133,6 +133,19 @@ glm::mat4 Actor::GetSpriteTransform()
 	return glm::translate(glm::mat4(1.f), glm::vec3(root.x, root.y, 0))*transform*customTransform;
 }
 
+RenderOptions Actor::GetRenderOptions()
+{
+	auto &fp = framePointer->frameProp;
+	return {
+		fp.blendType,
+		paletteIndex,
+		fp.color[0],
+		fp.color[1],
+		fp.color[2],
+		fp.color[3],
+	};
+}
+
 void Actor::SendHitboxData(HitboxRenderer &hr)
 {
 	static std::vector<float> vertices;
@@ -307,6 +320,7 @@ std::pair<bool, Point2d<FixedPoint>> Actor::HitCollision(const Actor& hurt, cons
 Actor& Actor::SpawnChild(int sequence)
 {
 	Actor child(sequences, lua, actorList);
+	child.paletteIndex = paletteIndex;
 	child.GotoSequence(sequence);
 	actorList.get().push_back(std::move(child));
 	return actorList.get().back();
@@ -315,7 +329,7 @@ Actor& Actor::SpawnChild(int sequence)
 int Actor::ResolveHit(int keypress, Actor *hitter)
 {
 	//Todo call hit lua func
-	return hurt;
+	return none;
 }
 
 bool Actor::ThrowCheck(Actor& enemy, int frontRange, int upRange, int downRange)

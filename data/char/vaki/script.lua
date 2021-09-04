@@ -383,6 +383,7 @@ function sgthrow(actor)
 				actor:SetSide(-actor:GetSide())
 				g.GetTarget():SetSide(-g.GetTarget():GetSide())
 			end
+			g.SetPriority(1)
 			actor:GotoFrame(13)
 		end
 	end

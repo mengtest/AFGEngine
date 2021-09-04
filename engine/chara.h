@@ -82,9 +82,11 @@ private:
 	bool hasUpdateFunction = false;
 
 	std::vector<Sequence> sequences;
+	std::vector<Actor> newChildren;
 	BattleInterface& scene;
 	Character* charObj = nullptr;
-	Character* target;
+	Character* target = nullptr;
+	Player* pTarget = nullptr;
 
 	int delay = 0;
 	input_deque keyBufOrig;
@@ -93,20 +95,30 @@ private:
 	CommandInputs cmd;
 
 	bool ScriptSetup();
-	
+
 public:
-	std::vector<Actor*> updateList;
+	int priority = 0;
 	std::vector<Actor> children;
-	std::vector<Actor> newChildren;
+	struct DrawList{
+		std::vector<Actor*> v;
+		int middle;
+		void Init(const Player &p1, const Player &p2)
+		{
+			v.resize(p1.children.size()+p2.children.size()+2);
+			middle = 0;
+		}
+	};
+	
 	Player(BattleInterface& scene);
 	~Player();
-	Player(int side, std::string charFile, BattleInterface& scene);
-	void Load(int side, std::string charFile);
+	Player(int side, std::string charFile, BattleInterface& scene, int paletteSlot);
+	void Load(int side, std::string charFile, int paletteSlot);
 	void SetState(PlayerStateCopy &state);
 	PlayerStateCopy GetStateCopy();
 
 	void SetTarget(Player &target);
 	void Update(HitboxRenderer &hr);
+	int FillDrawList(DrawList &dl); //Returns player object index in the drawlist
 	void ProcessInput();
 	Point2d<FixedPoint> GetXYCoords();
 	float GetHealthRatio();

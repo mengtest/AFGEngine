@@ -14,10 +14,15 @@ class Stage
 	{
 		float x,y;
 		int drawId;
+		int movementType;
+		float speedX, speedY;
+		float accelX, accelY;
+		float centerX, centerY;
 	};
 
 	struct layer
 	{
+		int mode;
 		float x,y;
 		float scale;
 		float xParallax;
@@ -31,7 +36,14 @@ class Stage
 
 	GfxHandler *gfx;
 	std::function <void(glm::mat4&)> setView;
-	
+
+	enum //lua constants
+	{
+		normal = 0,
+		additive = 1,
+		horizontal = 0x1,
+		vertical = 0x2,
+	};
 
 public:
 	int defId;

@@ -52,6 +52,18 @@ struct HitDef
 	static Vector getVectorTableFromTable(const sol::table &table);
 };
 
+struct RenderOptions
+{
+	enum
+	{
+		normal,
+		additive
+	};
+	int blendingMode;
+	int paletteIndex;
+	float rgba[4];
+};
+
 class Actor{
 	friend class Character;
 	friend class Player;
@@ -72,6 +84,7 @@ protected:
 	Sequence *seqPointer;
 	Frame *framePointer;
 	
+	int paletteIndex; //Palette slot to use for indexed sprites
 	int side = 1; //used to invert the x of all sort of things
 
 	int currSeq = 0; //The active sequence.
@@ -118,6 +131,7 @@ public:
 	Frame *GetCurrentFrame();
 	int GetSpriteIndex();
 	glm::mat4 GetSpriteTransform();
+	RenderOptions GetRenderOptions();
 
 	//If collided and where
 	static std::pair<bool, Point2d<FixedPoint>> HitCollision(const Actor& hurt, const Actor& hit);
