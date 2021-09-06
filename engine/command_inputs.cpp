@@ -101,6 +101,7 @@ MotionData CommandInputs::ProcessInput(const input_deque &keyPresses, const char
 	for(const auto &md : motions[motionType])
 	{
 		//If can cancel and the next move is comboable into.
+		//TODO:
 		bool canDo = (info.canNormalCancel | info.canSpecialCancel) & !(md.flags & (CommandInputs::neutralMove | CommandInputs::noCombo));
 		//If can't cancel, but you can move
 		canDo |= (info.actorFlags & flag::canMove);

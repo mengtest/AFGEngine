@@ -40,18 +40,30 @@ namespace key //Key press as an int after being processed.
 	}
 }
 
-const int buttonsN = key::END;
+struct JoyInputInfo
+{
+	SDL_JoystickID id; //Idk
+	int type; //0 Button //1 Axis
+	uint8_t axis;
+	uint8_t button;
+	enum{
+		BUTTON,
+		AXIS
+	};
+};
 
+constexpr int buttonsN = key::END;
+
+extern short deadZone;
 extern unsigned int keySend[2];
 extern SDL_Scancode modifiableSCKeys[buttonsN*2];
-extern int modifiableJoyKeys[4];
+extern JoyInputInfo modifiableJoyKeys[buttonsN*2];
+extern std::unordered_map<SDL_JoystickID, int> JoyInstanceIds;
 
-void GameLoopJoy(); //Called directly to poll Joy stick/pad status.
-//Callbacks that are called when polling anyway.
-void GameLoopKeyHandle(SDL_KeyboardEvent &e); //In-game input processing.
+void InitControllers(std::vector<SDL_GameController*> &controllers);
 void SetupKeys(int offset); //Sets up and uses the callback to configure keys.
-void EventLoop(std::function<void(SDL_KeyboardEvent &e)> f);
-//void EventLoop(std::function<void(SDL_KeyboardEvent &e)> f, void *obj);
-
+void SetupJoy(int offset); //Sets up and uses the callback to configure keys.
+void EventLoop(std::function<void(SDL_KeyboardEvent &e)> keyHandler,
+	std::function<void(SDL_ControllerButtonEvent*, SDL_ControllerAxisEvent*)> joyHandler);
 
 #endif // RAW_INPUT_H_INCLUDED

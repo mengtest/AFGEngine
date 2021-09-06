@@ -2,10 +2,31 @@
 #include "window.h"
 #include <SDL.h>
 #include <fstream>
+#include <iostream>
 
 unsigned int keySend[2] {};
 SDL_Scancode modifiableSCKeys[buttonsN*2];
-int modifiableJoyKeys[4] = {0};
+JoyInputInfo modifiableJoyKeys[buttonsN*2] = {0};
+std::unordered_map<SDL_JoystickID, int> JoyInstanceIds;
+
+short deadZone = 12540; //Sin of (90/4) * 2^15
+
+void InitControllers(std::vector<SDL_GameController*> &controllers)
+{
+	auto nControllers = SDL_NumJoysticks();
+	controllers.resize(nControllers);
+	for (int i = 0; i < nControllers; ++i) {
+		if (SDL_IsGameController(i)) {
+			controllers[i] = SDL_GameControllerOpen(i);
+			if (controllers[i]) {
+				JoyInstanceIds.insert({SDL_JoystickInstanceID(SDL_GameControllerGetJoystick(controllers[i])), i});
+				std::cout<< "Game controller "<<i<<" "<<SDL_GameControllerName(controllers[i])<<" initialized\n";
+			} else {
+				std::cerr<< "Could not open gamecontroller "<<i<<" "<<SDL_GetError()<<"\n";
+			}
+		}
+	}
+}
 
 void SetupKeys(int offset)
 {
@@ -26,55 +47,49 @@ void SetupKeys(int offset)
 	keyfile.close();
 }
 
-void GameLoopJoy()
+void SetupJoy(int offset)
 {
-	/* TODO
-	int acount;
-	const float *axesArray = glfwGetJoystickAxes(GLFW_JOYSTICK_1, &acount);
-	if(acount >= 2)
+	int keyIterator = 0;
+	keyIterator = offset;
+	Uint8 lastAxis = -1;
+	while(keyIterator<buttonsN+offset)
 	{
-		if(axesArray[0] == 1)
-			keySend[0] |= key::buf::RIGHT;
-		else if(axesArray[0] == -1)
-			keySend[0] |= key::buf::LEFT;
-		else
-			keySend[0] &= ~(key::buf::RIGHT | key::buf::LEFT);
-
-		if(axesArray[1] == 1)
-			keySend[0] |= key::buf::DOWN;
-		else if(axesArray[1] == -1)
-			keySend[0] |= key::buf::UP;
-		else
-			keySend[0] &= ~(key::buf::DOWN | key::buf::UP);
-	}
-
-	int bcount;
-	const unsigned char* buttonArray = glfwGetJoystickButtons(GLFW_JOYSTICK_1, &bcount);
-	for(int i = 0; i < bcount; ++i)
-	{
-		if(buttonArray[i] == GLFW_PRESS)
+		SDL_Event event;
+		SDL_WaitEvent(&event);
+		if(event.type == SDL_CONTROLLERBUTTONDOWN)
 		{
-			for(int i2 = 0; i2 < 4; ++i2)
+			modifiableJoyKeys[keyIterator].id = JoyInstanceIds[event.cbutton.which];
+			modifiableJoyKeys[keyIterator].button = event.cbutton.button;
+			modifiableJoyKeys[keyIterator].type = JoyInputInfo::BUTTON;
+			++keyIterator;
+		}
+		else if(event.type == SDL_CONTROLLERAXISMOTION)
+		{
+			auto caxis = event.caxis;
+			auto packdAxis = ((caxis.value > 0)<<7)+caxis.axis;
+			if(abs(caxis.value) < deadZone)
+				continue;
+			if(lastAxis != packdAxis)
 			{
-				if(i == modifiableJoyKeys[i2])
-				{
-					keySend[0] |= 1 << (i2+key::A);
-				}
+				lastAxis = packdAxis;
 			}
+			else
+				continue;
+			modifiableJoyKeys[keyIterator].id = JoyInstanceIds[caxis.which];
+			modifiableJoyKeys[keyIterator].axis = packdAxis;
+			modifiableJoyKeys[keyIterator].type = JoyInputInfo::AXIS;
+			++keyIterator;
 		}
 		else
-		{
-			for(int i2 = 0; i2 < 4; ++i2)
-			{
-				if(i == modifiableJoyKeys[i2])
-					keySend[0] &= ~(1 << (i2+key::A));
-			}
-		}
+			continue;
 	}
-	*/
+	std::ofstream keyfile("joyconf.bin", std::ofstream::out | std::ofstream::binary);
+	keyfile.write((const char*)modifiableJoyKeys, sizeof(modifiableJoyKeys));
+	keyfile.close();
 }
 
-void EventLoop(std::function<void(SDL_KeyboardEvent &e)> f)
+void EventLoop(std::function<void(SDL_KeyboardEvent&)> keyHandler,
+	std::function<void(SDL_ControllerButtonEvent*, SDL_ControllerAxisEvent*)> joyHandler)
 {
 	SDL_Event event;
 	while(SDL_PollEvent(&event))
@@ -94,7 +109,14 @@ void EventLoop(std::function<void(SDL_KeyboardEvent &e)> f)
 				break;
 			case SDL_KEYDOWN:
 			case SDL_KEYUP:
-				f(event.key);
+				keyHandler(event.key);
+				break;
+			case SDL_CONTROLLERAXISMOTION:
+				joyHandler(nullptr, &event.caxis);
+				break;
+			case SDL_CONTROLLERBUTTONDOWN:
+			case SDL_CONTROLLERBUTTONUP:
+				joyHandler(&event.cbutton, nullptr);
 				break;
 		}
 	}

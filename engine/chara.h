@@ -37,7 +37,7 @@ private:
 
 	std::reference_wrapper<BattleInterface> scene;
 	
-	bool interrumpible = false;
+	bool interruptible = false;
 	bool mustTurnAround = false;
 
 	//FixedPoint getAway; //Amount to move after collision
@@ -72,6 +72,7 @@ struct PlayerStateCopy
 	input_deque keyBufOrig;
 	input_deque keyBufDelayed;
 	unsigned int lastKey[2]{};
+	int priority;
 };
 
 class Player

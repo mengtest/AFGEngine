@@ -3,7 +3,9 @@
 #include "raw_input.h"
 #include "window.h"
 #include "game_state.h"
+#include "raw_input.h"
 #include <fstream>
+#include <SDL_gamecontroller.h>
 
 int gameState = GS_MENU;
 
@@ -15,15 +17,21 @@ int main(int argc, char** argv)
 	std::ifstream keyfile("keyconf.bin", std::ifstream::in | std::ifstream::binary);
 	if(keyfile.is_open())
 	{
-		keyfile.read((char*)modifiableSCKeys, sizeof(int)*buttonsN*2);
+		keyfile.read((char*)modifiableSCKeys, sizeof(modifiableSCKeys));
 		keyfile.close();
 	}
-	keyfile.open("joyconf.bin", std::ifstream::in | std::ifstream::binary);
+	
+ 	keyfile.open("joyconf.bin", std::ifstream::in | std::ifstream::binary);
 	if(keyfile.is_open())
 	{
-		keyfile.read((char*)modifiableJoyKeys, sizeof(int)*4);
+		keyfile.read((char*)modifiableJoyKeys, sizeof(modifiableJoyKeys));
 		keyfile.close();
 	}
+	else
+		memset(modifiableJoyKeys, -1, sizeof(modifiableJoyKeys));
+
+	std::vector<SDL_GameController*> controllers;
+	InitControllers(controllers);
 
 	while(!mainWindow->wantsToClose)
 	{
@@ -38,7 +46,7 @@ int main(int argc, char** argv)
 				//break;
 				case GS_PLAY: {
 					BattleScene bs;
-					gameState = bs.PlayLoop();
+					gameState = bs.PlayLoop(argc > 1);
 					break;
 				}
 			}
@@ -49,6 +57,12 @@ int main(int argc, char** argv)
 			std::cin.get();
 			return 0;
 		}
+	}
+
+	for(auto &control : controllers)
+	{
+		if(control)
+			SDL_GameControllerClose(control);
 	}
 
 	return 0;

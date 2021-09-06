@@ -66,7 +66,7 @@ public:
 		neutralMove = 0x1,
 		repeatable = 0x2,
 		wipeBuffer = 0x4,
-		interrupts = 0x8, //Will interrupt any move marked as interrumpible.
+		interrupts = 0x8, //Will interrupt any move marked as interruptible.
 		interruptible = 0x10,
 		noCombo = 0x20
 	};

@@ -7,6 +7,7 @@
 /data/char/vaki/effect/
 /data/char/vaki/vaki/
 /data/images/src/
+/data/hud/src/
 /data/bg/src/
 
 #clangd
@@ -14,7 +15,9 @@
 
 #Executable artifacts
 /keyconf.bin
+/joyconf.bin
 *.ini
+/replay
 
 #build artifacts
 /build/

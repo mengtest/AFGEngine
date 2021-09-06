@@ -151,7 +151,7 @@ void Character::GotoSequence(int seq)
 	if (seq < 0)
 		return;
 	
-	interrumpible = false;
+	interruptible = false;
 	comboType = none;
 	currSeq = seq;
 	currFrame = 0;
@@ -232,12 +232,7 @@ bool Character::Update()
 	else
 		shaking = false;
 
-	if(friction && (vel.x.value < 0 && accel.x.value < 0)) //Pushback can't accelerate. Only slow down.
-	{
-		vel.x.value = 0;
-		accel.x.value = 0;
-	}
-	else if(friction && (vel.x.value > 0 && accel.x.value > 0))
+	if(friction &&((vel.x.value < 0 && accel.x.value < 0) || (vel.x.value > 0 && accel.x.value > 0))) //Pushback can't accelerate. Only slow down.
 	{
 		vel.x.value = 0;
 		accel.x.value = 0;
@@ -316,6 +311,7 @@ void Character::Input(input_deque &keyPresses, CommandInputs &cmd)
 				cancellable[i] = comboType == blocked;
 				break;
 			default: //Never
+			case 0:
 				cancellable[i] = false;
 		}
 	}
@@ -323,7 +319,7 @@ void Character::Input(input_deque &keyPresses, CommandInputs &cmd)
 	CommandInputs::CancelInfo info{
 		totalSubframeCount, flags,
 		cancellable[0], cancellable[1],
-		interrumpible,
+		interruptible,
 		currSeq
 	};
 
@@ -354,7 +350,7 @@ void Character::Input(input_deque &keyPresses, CommandInputs &cmd)
 			keyPresses.front() |= key::buf::CUT;
 
 		if(command.flags & CommandInputs::interruptible) 
-			interrumpible = true;
+			interruptible = true;
 	}	
 }
 
@@ -411,7 +407,7 @@ void Player::SetState(PlayerStateCopy &state)
 	keyBufDelayed = state.keyBufDelayed;
 	lastKey[0] = state.lastKey[0];
 	lastKey[1] = state.lastKey[1];
-	
+	priority = state.priority;
 }
 
 sol::object DeepCopy(sol::object obj, sol::table seen, sol::state &lua)
@@ -457,7 +453,8 @@ PlayerStateCopy Player::GetStateCopy()
 		target,
 		keyBufOrig,
 		keyBufDelayed,
-		{lastKey[0], lastKey[1]}
+		{lastKey[0], lastKey[1]},
+		priority
 	};
 	copy.charObj.reset(p);
 	//copy.luaState.create();

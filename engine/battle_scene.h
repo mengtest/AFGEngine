@@ -42,7 +42,7 @@ public:
 	void SaveState();
 	void LoadState();
 
-	int PlayLoop();
+	int PlayLoop(bool replay = false);
 
 private:
 	std::vector<Texture> activeTextures;
@@ -56,6 +56,7 @@ private:
 	void SetModelView(glm::mat4 &view);
 	void SetModelView(glm::mat4 &&view);
 	void KeyHandle(SDL_KeyboardEvent &e);
+	void JoyHandle(SDL_ControllerButtonEvent* cbutton, SDL_ControllerAxisEvent* caxis);
 };
 
 #endif /* BATTLE_SCENE_H_GUARD */

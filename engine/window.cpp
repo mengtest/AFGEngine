@@ -23,7 +23,7 @@ targetSpf(0.01666),
 realSpf(0),
 startClock(std::chrono::high_resolution_clock::now())
 {
-	if(SDL_Init(SDL_INIT_VIDEO))
+	if(SDL_Init(SDL_INIT_VIDEO|SDL_INIT_GAMECONTROLLER))
 	{
 		std::cerr << SDL_GetError();
 		throw std::runtime_error("Couldn't init SDL.");
