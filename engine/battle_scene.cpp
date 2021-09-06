@@ -164,7 +164,6 @@ int BattleScene::PlayLoop(bool replay)
 	defaultS.Use();
 
 	auto keyHandler = std::bind(&BattleScene::KeyHandle, this, std::placeholders::_1);
-	auto joyHandler = std::bind(&BattleScene::JoyHandle, this, std::placeholders::_1, std::placeholders::_2);
 	int32_t gameTicks = 0;
 	bool gameOver = false;
 	
@@ -175,7 +174,7 @@ int BattleScene::PlayLoop(bool replay)
 			std::cerr << "GL Error: 0x" << std::hex << err << "\n";
 		}
 		
-		EventLoop(keyHandler, joyHandler);
+		EventLoop(keyHandler);
 		
 		// TODO
 		//if(glfwJoystickPresent(GLFW_JOYSTICK_1))
@@ -347,97 +346,20 @@ void BattleScene::LoadState()
 	view = state.view;
 }
 
-void BattleScene::KeyHandle(SDL_KeyboardEvent &e)
+bool BattleScene::KeyHandle(const SDL_KeyboardEvent &e)
 {
-	if(e.repeat)
-		return;
-	
-	SDL_Scancode scancode = e.keysym.scancode; 
+	if(e.type != SDL_KEYDOWN)
+		return false;
 
-	bool action = e.type == SDL_KEYDOWN;
-	for(int i = 0; i < buttonsN*2; ++i)
-	{
-		if(scancode == modifiableSCKeys[i])
-		{
-			if(action)
-				keySend[i/buttonsN] |= 1 << (i%buttonsN);
-			else
-				keySend[i/buttonsN] &= ~(1 << (i%buttonsN));
-		}
-	}
-	//unmodifiable keys.
-	if(!action)
-		return;
-
-	switch (scancode){
+	switch (e.keysym.scancode){
 	case SDL_SCANCODE_F1: 
 		SaveState();
 		break;
 	case SDL_SCANCODE_F2:
 		LoadState();
 		break;
-	case SDL_SCANCODE_F5: //Switches between different framerates
-		mainWindow->ChangeFramerate();
-		break;
-	case SDL_SCANCODE_F6: //Swap controller
-		for(auto& id : JoyInstanceIds)
-			id.second = (id.second+1)%2;
-		break;
-	case SDL_SCANCODE_F7: //Set joy buttons for p1
-		SetupJoy(0);
-		break;
-	case SDL_SCANCODE_F8: //for p2
-		SetupJoy(buttonsN);
-		break;
-	case SDL_SCANCODE_F9: //Set custom keys for player one
-		SetupKeys(0);
-		break;
-	case SDL_SCANCODE_F10: //and player two too
-		SetupKeys(buttonsN);
-		break;
-	case SDL_SCANCODE_ESCAPE:
-			mainWindow->wantsToClose = true;
-		break;
 	default:
-		return;
+		return false;
 	}
-}
-
-void BattleScene::JoyHandle(SDL_ControllerButtonEvent* cbutton, SDL_ControllerAxisEvent* caxis)
-{
-	if(cbutton)
-	{
-		bool isDown = cbutton->state > 0; //Pressed down
-		for(int i = 0; i < buttonsN*2; ++i)
-		{
-			int controller = i/buttonsN;
-			if( modifiableJoyKeys[i].id == JoyInstanceIds[cbutton->which] &&
-				modifiableJoyKeys[i].type == JoyInputInfo::BUTTON &&
-				modifiableJoyKeys[i].button == cbutton->button)
-			{
-				if(isDown)
-					keySend[controller] |= 1 << (i%buttonsN);
-				else
-					keySend[controller] &= ~(1 << (i%buttonsN));
-			}
-		}
-	}
-	else if(caxis)
-	{
-		std::cout << (int)caxis->axis <<" - "<<(int)caxis->value<<"\n";
-		bool isDown = abs(caxis->value) > deadZone;
-		for(int i = 0; i < buttonsN*2; ++i)
-		{
-			int controller = i/buttonsN;
-			if( modifiableJoyKeys[i].id == JoyInstanceIds[caxis->which] &&
-				modifiableJoyKeys[i].type == JoyInputInfo::AXIS &&
-				(modifiableJoyKeys[i].axis & 0x7F) == caxis->axis)
-			{
-				if(isDown && !!(modifiableJoyKeys[i].axis & 0x80) == caxis->value > 0)
-					keySend[i/buttonsN] |= 1 << (i%buttonsN);
-				else
-					keySend[i/buttonsN] &= ~(1 << (i%buttonsN));
-			}
-		}
-	}
+	return true;
 }

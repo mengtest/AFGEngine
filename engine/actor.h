@@ -47,6 +47,8 @@ struct HitDef
 		hitsAir = 0x4,
 		hitsStand = 0x8,
 		unblockable = hitsCrouch | hitsAir | hitsStand,
+		wallBounce = 0x10,
+		disableCollision = 0x20,
 	};
 
 	static Vector getVectorTableFromTable(const sol::table &table);
@@ -150,6 +152,7 @@ protected:
 	enum actorFlags{
 		floorCheck = 0x1,
 		followParent = 0x2,
+		noCollision = 0x4,
 	};
 };
 

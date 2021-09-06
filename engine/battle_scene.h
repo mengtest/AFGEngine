@@ -55,8 +55,7 @@ private:
 
 	void SetModelView(glm::mat4 &view);
 	void SetModelView(glm::mat4 &&view);
-	void KeyHandle(SDL_KeyboardEvent &e);
-	void JoyHandle(SDL_ControllerButtonEvent* cbutton, SDL_ControllerAxisEvent* caxis);
+	bool KeyHandle(const SDL_KeyboardEvent &e); //Returns false if it doesn't handle the event.
 };
 
 #endif /* BATTLE_SCENE_H_GUARD */

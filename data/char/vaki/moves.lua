@@ -9,15 +9,14 @@ local f = {
 
 inputs = {
 	ground = {
-
-			
-		{input = "23~6b", sBuf = 4, ref = 507},
-		{input = "23~6a", sBuf = 4, ref = 506},
-
+		
 		--Power dunk
 		{input = "62~3c", sBuf = 4, ref = 207},
 		{input = "62~3b", sBuf = 4, ref = 206},
 		{input = "62~3a", sBuf = 4, ref = 554},
+
+		{input = "23~6b", sBuf = 4, ref = 507},
+		{input = "23~6a", sBuf = 4, ref = 506},
 		
 		--Tsuki
 		{input = "21~4a", sBuf = 4, ref = 180},
@@ -33,9 +32,9 @@ inputs = {
 		{input = "~6ab", sBuf = 1, aBuf=1, ref = 43, flag = f.interrupts | f.noCombo},
 		
 		{input = "~d", sBuf = 2, aBuf = 1, ref = 62, flag = f.interruptible},
-		{input = "~3c", sBuf = 1, aBuf = 1, ref = 445, flag = f.interruptible},
-		{input = "~6c", sBuf = 2, aBuf = 1, ref = 60, flag = f.interruptible},
-		{input = "~4c", sBuf = 2, aBuf = 1, ref = 80, flag = f.interruptible},
+		{input = "~3c", sBuf = 4, aBuf = 3, ref = 445, flag = f.interruptible},
+		{input = "~6c", sBuf = 4, aBuf = 3, ref = 60, flag = f.interruptible},
+		{input = "~4c", sBuf = 4, aBuf = 3, ref = 80, flag = f.interruptible},
 		{input = "~Dc", sBuf = 2, aBuf = 1, ref = 6, flag = f.interruptible},
 		{input = "~Db", sBuf = 2, aBuf = 1, ref = 5, flag = f.interruptible},
 		{input = "~Da", sBuf = 2, aBuf = 1, ref = 4, flag = f.interruptible | f.repeatable},

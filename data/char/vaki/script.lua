@@ -77,6 +77,18 @@ _vectors = {
 		xAccel = 0, yAccel = -150;
 		maxTime = 0,
 		ani = "airDown",
+	},
+	wallSlam = {
+		xSpeed = 2800,
+		maxTime = 0,
+		ani = "down",
+		onBounce = "wallSlamBounce"
+	},
+	wallSlamBounce = {
+		xSpeed = -400, ySpeed = 2200;
+		xAccel = 0, yAccel = -150;
+		maxTime = 0,
+		ani = "down",
 	}
 	
 }
@@ -98,6 +110,13 @@ a_flag = {
 	floorCheck = 0x1,
 	followParent = 0x2,
 }
+
+local function runFrameTable(actor, table)
+	local func = table[actor.currentFrame]
+	if(func and actor.subframeCount == 0) then
+		func(actor)
+	end
+end
 
 function C_toCrouch()
 	local crouchingSeq = player.currentSequence;
@@ -278,7 +297,7 @@ function s2a (actor)
 		hitdef.hitStop = histopTbl.weak
 		hitdef.blockStun = 14
 		hitdef.damage = 350
-		hitdef.attackFlags = _hit.hitsStand
+		hitdef.attackFlags = g.hit.hitsStand
 	end
 end
 
@@ -368,7 +387,7 @@ function s3c (actor)
 		hitdef.blockStun = 20
 		hitdef.damage = 700
 		hitdef.shakeTime = 8
-		hitdef.attackFlags = _hit.hitsAir
+		hitdef.attackFlags = g.hit.hitsAir
 	end
 end
 
@@ -389,7 +408,29 @@ function sgthrow(actor)
 	end
 end
 
+
 --------------------- Special moves -----------------------
+local t_s623a = {
+	[0] = function (actor)
+		local hitdef = actor.hitDef
+		hitdef:SetVectors(s.stand, v.wallSlam, v.block3)
+		hitdef:SetVectors(s.air, v.wallSlam, v.airBlock)
+		hitdef:SetVectors(s.crouch, v.wallSlam, v.croBlock3)
+		hitdef.hitStop = histopTbl.strong
+		hitdef.blockStun = 20
+		hitdef.damage = 700
+		hitdef.shakeTime = 4
+		hitdef.attackFlags = g.hit.wallBounce | g.hit.hitsAir | g.hit.disableCollision
+	end
+}
+function s623a (actor)
+	local x = actor:GetVel()
+	if(actor:GetSide()*x < 0) then
+		actor:SetVel(0, 0)
+	end
+	runFrameTable(actor, t_s623a)
+end
+
 function s623b (actor)
 	frame = actor.currentFrame
 	if(frame == 0 and actor.subframeCount == 0) then
@@ -415,7 +456,7 @@ function s623b (actor)
 		hitdef.hitStop = histopTbl.strong
 		hitdef.blockStun = 20
 		hitdef.damage = 500
-		hitdef.attackFlags = _hit.bounce
+		hitdef.attackFlags = g.hit.bounce
 	end
 end
 

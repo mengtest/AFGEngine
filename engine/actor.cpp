@@ -28,6 +28,7 @@ void Actor::GotoSequence(int seq)
 
 	seqPointer = &sequences.get()[currSeq];
 	landingFrame = seqPointer->props.landFrame;
+	flags &= ~noCollision; 
 	GotoFrame(0);
 }
 
@@ -426,12 +427,14 @@ void Actor::DeclareActorLua(sol::state &lua)
 		"hitStop", &Actor::hitstop
 	);
 
-	auto table = lua["_hit"].get_or_create<sol::table>();
+	auto table = lua["global"]["hit"].get_or_create<sol::table>();
 	table["bounce"] = HitDef::canBounce;
+	table["wallBounce"] = HitDef::wallBounce;
 	table["hitsStand"] = HitDef::hitsStand;
 	table["hitsCrouch"] = HitDef::hitsCrouch;
 	table["hitsAir"] = HitDef::hitsAir;
 	table["unblockable"] = HitDef::unblockable;
+	table["disableCollision"] = HitDef::disableCollision;
 }
 
 void HitDef::SetVectors(int state, sol::table onHitTbl, sol::table onBlockTbl)

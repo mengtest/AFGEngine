@@ -39,8 +39,21 @@ void Character::BoundaryCollision()
 		touchedWall = 1;
 		root.x = currView.GetWallPos(camera::rightWall) - wallOffset;
 	}
-
-	if (touchedWall == target->touchedWall) //Someone already has the wall.
+	
+	if (touchedWall != 0 && hitFlags & HitDef::wallBounce)
+	{
+		hitFlags &= ~HitDef::wallBounce;
+		vel.x.value = bounceVector.xSpeed*speedMultiplier;
+		vel.y.value = bounceVector.ySpeed*speedMultiplier;
+		accel.x.value = bounceVector.xAccel*speedMultiplier;
+		accel.y.value = bounceVector.yAccel*speedMultiplier;
+		pushTimer = bounceVector.maxPushBackTime;
+		GotoSequence(lua.get()["_seqTable"][bounceVector.sequenceName].get_or(-1));
+		touchedWall = 0;
+		hitstop = 6;
+		scene.get().view.SetShakeTime(12);
+	}
+	else if (touchedWall == target->touchedWall) //Someone already has the wall.
 		touchedWall = 0;
 }
 
@@ -161,6 +174,7 @@ void Character::GotoSequence(int seq)
 
 	seqPointer = &sequences.get()[currSeq];
 	landingFrame = seqPointer->props.landFrame;
+	flags &= ~noCollision; 
 	GotoFrame(0);
 	if(framePointer->frameProp.flags & flag::canMove)
 	{
@@ -193,6 +207,8 @@ bool Character::Update()
 	if(gotHit) //Chara
 	{
 		GotoSequence(hurtSeq);
+		if(hitFlags & HitDef::disableCollision)
+			flags |= noCollision;
 		hurtSeq = -1;
 		gotHit = false;
 		if (root.y < floorPos) //Fixes a problem when you get hit under the floor.
@@ -213,6 +229,7 @@ bool Character::Update()
 			accel.y.value = bounceVector.yAccel*speedMultiplier;
 			pushTimer = bounceVector.maxPushBackTime;
 			GotoSequence(lua.get()["_seqTable"][bounceVector.sequenceName].get_or(-1));
+			scene.get().view.SetShakeTime(12);
 		}
 		else
 			GotoFrame(landingFrame);
@@ -469,6 +486,7 @@ PlayerStateCopy Player::GetStateCopy()
 bool Player::ScriptSetup()
 {
 	lua.open_libraries(sol::lib::base);
+	auto global = lua["global"].get_or_create<sol::table>();
 	Actor::DeclareActorLua(lua);
 
 	auto constant = lua["constant"].get_or_create<sol::table>();
@@ -480,7 +498,6 @@ bool Player::ScriptSetup()
 	key["right"] = key::buf::RIGHT;
 	key["any"] = key::buf::UP | key::buf::DOWN | key::buf::LEFT | key::buf::RIGHT;
 
-	auto global = lua["global"].get_or_create<sol::table>();
 	global.set_function("DamageTarget", [this](int amount){target->health -= amount;});
 	global.set_function("ParticlesNormalRel", [this](int amount, float x, float y){
 		scene.particles[ParticleGroup::redSpark].PushNormalHit(amount, (float)charObj->root.x+x*charObj->side, float(charObj->root.y)+y);
@@ -681,6 +698,8 @@ void Player::Collision(Player& blue, Player& red)
 {
 	bool isColliding = false;
 	Character *playerOne = blue.charObj, *playerTwo = red.charObj;
+	if(playerOne->flags & Actor::noCollision || playerTwo->flags & Actor::noCollision)
+		return;
 
 	Rect2d<FixedPoint> colBlue = playerOne->framePointer->colbox;
 	Rect2d<FixedPoint> colRed = playerTwo->framePointer->colbox;
