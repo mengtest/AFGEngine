@@ -2,10 +2,13 @@
 
 A fighting game engine in C++
 It is currently in very early stages and it's going through many changes.
-It has character framedata editor and scripting support.
+It has a character framedata editor (wip) and scripting support.
 Rollback netplay code is planned.
+You can see it in action [here](https://files.catbox.moe/42pwfv.webm)
 
 ![screenshot](https://user-images.githubusercontent.com/39018575/129495632-f9d50690-9469-4033-b8fe-1e218d82892c.png)
+
+
 
 
 -----------------------
