@@ -1,43 +1,44 @@
 #ifndef HUD_H_INCLUDED
 #define HUD_H_INCLUDED
-#include <glad/glad.h>
-#include <vector>
 
-enum
+//#include <vector>
+
+#include "vao.h"
+#include "texture.h"
+#include <filesystem>
+
+class Hud
 {
-	B_P1LifeRed,
-	B_P2LifeRed,
-	B_P1Life,
-	B_P2Life
-};
+	struct Coord{
+		float x,y,s,t;
+	};
 
-enum e_side
-{
-	LEFT,
-	RIGHT
-};
-
-class Bar //as in lifebar.
-{
-private:
-
+	struct Bar
+	{
+		int pos;
+		float w,h; //original size;
+		float x,y;
+		float tx,ty;
+		bool flipped;
+		int id;
+	};
+	
+	float gScale;
 	float width;
 	float height;
-	float offsetX; //from the bottom of the screen
-	float offsetY; //from the middle of the screen. Convenient since bars are symmetrical.
-	float texChunkX; //Indexes of XY chunks
-	float texChunkY;
-	e_side side;
-	std::vector<float> *vertexArray;
-	int index; //Where is the bar in the vertex array.
+	int startId;
+	std::vector<Bar> barData;
+	std::vector<Coord> coords;
+	int staticCount = 0;
+	Vao* vao;
 
 public:
-	Bar(float width, float height, float offsetX, float offsetY, std::vector<float> *vertexArray, float texAtlasIndexX, float texAtlasIndexY, e_side side);
-	void Resize(float amountX, float amountY); //Amounts are the ratio of the maximum size, not the actual size.
-
+	Texture texture;
+	Hud();
+	Hud(std::filesystem::path file, Vao &vao);
+	void Load(std::filesystem::path file, Vao &vao);
+	void Draw();
+	void ResizeBarId(int id, float horizPercentage);
 };
-
-std::vector<Bar> InitBars();
-std::vector<float>& GetHudData();
 
 #endif // HUD_H_INCLUDED

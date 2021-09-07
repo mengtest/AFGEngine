@@ -39,21 +39,21 @@ void Texture::LoadPng(std::filesystem::path imageFile, const texture_options opt
 	
 	ImageData image(imageFile.string().c_str(), palette, options.linearAlpha);
 	Apply(options, image.bytesPerPixel, image.width, image.height, image.data);
-	if(image.bytesPerPixel == 1)
-		is8bpp = true;
 }
 
 void Texture::LoadLzs3(std::filesystem::path imageFile, const texture_options options)
 {
 	filename = imageFile.filename().string();
 	std::ifstream file(imageFile, std::ios::binary);
+	if(!file.is_open())
+		throw std::runtime_error("Couldn't open image "+imageFile.string()+"\n");
 
 	struct{
 		uint32_t type;
 		uint32_t size;
 		uint32_t cSize;
 		uint16_t w,h;
-	} meta;
+	} meta{};
 	file.read((char*)&meta, sizeof(meta));
 	auto data = std::make_unique<char[]>(meta.size);
 	auto cData = std::make_unique<char[]>(meta.cSize);
@@ -63,8 +63,12 @@ void Texture::LoadLzs3(std::filesystem::path imageFile, const texture_options op
 	if(decompSize < 0 || decompSize != meta.size)
 		throw std::runtime_error("Texture::LoadLzs3: Error while decompressing LZ4 - "+ filename + "\n");
 
-	Apply(options, meta.type, meta.w, meta.h, data.get(), decompSize);
-}
+	constexpr uint32_t nonS3tcFlag = 0x1000;
+	if(meta.type & nonS3tcFlag)
+		Apply(options, meta.type & ~nonS3tcFlag, meta.w, meta.h, data.get());
+	else
+		Apply(options, meta.type, meta.w, meta.h, data.get(), decompSize);
+}		
 
 void Texture::Apply(const texture_options &options, int dataType, int w, int h, void* data, int compressedSize)
 {
@@ -114,7 +118,7 @@ void Texture::Apply(const texture_options &options, int dataType, int w, int h, 
 				intType = GL_COMPRESSED_RGBA_S3TC_DXT5_EXT;
 				break;
 			default:
-				std::cerr << filename.c_str() << " unhandled s3tc format "<< dataType << ".\n";
+				std::cerr << filename.c_str() << " unhandled lz3s type "<< dataType << ".\n";
 				break;
 		}
 		glCompressedTexImage2D(textype, 0, intType, w, h, 0, compressedSize, data);
@@ -127,6 +131,7 @@ void Texture::Apply(const texture_options &options, int dataType, int w, int h, 
 			case 1:
 				extType = GL_RED;
 				intType = GL_R8;
+				is8bpp = true;
 				break;
 			case 3:
 				extType = GL_RGB;

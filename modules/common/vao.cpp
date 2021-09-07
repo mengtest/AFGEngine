@@ -58,6 +58,11 @@ void Vao::Draw(int which, int mode)
 	glDrawArrays(mode, dataPointers[which].location, count);
 }
 
+void Vao::DrawCount(int which, int count, int mode)
+{
+	glDrawArrays(mode, dataPointers[which].location, count);
+}
+
 void Vao::DrawInstances(int which, size_t instances, int mode)
 {
 	int vCount = dataPointers[which].size/stride;

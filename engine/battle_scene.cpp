@@ -17,14 +17,12 @@
 
 enum //TODO: Remove
 {
-	T_HUD,
 	T_FONT
 };
 
 //TODO: Load from lua
 const char *texNames[] ={
-	"data/images/hud.lzs3",
-	"data/images/font.lzs3"
+	"data/hud/font.lzs3"
 };
 
 int inputDelay = 0;
@@ -60,16 +58,14 @@ interface{rng, particleGroups, view},
 player(interface), player2(interface),
 uniforms("Common", 1)
 {
-	texture_options opt; opt.linearFilter = true;
-	activeTextures.reserve(2);
-	for(int i = 0; i < 2; ++i)
-	{
+	{ //Loads font texture. TODO: Remove
 		Texture texture;
 		texture_options opt;
 		opt.linearFilter = true;
-		texture.LoadLzs3(texNames[i], opt);
+		texture.LoadLzs3(texNames[0], opt);
 		activeTextures.push_back(std::move(texture));
 	}
+	
 	paletteId = LoadPaletteTEMP();
 
 	defaultS.LoadShader("data/def.vert", "data/def.frag");
@@ -80,6 +76,7 @@ uniforms("Common", 1)
 	uniforms.Bind(defaultS.program);
 
 	projection = glm::ortho<float>(0, internalWidth, 0, internalHeight, -32768, 32767);
+	//projection = glm::ortho<float>(-internalWidth*0.5, internalWidth*1.5, -internalHeight*0.5, internalHeight*1.5, -32768, 32767);
 	/* projection = glm::perspective<float>(90, (float)internalWidth/(float)internalHeight, 1, 32767);
 	projection = glm::rotate(projection, 0.3f, glm::vec3(0.f,1.f,0.f));
 	projection = glm::translate(projection, glm::vec3(-internalWidth/2.f,-internalHeight/2.f,-200)); */
@@ -111,23 +108,21 @@ int BattleScene::PlayLoop(bool replay)
 	}
 	else
 		inputs.reserve(0x2000);
-
-	//TODO: Get rid of this garbage hud code. It can and will cause problems.
-	std::vector<Bar> barHandler;
-	barHandler = InitBars();
 	
 	std::ostringstream timerString;
 	timerString.precision(6);
 	timerString.setf(std::ios::fixed, std::ios::floatfield);
 
-	int hudId, stageId, textId;
+	Hud hud;
+
+	int stageId, textId;
 	std::vector<float> textVertData;
 	textVertData.resize(24*80);
-	Vao VaoTexOnly(Vao::F2F2, GL_DYNAMIC_DRAW);
+	Vao vaoTexOnly(Vao::F2F2, GL_DYNAMIC_DRAW);
 	{
-		hudId = VaoTexOnly.Prepare(GetHudData().size()*sizeof(float), nullptr);
-		textId = VaoTexOnly.Prepare(sizeof(float)*textVertData.size(), nullptr);
-		VaoTexOnly.Load();
+		hud.Load("data/hud/hud.lua", vaoTexOnly);
+		textId = vaoTexOnly.Prepare(sizeof(float)*textVertData.size(), nullptr);
+		vaoTexOnly.Load();
 	}
 
 	player.Load(1, "data/char/vaki/vaki.char", 0);
@@ -154,7 +149,7 @@ int BattleScene::PlayLoop(bool replay)
 
 	Player* players[2];
 
-	VaoTexOnly.Bind();
+	vaoTexOnly.Bind();
 
 	std::vector<Particle> particles;
 	Player::DrawList drawList;
@@ -175,10 +170,6 @@ int BattleScene::PlayLoop(bool replay)
 		}
 		
 		EventLoop(keyHandler);
-		
-		// TODO
-		//if(glfwJoystickPresent(GLFW_JOYSTICK_1))
-		//	GameLoopJoy();
 
 		if(replay)
 		{
@@ -196,7 +187,6 @@ int BattleScene::PlayLoop(bool replay)
 			player2.SendInput(keySend[1]);
 		}
 		
-
 		if(player.priority >= player2.priority){
 			players[0] = &player;
 			players[1] = &player2;
@@ -218,20 +208,18 @@ int BattleScene::PlayLoop(bool replay)
 		//auto &&pos = players[1]->getXYCoords();
 		//pg.PushNormalHit(5, 256, 128);
 
-
-		barHandler[B_P1Life].Resize(player.GetHealthRatio(), 1);
-		barHandler[B_P2Life].Resize(player2.GetHealthRatio(), 1);
-		VaoTexOnly.UpdateBuffer(hudId, GetHudData().data(), GetHudData().size()*sizeof(float));
+		//Hud state update
+		//barHandler[B_P1Life].Resize(player.GetHealthRatio(), 1);
+		//barHandler[B_P2Life].Resize(player2.GetHealthRatio(), 1);
+		//VaoTexOnly.UpdateBuffer(hudId, GetHudData().data(), GetHudData().size()*sizeof(float));
 		
 		//Start rendering
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		
 		//Should calculations be performed earlier? Watchout for this (Why?)
 		glm::mat4 viewMatrix = view.Calculate(players[0]->GetXYCoords(), players[1]->GetXYCoords());
-		//SetModelView(viewMatrix);
 
 		gfx.Begin();
-
 		//Draw stage quad
 		auto center = view.GetCameraCenterScale();
 		stage.Draw(viewMatrix, center);
@@ -286,19 +274,28 @@ int BattleScene::PlayLoop(bool replay)
 		
 		//Draw HUD
 		SetModelView(glm::mat4(1));
-		VaoTexOnly.Bind();
+		vaoTexOnly.Bind();
 		defaultS.Use();
-		glBindTexture(GL_TEXTURE_2D, activeTextures[T_HUD].id);
-		VaoTexOnly.Draw(hudId); 
 
-		timerString.seekp(0);
+		//Draw lifebars.
+		glBindTexture(GL_TEXTURE_2D, hud.texture.id);
+		hud.ResizeBarId(0, (gameTicks%120)/119.f);
+		hud.ResizeBarId(1, (gameTicks%240)/239.f);
+		hud.ResizeBarId(2, (gameTicks%60)/59.f);
+		hud.ResizeBarId(3, (gameTicks%512)/511.f);
+		hud.ResizeBarId(4, player.GetHealthRatio());
+		hud.ResizeBarId(5, player2.GetHealthRatio());
+		hud.Draw();
+
+		//Draw fps bar
+		/* timerString.seekp(0);
 		timerString << "SFP: " << mainWindow->GetSpf() << " FPS: " << 1/mainWindow->GetSpf()<<"      Entities:"<<drawList.v.size()<<
 			"   Particles:"<<particles.size()<<"  ";
-
 		glBindTexture(GL_TEXTURE_2D, activeTextures[T_FONT].id);
 		int count = DrawText(timerString.str(), textVertData, 2, 10);
-		VaoTexOnly.UpdateBuffer(textId, textVertData.data());
-		VaoTexOnly.Draw(textId);
+		vaoTexOnly.UpdateBuffer(textId, textVertData.data());
+		vaoTexOnly.Draw(textId); */
+
 		//End drawing.
 		++gameTicks;
 		mainWindow->SwapBuffers();

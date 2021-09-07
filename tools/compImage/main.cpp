@@ -18,13 +18,13 @@ int main(int argc, char **argv)
 	args::ValueFlag<int> dtxn(parser, "format",
 		"DTXn format.\n"
 		"0 - Use DXT1A compression. (Unsupported)\n"
-		"1 - Use DXT1 compression <- Default\n"
+		"1 - Use DXT1 compression\n"
 		"3 - Use DXT3 compression\n"
-		"5 - Use DXT5 compression",
-		{'x', "dtx"}, 1);
+		"5 - Use DXT5 compression <- Default",
+		{'x', "dtx"}, 5);
 	args::ValueFlag<int> quality(parser, "quality",
 		"The quality of the S3 compression.\n"
-		"0 - No compression. (Unsupported)\n"
+		"0 - No compression.\n"
 		"1 - Low / fast <- Default\n"
 		"2 - High / slow\n"
 		"3 - Best / very slow",
@@ -81,8 +81,9 @@ int main(int argc, char **argv)
 		return 0;
 	}
 
-	int fit = 0;
+	int fit = -1;
 	const std::vector<std::pair<int,int>> qualities = {
+		{0, 0},
 		{1, kColourRangeFit},
 		{2, kColourClusterFit},
 		{3, kColourIterativeClusterFit}
@@ -95,7 +96,7 @@ int main(int argc, char **argv)
 			break;
 		}
 	}
-	if(fit == 0)
+	if(fit < 0)
 	{
 		std::cerr << "Invalid quality number.";
 		return 0;
@@ -120,15 +121,29 @@ int main(int argc, char **argv)
 		}
 	}
 
-	int flags = format | fit | extra;
-	int size = GetStorageRequirements( img.width, img.height, flags );
-	auto dxtData = std::make_unique<char[]>(size);
-	CompressImage(img.data, img.width, img.height, dxtData.get(), flags );
+	int size;
+	uint8_t* dataToCompress;
+
+	if(fit)
+	{
+		int flags = format | fit | extra;
+		size = GetStorageRequirements( img.width, img.height, flags );
+		dataToCompress = new uint8_t[size];
+		CompressImage(img.data, img.width, img.height, dataToCompress, flags);
+	}
+	else
+	{
+		format = 0;
+		size = img.width * img.height * img.bytesPerPixel;
+		dataToCompress = img.data;
+	}
 
 	int cSize = LZ4_compressBound(size);
 	auto compressed = std::make_unique<char[]>(cSize);
 
-	uint32_t outBytes = LZ4_compress_default(dxtData.get(), compressed.get(), size, cSize);
+	uint32_t outBytes = LZ4_compress_default((char*)dataToCompress, compressed.get(), size, cSize);
+	if(fit)
+		delete[] dataToCompress;
 
 	struct{
 		uint32_t type;
@@ -146,6 +161,8 @@ int main(int argc, char **argv)
 		meta.type = 2;
 	else if(format & kDxt5)
 		meta.type = 3;
+	else
+		meta.type = img.bytesPerPixel|0x1000;
 
 	std::filesystem::path outFilepath = filepath.parent_path()/filepath.stem();
 	if(outName)
